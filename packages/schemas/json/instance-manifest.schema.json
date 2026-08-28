@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rackmcp.local/schemas/instance-manifest.schema.json",
+  "description": "Rack MCP instance discovery manifest",
+  "type": "object",
+  "properties": {
+    "manifestVersion": {
+      "type": "number",
+      "const": 1
+    },
+    "instanceId": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "pid": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "rackVersion": {
+      "type": "string",
+      "maxLength": 64
+    },
+    "rackEdition": {
+      "type": "string",
+      "enum": [
+        "Free",
+        "Pro",
+        "unknown"
+      ]
+    },
+    "bridgeVersion": {
+      "type": "string",
+      "maxLength": 64
+    },
+    "bridgeProtocolVersion": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "port": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 65535
+    },
+    "startTime": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+    },
+    "lastHeartbeat": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+    },
+    "mode": {
+      "type": "string",
+      "const": "standalone-gui"
+    },
+    "patchName": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 512
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "commandPumpPresent": {
+      "type": "boolean"
+    },
+    "bridgeModulePresent": {
+      "type": "boolean"
+    },
+    "userDir": {
+      "type": "string",
+      "maxLength": 4096
+    },
+    "patchesDir": {
+      "type": "string",
+      "maxLength": 4096
+    },
+    "checkpointsDir": {
+      "type": "string",
+      "maxLength": 4096
+    }
+  },
+  "required": [
+    "manifestVersion",
+    "instanceId",
+    "pid",
+    "rackVersion",
+    "rackEdition",
+    "bridgeVersion",
+    "bridgeProtocolVersion",
+    "port",
+    "startTime",
+    "lastHeartbeat",
+    "mode",
+    "patchName",
+    "commandPumpPresent",
+    "bridgeModulePresent",
+    "userDir",
+    "patchesDir",
+    "checkpointsDir"
+  ],
+  "additionalProperties": false
+}

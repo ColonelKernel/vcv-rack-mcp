@@ -1,0 +1,166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rackmcp.local/schemas/validation-finding.schema.json",
+  "description": "Rack MCP validation finding",
+  "type": "object",
+  "properties": {
+    "ruleId": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^[a-z0-9_.]+$"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "error",
+        "warning",
+        "info"
+      ]
+    },
+    "confidence": {
+      "type": "string",
+      "enum": [
+        "certain",
+        "adapter",
+        "heuristic"
+      ]
+    },
+    "entities": {
+      "maxItems": 64,
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "module"
+              },
+              "moduleId": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$"
+              }
+            },
+            "required": [
+              "kind",
+              "moduleId"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "cable"
+              },
+              "cableId": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$"
+              }
+            },
+            "required": [
+              "kind",
+              "cableId"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "port"
+              },
+              "moduleId": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$"
+              },
+              "portType": {
+                "type": "string",
+                "enum": [
+                  "input",
+                  "output"
+                ]
+              },
+              "portId": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              }
+            },
+            "required": [
+              "kind",
+              "moduleId",
+              "portType",
+              "portId"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "param"
+              },
+              "moduleId": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$"
+              },
+              "paramId": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              }
+            },
+            "required": [
+              "kind",
+              "moduleId",
+              "paramId"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "patch"
+              }
+            },
+            "required": [
+              "kind"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {}
+    },
+    "explanation": {
+      "type": "string",
+      "maxLength": 4096
+    },
+    "suggestedRepair": {
+      "type": "string",
+      "maxLength": 4096
+    }
+  },
+  "required": [
+    "ruleId",
+    "severity",
+    "confidence",
+    "entities",
+    "evidence",
+    "explanation"
+  ],
+  "additionalProperties": false
+}

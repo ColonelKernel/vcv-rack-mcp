@@ -1,0 +1,297 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rackmcp.local/schemas/module-adapter.schema.json",
+  "description": "Rack MCP module adapter document",
+  "type": "object",
+  "properties": {
+    "adapterVersion": {
+      "type": "number",
+      "const": 1
+    },
+    "pluginSlug": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255
+    },
+    "modelSlug": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255
+    },
+    "pluginVersionRange": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "displayName": {
+      "type": "string",
+      "maxLength": 256
+    },
+    "summary": {
+      "type": "string",
+      "maxLength": 2048
+    },
+    "params": {
+      "maxItems": 1024,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "paramId": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 65535
+          },
+          "role": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "safeInitial": {
+            "type": "number"
+          },
+          "safeRange": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        },
+        "required": [
+          "paramId",
+          "role"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "inputs": {
+      "maxItems": 256,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "portId": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 65535
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "audio",
+              "cv_unipolar",
+              "cv_bipolar",
+              "pitch_voct",
+              "gate",
+              "trigger",
+              "clock",
+              "unknown"
+            ]
+          },
+          "key": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "polyphony": {
+            "default": "unknown",
+            "type": "string",
+            "enum": [
+              "monophonic",
+              "polyphonic",
+              "poly_from_input",
+              "unknown"
+            ]
+          }
+        },
+        "required": [
+          "portId",
+          "role",
+          "key",
+          "polyphony"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "outputs": {
+      "maxItems": 256,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "portId": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 65535
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "audio",
+              "cv_unipolar",
+              "cv_bipolar",
+              "pitch_voct",
+              "gate",
+              "trigger",
+              "clock",
+              "unknown"
+            ]
+          },
+          "key": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "polyphony": {
+            "default": "unknown",
+            "type": "string",
+            "enum": [
+              "monophonic",
+              "polyphonic",
+              "poly_from_input",
+              "unknown"
+            ]
+          }
+        },
+        "required": [
+          "portId",
+          "role",
+          "key",
+          "polyphony"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "polyphony": {
+      "default": "unknown",
+      "type": "string",
+      "enum": [
+        "monophonic",
+        "polyphonic",
+        "poly_from_input",
+        "unknown"
+      ]
+    },
+    "opaqueStateFields": {
+      "default": [],
+      "maxItems": 64,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "boolean",
+              "integer",
+              "number",
+              "string"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1024
+          }
+        },
+        "required": [
+          "key",
+          "type",
+          "description"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "validationRules": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 128
+      }
+    },
+    "connectionRecipes": {
+      "default": [],
+      "maxItems": 64,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2048
+          },
+          "fromOutputKey": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "toRole": {
+            "type": "string",
+            "enum": [
+              "audio",
+              "cv_unipolar",
+              "cv_bipolar",
+              "pitch_voct",
+              "gate",
+              "trigger",
+              "clock",
+              "unknown"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "description",
+          "fromOutputKey",
+          "toRole"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "provenance": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 1024
+      }
+    }
+  },
+  "required": [
+    "adapterVersion",
+    "pluginSlug",
+    "modelSlug",
+    "pluginVersionRange",
+    "displayName",
+    "summary",
+    "params",
+    "inputs",
+    "outputs",
+    "polyphony",
+    "opaqueStateFields",
+    "validationRules",
+    "connectionRecipes",
+    "provenance"
+  ],
+  "additionalProperties": false
+}

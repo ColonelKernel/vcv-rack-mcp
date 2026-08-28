@@ -1,0 +1,394 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rackmcp.local/schemas/patch-snapshot.schema.json",
+  "description": "Rack MCP patch snapshot",
+  "type": "object",
+  "properties": {
+    "rackVersion": {
+      "type": "string",
+      "maxLength": 64
+    },
+    "rackEdition": {
+      "type": "string",
+      "enum": [
+        "Free",
+        "Pro",
+        "unknown"
+      ]
+    },
+    "bridgeVersion": {
+      "type": "string",
+      "maxLength": 64
+    },
+    "instanceId": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "sessionId": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "patchEpoch": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "patchPath": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 4096
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "pathDisclosed": {
+      "type": "boolean"
+    },
+    "saved": {
+      "type": "boolean"
+    },
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "modules": {
+      "maxItems": 4096,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "moduleId": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]{0,18})$"
+          },
+          "pluginSlug": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "modelSlug": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "pluginVersion": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "position": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "integer",
+                "minimum": -4096,
+                "maximum": 4096
+              },
+              "y": {
+                "type": "integer",
+                "minimum": -256,
+                "maximum": 256
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ],
+            "additionalProperties": false
+          },
+          "sizeHp": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1024
+          },
+          "bypassed": {
+            "type": "boolean"
+          },
+          "params": {
+            "maxItems": 4096,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "paramId": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 65535
+                },
+                "name": {
+                  "type": "string",
+                  "maxLength": 256
+                },
+                "unit": {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                "value": {
+                  "type": "number"
+                },
+                "minValue": {
+                  "type": "number"
+                },
+                "maxValue": {
+                  "type": "number"
+                },
+                "defaultValue": {
+                  "type": "number"
+                },
+                "displayValue": {
+                  "type": "string",
+                  "maxLength": 256
+                },
+                "labels": {
+                  "maxItems": 64,
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 128
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 512
+                  }
+                }
+              },
+              "required": [
+                "paramId",
+                "name",
+                "unit",
+                "value",
+                "minValue",
+                "maxValue",
+                "defaultValue",
+                "displayValue"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "inputs": {
+            "maxItems": 1024,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "portId": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 65535
+                },
+                "name": {
+                  "type": "string",
+                  "maxLength": 256
+                },
+                "description": {
+                  "type": "string",
+                  "maxLength": 1024
+                },
+                "connectedCableIds": {
+                  "maxItems": 1024,
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]{0,18})$"
+                  }
+                }
+              },
+              "required": [
+                "portId",
+                "name",
+                "connectedCableIds"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "outputs": {
+            "maxItems": 1024,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "portId": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 65535
+                },
+                "name": {
+                  "type": "string",
+                  "maxLength": 256
+                },
+                "description": {
+                  "type": "string",
+                  "maxLength": 1024
+                },
+                "connectedCableIds": {
+                  "maxItems": 1024,
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]{0,18})$"
+                  }
+                }
+              },
+              "required": [
+                "portId",
+                "name",
+                "connectedCableIds"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "leftExpanderModuleId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rightExpanderModuleId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "isBridge": {
+            "type": "boolean"
+          },
+          "isProbe": {
+            "type": "boolean"
+          },
+          "opaqueState": {},
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 512
+            }
+          }
+        },
+        "required": [
+          "moduleId",
+          "pluginSlug",
+          "modelSlug",
+          "pluginVersion",
+          "name",
+          "position",
+          "sizeHp",
+          "bypassed",
+          "params",
+          "inputs",
+          "outputs",
+          "leftExpanderModuleId",
+          "rightExpanderModuleId",
+          "isBridge",
+          "isProbe",
+          "warnings"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "cables": {
+      "maxItems": 16384,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "cableId": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]{0,18})$"
+          },
+          "outputModuleId": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]{0,18})$"
+          },
+          "outputPortId": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 65535
+          },
+          "inputModuleId": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]{0,18})$"
+          },
+          "inputPortId": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 65535
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$"
+          }
+        },
+        "required": [
+          "cableId",
+          "outputModuleId",
+          "outputPortId",
+          "inputModuleId",
+          "inputPortId",
+          "color"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "bridgePresent": {
+      "type": "boolean"
+    },
+    "probeModuleIds": {
+      "maxItems": 64,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^(0|[1-9][0-9]{0,18})$"
+      }
+    },
+    "includesOpaqueState": {
+      "type": "boolean"
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 512
+      }
+    }
+  },
+  "required": [
+    "rackVersion",
+    "rackEdition",
+    "bridgeVersion",
+    "instanceId",
+    "sessionId",
+    "patchEpoch",
+    "patchPath",
+    "pathDisclosed",
+    "saved",
+    "fingerprint",
+    "modules",
+    "cables",
+    "bridgePresent",
+    "probeModuleIds",
+    "includesOpaqueState",
+    "warnings"
+  ],
+  "additionalProperties": false
+}

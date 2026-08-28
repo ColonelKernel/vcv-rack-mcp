@@ -1,0 +1,12 @@
+node_modules/
+dist/
+build/
+coverage/
+*.log
+.DS_Store
+vendor/
+plugins/RackMCP/build/
+plugins/RackMCP/dist/
+plugins/RackMCP/*.vcvplugin
+tests/cpp-build/
+.tmp/

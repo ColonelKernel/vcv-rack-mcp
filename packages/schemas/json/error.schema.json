@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rackmcp.local/schemas/error.schema.json",
+  "description": "Rack MCP structured error",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "RACK_NOT_FOUND",
+        "RACK_DISCONNECTED",
+        "BRIDGE_NOT_READY",
+        "WRITER_LEASE_REQUIRED",
+        "AUTHENTICATION_FAILED",
+        "PROTOCOL_VERSION_MISMATCH",
+        "STALE_SESSION",
+        "STALE_PATCH_EPOCH",
+        "PATCH_CONFLICT",
+        "MODEL_NOT_INSTALLED",
+        "MODULE_NOT_FOUND",
+        "CABLE_NOT_FOUND",
+        "PARAMETER_NOT_FOUND",
+        "PORT_NOT_FOUND",
+        "VALIDATION_FAILED",
+        "CONFIRMATION_REQUIRED",
+        "CONFIRMATION_EXPIRED",
+        "PATH_NOT_ALLOWED",
+        "TRANSACTION_TOO_LARGE",
+        "ROLLBACK_FAILED",
+        "TIMEOUT",
+        "UNSUPPORTED_OPERATION",
+        "OPAQUE_STATE_UNSUPPORTED",
+        "TELEMETRY_UNAVAILABLE",
+        "BAD_REQUEST",
+        "RATE_LIMITED",
+        "LEASE_HELD",
+        "INSTANCE_NOT_SELECTED",
+        "RESULT_TOO_LARGE",
+        "INTERNAL"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 4096
+    },
+    "retrySafe": {
+      "type": "boolean"
+    },
+    "mutationMayHaveOccurred": {
+      "type": "boolean"
+    },
+    "details": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {}
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "retrySafe",
+    "mutationMayHaveOccurred"
+  ],
+  "additionalProperties": false
+}

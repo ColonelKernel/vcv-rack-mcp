@@ -1,0 +1,422 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rackmcp.local/schemas/bridge-frame.schema.json",
+  "description": "Rack MCP bridge protocol frame (length-prefixed JSON over loopback TCP)",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "hello"
+        },
+        "versions": {
+          "minItems": 1,
+          "maxItems": 16,
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "client": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "version": {
+              "type": "string",
+              "maxLength": 64
+            }
+          },
+          "required": [
+            "name",
+            "version"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "kind",
+        "versions",
+        "client"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "welcome"
+        },
+        "version": {
+          "type": "number",
+          "const": 1
+        },
+        "instanceId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "sessionId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "bridgeVersion": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "rackVersion": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "rackEdition": {
+          "type": "string",
+          "enum": [
+            "Free",
+            "Pro",
+            "unknown"
+          ]
+        },
+        "patchEpoch": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "nonce": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "authRequired": {
+          "type": "boolean",
+          "const": true
+        }
+      },
+      "required": [
+        "kind",
+        "version",
+        "instanceId",
+        "sessionId",
+        "bridgeVersion",
+        "rackVersion",
+        "rackEdition",
+        "patchEpoch",
+        "nonce",
+        "authRequired"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "auth"
+        },
+        "hmac": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "kind",
+        "hmac"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "authResult"
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "readonly"
+          ]
+        },
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "RACK_NOT_FOUND",
+                "RACK_DISCONNECTED",
+                "BRIDGE_NOT_READY",
+                "WRITER_LEASE_REQUIRED",
+                "AUTHENTICATION_FAILED",
+                "PROTOCOL_VERSION_MISMATCH",
+                "STALE_SESSION",
+                "STALE_PATCH_EPOCH",
+                "PATCH_CONFLICT",
+                "MODEL_NOT_INSTALLED",
+                "MODULE_NOT_FOUND",
+                "CABLE_NOT_FOUND",
+                "PARAMETER_NOT_FOUND",
+                "PORT_NOT_FOUND",
+                "VALIDATION_FAILED",
+                "CONFIRMATION_REQUIRED",
+                "CONFIRMATION_EXPIRED",
+                "PATH_NOT_ALLOWED",
+                "TRANSACTION_TOO_LARGE",
+                "ROLLBACK_FAILED",
+                "TIMEOUT",
+                "UNSUPPORTED_OPERATION",
+                "OPAQUE_STATE_UNSUPPORTED",
+                "TELEMETRY_UNAVAILABLE",
+                "BAD_REQUEST",
+                "RATE_LIMITED",
+                "LEASE_HELD",
+                "INSTANCE_NOT_SELECTED",
+                "RESULT_TOO_LARGE",
+                "INTERNAL"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "maxLength": 4096
+            },
+            "retrySafe": {
+              "type": "boolean"
+            },
+            "mutationMayHaveOccurred": {
+              "type": "boolean"
+            },
+            "details": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {}
+            }
+          },
+          "required": [
+            "code",
+            "message",
+            "retrySafe",
+            "mutationMayHaveOccurred"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "kind",
+        "ok"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "req"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{16}$"
+        },
+        "method": {
+          "type": "string",
+          "enum": [
+            "status.get",
+            "lease.acquire",
+            "lease.renew",
+            "lease.release",
+            "catalog.listModels",
+            "catalog.inspectModel",
+            "patch.snapshot",
+            "patch.fingerprint",
+            "module.inspect",
+            "txn.preview",
+            "txn.commit",
+            "txn.undoLast",
+            "patchfile.save",
+            "patchfile.saveCopy",
+            "patchfile.load",
+            "patchfile.clear",
+            "probe.list",
+            "probe.read",
+            "metrics.get"
+          ]
+        },
+        "deadlineMs": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 600000
+        },
+        "operationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "payload": {}
+      },
+      "required": [
+        "kind",
+        "id",
+        "method",
+        "deadlineMs",
+        "payload"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "res"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{16}$"
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "payload": {},
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "RACK_NOT_FOUND",
+                "RACK_DISCONNECTED",
+                "BRIDGE_NOT_READY",
+                "WRITER_LEASE_REQUIRED",
+                "AUTHENTICATION_FAILED",
+                "PROTOCOL_VERSION_MISMATCH",
+                "STALE_SESSION",
+                "STALE_PATCH_EPOCH",
+                "PATCH_CONFLICT",
+                "MODEL_NOT_INSTALLED",
+                "MODULE_NOT_FOUND",
+                "CABLE_NOT_FOUND",
+                "PARAMETER_NOT_FOUND",
+                "PORT_NOT_FOUND",
+                "VALIDATION_FAILED",
+                "CONFIRMATION_REQUIRED",
+                "CONFIRMATION_EXPIRED",
+                "PATH_NOT_ALLOWED",
+                "TRANSACTION_TOO_LARGE",
+                "ROLLBACK_FAILED",
+                "TIMEOUT",
+                "UNSUPPORTED_OPERATION",
+                "OPAQUE_STATE_UNSUPPORTED",
+                "TELEMETRY_UNAVAILABLE",
+                "BAD_REQUEST",
+                "RATE_LIMITED",
+                "LEASE_HELD",
+                "INSTANCE_NOT_SELECTED",
+                "RESULT_TOO_LARGE",
+                "INTERNAL"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "maxLength": 4096
+            },
+            "retrySafe": {
+              "type": "boolean"
+            },
+            "mutationMayHaveOccurred": {
+              "type": "boolean"
+            },
+            "details": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {}
+            }
+          },
+          "required": [
+            "code",
+            "message",
+            "retrySafe",
+            "mutationMayHaveOccurred"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "ok"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "ping"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{16}$"
+        }
+      },
+      "required": [
+        "kind",
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "pong"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{16}$"
+        }
+      },
+      "required": [
+        "kind",
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "evt"
+        },
+        "event": {
+          "type": "string",
+          "enum": [
+            "shutting_down",
+            "patch_epoch_changed",
+            "lease_revoked"
+          ]
+        },
+        "payload": {}
+      },
+      "required": [
+        "kind",
+        "event"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}

@@ -1,0 +1,764 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rackmcp.local/schemas/patch-operation.schema.json",
+  "description": "Rack MCP patch operation (discriminated union)",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "add_module"
+        },
+        "pluginSlug": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "modelSlug": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "alias": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "placement": {
+          "default": "auto",
+          "type": "string",
+          "enum": [
+            "auto",
+            "at"
+          ]
+        },
+        "position": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "integer",
+              "minimum": -4096,
+              "maximum": 4096
+            },
+            "y": {
+              "type": "integer",
+              "minimum": -256,
+              "maximum": 256
+            }
+          },
+          "required": [
+            "x",
+            "y"
+          ],
+          "additionalProperties": false
+        },
+        "initialParams": {
+          "maxItems": 256,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "paramId": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "value": {
+                "type": "number"
+              },
+              "normalized": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "display": {
+                "type": "string",
+                "maxLength": 256
+              }
+            },
+            "required": [
+              "paramId"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "bypassed": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "op",
+        "pluginSlug",
+        "modelSlug",
+        "alias",
+        "placement"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "remove_module"
+        },
+        "module": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "moduleId": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]{0,18})$"
+                }
+              },
+              "required": [
+                "moduleId"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "alias": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                }
+              },
+              "required": [
+                "alias"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "cablePolicy": {
+          "type": "string",
+          "enum": [
+            "remove_attached",
+            "fail_if_connected"
+          ]
+        },
+        "allowLastBridge": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "op",
+        "module",
+        "cablePolicy",
+        "allowLastBridge"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "move_module"
+        },
+        "module": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "moduleId": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]{0,18})$"
+                }
+              },
+              "required": [
+                "moduleId"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "alias": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                }
+              },
+              "required": [
+                "alias"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "position": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "integer",
+              "minimum": -4096,
+              "maximum": 4096
+            },
+            "y": {
+              "type": "integer",
+              "minimum": -256,
+              "maximum": 256
+            }
+          },
+          "required": [
+            "x",
+            "y"
+          ],
+          "additionalProperties": false
+        },
+        "collision": {
+          "type": "string",
+          "enum": [
+            "fail",
+            "nearest",
+            "force",
+            "squeeze"
+          ]
+        }
+      },
+      "required": [
+        "op",
+        "module",
+        "position",
+        "collision"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "duplicate_module"
+        },
+        "module": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "moduleId": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]{0,18})$"
+                }
+              },
+              "required": [
+                "moduleId"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "alias": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                }
+              },
+              "required": [
+                "alias"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "alias": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "copyCables": {
+          "type": "boolean"
+        },
+        "placement": {
+          "default": "auto",
+          "type": "string",
+          "enum": [
+            "auto",
+            "at"
+          ]
+        },
+        "position": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "integer",
+              "minimum": -4096,
+              "maximum": 4096
+            },
+            "y": {
+              "type": "integer",
+              "minimum": -256,
+              "maximum": 256
+            }
+          },
+          "required": [
+            "x",
+            "y"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "op",
+        "module",
+        "alias",
+        "copyCables",
+        "placement"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "set_parameter"
+        },
+        "module": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "moduleId": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]{0,18})$"
+                }
+              },
+              "required": [
+                "moduleId"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "alias": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                }
+              },
+              "required": [
+                "alias"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "paramId": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
+        },
+        "value": {
+          "type": "number"
+        },
+        "normalized": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "display": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "smoothMs": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10000
+        }
+      },
+      "required": [
+        "op",
+        "module",
+        "paramId"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "set_bypass"
+        },
+        "module": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "moduleId": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]{0,18})$"
+                }
+              },
+              "required": [
+                "moduleId"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "alias": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                }
+              },
+              "required": [
+                "alias"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "bypassed": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "op",
+        "module",
+        "bypassed"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "connect"
+        },
+        "output": {
+          "type": "object",
+          "properties": {
+            "module": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "moduleId": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9][0-9]{0,18})$"
+                    }
+                  },
+                  "required": [
+                    "moduleId"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "alias": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    }
+                  },
+                  "required": [
+                    "alias"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "portType": {
+              "type": "string",
+              "enum": [
+                "input",
+                "output"
+              ]
+            },
+            "portId": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 65535
+            }
+          },
+          "required": [
+            "module",
+            "portType",
+            "portId"
+          ],
+          "additionalProperties": false
+        },
+        "input": {
+          "type": "object",
+          "properties": {
+            "module": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "moduleId": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9][0-9]{0,18})$"
+                    }
+                  },
+                  "required": [
+                    "moduleId"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "alias": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    }
+                  },
+                  "required": [
+                    "alias"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "portType": {
+              "type": "string",
+              "enum": [
+                "input",
+                "output"
+              ]
+            },
+            "portId": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 65535
+            }
+          },
+          "required": [
+            "module",
+            "portType",
+            "portId"
+          ],
+          "additionalProperties": false
+        },
+        "color": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "inputPolicy": {
+          "type": "string",
+          "enum": [
+            "fail_if_connected",
+            "stack",
+            "replace_all"
+          ]
+        }
+      },
+      "required": [
+        "op",
+        "output",
+        "input",
+        "inputPolicy"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "disconnect"
+        },
+        "cable": {
+          "type": "object",
+          "properties": {
+            "cableId": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]{0,18})$"
+            }
+          },
+          "required": [
+            "cableId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "op",
+        "cable"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "disconnect_port"
+        },
+        "port": {
+          "type": "object",
+          "properties": {
+            "module": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "moduleId": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9][0-9]{0,18})$"
+                    }
+                  },
+                  "required": [
+                    "moduleId"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "alias": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    }
+                  },
+                  "required": [
+                    "alias"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "portType": {
+              "type": "string",
+              "enum": [
+                "input",
+                "output"
+              ]
+            },
+            "portId": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 65535
+            }
+          },
+          "required": [
+            "module",
+            "portType",
+            "portId"
+          ],
+          "additionalProperties": false
+        },
+        "policy": {
+          "type": "string",
+          "enum": [
+            "top",
+            "all"
+          ]
+        }
+      },
+      "required": [
+        "op",
+        "port",
+        "policy"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "reset_module"
+        },
+        "module": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "moduleId": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]{0,18})$"
+                }
+              },
+              "required": [
+                "moduleId"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "alias": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                }
+              },
+              "required": [
+                "alias"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "required": [
+        "op",
+        "module"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "const": "randomize_module"
+        },
+        "module": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "moduleId": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]{0,18})$"
+                }
+              },
+              "required": [
+                "moduleId"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "alias": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                }
+              },
+              "required": [
+                "alias"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "required": [
+        "op",
+        "module"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}

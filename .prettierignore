@@ -1,0 +1,7 @@
+pnpm-lock.yaml
+packages/schemas/json
+plugins/RackMCP/src/gen
+vendor
+third_party
+dist
+build

@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  typescript:
+    name: TypeScript (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
+      - run: pnpm run test
+      - name: Generated artifacts are fresh
+        if: runner.os != 'Windows'
+        run: pnpm run check:gen
+
+  cpp-core:
+    name: C++ core (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S tests/cpp -B tests/cpp-build
+      - name: Build
+        run: cmake --build tests/cpp-build --config Debug
+      - name: Test
+        run: ctest --test-dir tests/cpp-build --output-on-failure -C Debug
+
+  fuzz-smoke:
+    name: Fuzz smoke (Linux clang)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure with fuzzers
+        run: CC=clang CXX=clang++ cmake -S tests/cpp -B tests/cpp-build -DRACKMCP_BUILD_FUZZERS=ON
+      - name: Build
+        run: cmake --build tests/cpp-build
+      - name: Run frame-decoder fuzzer briefly
+        run: ./tests/cpp-build/fuzz_frame_decoder -max_total_time=60 -rss_limit_mb=1024
+
+  plugin:
+    name: Rack plugin (${{ matrix.platform.name }})
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - { name: mac-arm64, os: macos-latest, sdk: mac-arm64 }
+          - { name: mac-x64, os: macos-13, sdk: mac-x64 }
+          - { name: lin-x64, os: ubuntu-latest, sdk: lin-x64 }
+          - { name: win-x64, os: windows-latest, sdk: win-x64 }
+    runs-on: ${{ matrix.platform.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Linux build deps
+        if: matrix.platform.name == 'lin-x64'
+        run: sudo apt-get update && sudo apt-get install -y libglu1-mesa-dev
+      - name: Set up MSYS2 (Windows)
+        if: matrix.platform.name == 'win-x64'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake make unzip zip curl
+      - name: Fetch Rack SDK
+        run: ./scripts/fetch-rack-sdk.sh ${{ matrix.platform.sdk }}
+      - name: Build plugin
+        run: make -C plugins/RackMCP -j4 RACK_DIR=../../vendor/Rack-SDK
+      - name: Package plugin
+        run: make -C plugins/RackMCP dist RACK_DIR=../../vendor/Rack-SDK
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RackMCP-${{ matrix.platform.name }}
+          path: plugins/RackMCP/dist/*.vcvplugin
+          if-no-files-found: warn

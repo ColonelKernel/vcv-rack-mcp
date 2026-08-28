@@ -1,0 +1,8 @@
+packages:
+  - apps/*
+  - packages/*
+  - tests/contract
+  - tests/fuzz
+  - tests/integration
+allowBuilds:
+  esbuild: true
