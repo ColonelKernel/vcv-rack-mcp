@@ -635,9 +635,6 @@
             "maxLength": 256
           }
         },
-        "required": [
-          "limit"
-        ],
         "additionalProperties": false
       },
       "output": {
@@ -950,9 +947,6 @@
             "maximum": 9007199254740991
           }
         },
-        "required": [
-          "includeOpaqueState"
-        ],
         "additionalProperties": false
       },
       "output": {
@@ -1376,8 +1370,7 @@
           }
         },
         "required": [
-          "moduleId",
-          "includeOpaqueState"
+          "moduleId"
         ],
         "additionalProperties": false
       },
@@ -2219,8 +2212,7 @@
                     "op",
                     "pluginSlug",
                     "modelSlug",
-                    "alias",
-                    "placement"
+                    "alias"
                   ],
                   "additionalProperties": false
                 },
@@ -2277,8 +2269,7 @@
                   "required": [
                     "op",
                     "module",
-                    "cablePolicy",
-                    "allowLastBridge"
+                    "cablePolicy"
                   ],
                   "additionalProperties": false
                 },
@@ -2437,8 +2428,7 @@
                     "op",
                     "module",
                     "alias",
-                    "copyCables",
-                    "placement"
+                    "copyCables"
                   ],
                   "additionalProperties": false
                 },
@@ -4237,8 +4227,7 @@
                     "op",
                     "pluginSlug",
                     "modelSlug",
-                    "alias",
-                    "placement"
+                    "alias"
                   ],
                   "additionalProperties": false
                 },
@@ -4295,8 +4284,7 @@
                   "required": [
                     "op",
                     "module",
-                    "cablePolicy",
-                    "allowLastBridge"
+                    "cablePolicy"
                   ],
                   "additionalProperties": false
                 },
@@ -4455,8 +4443,7 @@
                     "op",
                     "module",
                     "alias",
-                    "copyCables",
-                    "placement"
+                    "copyCables"
                   ],
                   "additionalProperties": false
                 },
@@ -4927,7 +4914,6 @@
         "required": [
           "label",
           "operations",
-          "autoCommit",
           "operationId"
         ],
         "additionalProperties": false
@@ -6094,10 +6080,6 @@
             "maximum": 500
           }
         },
-        "required": [
-          "root",
-          "limit"
-        ],
         "additionalProperties": false
       },
       "output": {
@@ -6386,6 +6368,19 @@
                   }
                 ]
               },
+              "targetBridgeModulePresent": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "willInsertBridgeModule": {
+                "type": "boolean"
+              },
               "risk": {
                 "type": "object",
                 "properties": {
@@ -6454,6 +6449,8 @@
               "currentPatchSaved",
               "willCreateRecoveryCheckpoint",
               "recoveryCheckpointImpossibleReason",
+              "targetBridgeModulePresent",
+              "willInsertBridgeModule",
               "risk",
               "warnings"
             ],
@@ -6652,6 +6649,19 @@
                   }
                 ]
               },
+              "targetBridgeModulePresent": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "willInsertBridgeModule": {
+                "type": "boolean"
+              },
               "risk": {
                 "type": "object",
                 "properties": {
@@ -6720,6 +6730,8 @@
               "currentPatchSaved",
               "willCreateRecoveryCheckpoint",
               "recoveryCheckpointImpossibleReason",
+              "targetBridgeModulePresent",
+              "willInsertBridgeModule",
               "risk",
               "warnings"
             ],
@@ -6945,6 +6957,19 @@
                   }
                 ]
               },
+              "targetBridgeModulePresent": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "willInsertBridgeModule": {
+                "type": "boolean"
+              },
               "risk": {
                 "type": "object",
                 "properties": {
@@ -7013,6 +7038,8 @@
               "currentPatchSaved",
               "willCreateRecoveryCheckpoint",
               "recoveryCheckpointImpossibleReason",
+              "targetBridgeModulePresent",
+              "willInsertBridgeModule",
               "risk",
               "warnings"
             ],
@@ -8676,7 +8703,8 @@
         "required": [
           "probeModuleId",
           "probeInputId",
-          "operationId"
+          "operationId",
+          "expectedPatchEpoch"
         ],
         "additionalProperties": false
       },

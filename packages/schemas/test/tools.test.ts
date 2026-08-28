@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { TOOLS, TOOL_NAMES, getTool } from "../src/tools.js";
+import { VALID_TOOL_INPUTS } from "./fixtures.js";
 
 const SPEC_TOOLS = [
   // Connection and discovery
@@ -83,10 +84,19 @@ describe("tool registry", () => {
     }
   });
 
-  it("every tool input rejects unknown keys", () => {
+  it("every tool has a valid sample input that parses", () => {
     for (const t of TOOLS) {
-      const probe = { __definitely_not_a_field__: 1 };
-      const res = t.input.safeParse(probe);
+      const sample = VALID_TOOL_INPUTS[t.name];
+      expect(sample, `${t.name} needs a sample input`).toBeDefined();
+      const res = t.input.safeParse(sample);
+      expect(res.success, `${t.name} sample should parse: ${JSON.stringify(res)}`).toBe(true);
+    }
+  });
+
+  it("every tool input rejects unknown keys on an otherwise valid input", () => {
+    for (const t of TOOLS) {
+      const sample = VALID_TOOL_INPUTS[t.name];
+      const res = t.input.safeParse({ ...sample, __definitely_not_a_field__: 1 });
       expect(res.success, `${t.name} should reject unknown keys`).toBe(false);
     }
   });

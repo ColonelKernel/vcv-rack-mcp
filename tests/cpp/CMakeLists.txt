@@ -17,14 +17,49 @@ add_compile_options(-Wall -Wextra -Wpedantic)
 set(RACKMCP_PLUGIN_SRC ${CMAKE_CURRENT_SOURCE_DIR}/../../plugins/RackMCP/src)
 set(RACKMCP_THIRD_PARTY ${CMAKE_CURRENT_SOURCE_DIR}/../../third_party)
 
-file(GLOB RACKMCP_CORE_SOURCES ${RACKMCP_PLUGIN_SRC}/core/*.cpp)
+# jansson is required by the canonical-JSON module. The plugin gets it from
+# the Rack SDK; the host-side tests use a system jansson when available.
+find_package(PkgConfig QUIET)
+if(PKG_CONFIG_FOUND)
+  pkg_check_modules(JANSSON IMPORTED_TARGET jansson)
+endif()
+
+set(RACKMCP_CORE_SOURCES
+  ${RACKMCP_PLUGIN_SRC}/core/framing.cpp
+  ${RACKMCP_PLUGIN_SRC}/core/crypto.cpp
+  ${RACKMCP_PLUGIN_SRC}/core/uuid.cpp
+  ${RACKMCP_PLUGIN_SRC}/core/tcp.cpp
+  ${RACKMCP_PLUGIN_SRC}/core/lease.cpp
+  ${RACKMCP_PLUGIN_SRC}/core/secret.cpp
+)
+if(JANSSON_FOUND)
+  list(APPEND RACKMCP_CORE_SOURCES
+    ${RACKMCP_PLUGIN_SRC}/core/canonical.cpp
+    ${RACKMCP_PLUGIN_SRC}/core/frames.cpp
+    ${RACKMCP_PLUGIN_SRC}/core/manifest.cpp
+    ${RACKMCP_PLUGIN_SRC}/core/service.cpp
+  )
+endif()
 
 add_library(rackmcp_core STATIC ${RACKMCP_CORE_SOURCES})
 target_include_directories(rackmcp_core PUBLIC ${RACKMCP_PLUGIN_SRC})
+if(JANSSON_FOUND)
+  target_link_libraries(rackmcp_core PUBLIC PkgConfig::JANSSON)
+  target_compile_definitions(rackmcp_core PUBLIC RACKMCP_HAVE_JANSSON=1)
+else()
+  message(WARNING "jansson not found; canonical-JSON module and its tests are skipped")
+endif()
 
 enable_testing()
 
 file(GLOB RACKMCP_TEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/*.test.cpp)
+if(NOT JANSSON_FOUND)
+  list(REMOVE_ITEM RACKMCP_TEST_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/canonical.test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/service.test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/secret_manifest.test.cpp
+  )
+endif()
 add_executable(rackmcp_tests main.cpp ${RACKMCP_TEST_SOURCES})
 target_include_directories(rackmcp_tests PRIVATE ${RACKMCP_THIRD_PARTY}/doctest)
 target_link_libraries(rackmcp_tests PRIVATE rackmcp_core)

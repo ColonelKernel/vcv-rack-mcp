@@ -393,16 +393,6 @@ export const TxnCommitResult = z
   .strict();
 export type TxnCommitResult = z.infer<typeof TxnCommitResult>;
 
-export const RollbackReport = z
-  .object({
-    rolledBack: z.enum(["complete", "indeterminate"]),
-    failedOperationIndex: z.number().int().min(0),
-    inversesExecuted: z.number().int().min(0),
-    detail: z.string().max(4096),
-  })
-  .strict();
-export type RollbackReport = z.infer<typeof RollbackReport>;
-
 export const TxnUndoPayload = z
   .object({
     scope: Scope,

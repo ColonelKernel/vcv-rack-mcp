@@ -101,9 +101,7 @@
         "required": [
           "role",
           "description",
-          "preferred",
-          "adapterVerifiedAlternatives",
-          "signalRoles"
+          "preferred"
         ],
         "additionalProperties": false
       }
@@ -201,8 +199,7 @@
               "op",
               "pluginSlug",
               "modelSlug",
-              "alias",
-              "placement"
+              "alias"
             ],
             "additionalProperties": false
           },
@@ -259,8 +256,7 @@
             "required": [
               "op",
               "module",
-              "cablePolicy",
-              "allowLastBridge"
+              "cablePolicy"
             ],
             "additionalProperties": false
           },
@@ -419,8 +415,7 @@
               "op",
               "module",
               "alias",
-              "copyCables",
-              "placement"
+              "copyCables"
             ],
             "additionalProperties": false
           },
@@ -888,8 +883,7 @@
     "name",
     "description",
     "roles",
-    "operations",
-    "notes"
+    "operations"
   ],
   "additionalProperties": false
 }

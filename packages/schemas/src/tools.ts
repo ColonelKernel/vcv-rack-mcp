@@ -351,6 +351,16 @@ export const LoadPreviewInfo = z
     willCreateRecoveryCheckpoint: z.boolean(),
     /** Reason when a recovery checkpoint cannot be created. */
     recoveryCheckpointImpossibleReason: z.string().max(1024).nullable(),
+    /**
+     * Whether the target patch already contains a RackMCP-Bridge module
+     * (null when that cannot be determined without loading, e.g. clear).
+     */
+    targetBridgeModulePresent: z.boolean().nullable(),
+    /**
+     * Disclosure required by the spec: the commit will insert a Bridge module
+     * so the resulting patch can reconnect after restart.
+     */
+    willInsertBridgeModule: z.boolean(),
     risk: TxnRisk,
     warnings: z.array(z.string().max(1024)).max(64),
   })
@@ -473,7 +483,12 @@ export const DetachProbeInput = z
     probeModuleId: DecimalId,
     probeInputId: SmallIndex,
     operationId: Uuid,
-    ...ExpectedEpoch,
+    /**
+     * Required (unlike read-only tools): a mutating reference must be bound to
+     * the epoch it was minted in so stale probe references are rejected
+     * instead of resolving against a different patch (spec section 5).
+     */
+    expectedPatchEpoch: PatchEpoch,
   })
   .strict();
 export const DetachProbeOutput = z

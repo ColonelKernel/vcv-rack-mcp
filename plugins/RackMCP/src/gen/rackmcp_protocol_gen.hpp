@@ -188,7 +188,6 @@ static const FieldSpec METHOD_FIELDS_3[] = {
 	{nullptr, nullptr}
 };
 static const FieldSpec METHOD_FIELDS_4[] = {
-	{"limit", "integer"},
 	{nullptr, nullptr}
 };
 static const FieldSpec METHOD_FIELDS_5[] = {
@@ -197,14 +196,12 @@ static const FieldSpec METHOD_FIELDS_5[] = {
 	{nullptr, nullptr}
 };
 static const FieldSpec METHOD_FIELDS_6[] = {
-	{"includeOpaqueState", "boolean"},
 	{nullptr, nullptr}
 };
 static const FieldSpec METHOD_FIELDS_7[] = {
 	{nullptr, nullptr}
 };
 static const FieldSpec METHOD_FIELDS_8[] = {
-	{"includeOpaqueState", "boolean"},
 	{"moduleId", "string"},
 	{"scope", "object"},
 	{nullptr, nullptr}
@@ -245,7 +242,6 @@ static const FieldSpec METHOD_FIELDS_14[] = {
 	{"operationId", "string"},
 	{"path", "string"},
 	{"scope", "object"},
-	{"setPath", "boolean"},
 	{nullptr, nullptr}
 };
 static const FieldSpec METHOD_FIELDS_15[] = {
@@ -270,17 +266,17 @@ static const MethodSpec METHOD_SPECS[] = {
 	{"lease.acquire", false, METHOD_FIELDS_1, 1},
 	{"lease.renew", false, METHOD_FIELDS_2, 1},
 	{"lease.release", false, METHOD_FIELDS_3, 1},
-	{"catalog.listModels", false, METHOD_FIELDS_4, 1},
+	{"catalog.listModels", false, METHOD_FIELDS_4, 0},
 	{"catalog.inspectModel", false, METHOD_FIELDS_5, 2},
-	{"patch.snapshot", false, METHOD_FIELDS_6, 1},
+	{"patch.snapshot", false, METHOD_FIELDS_6, 0},
 	{"patch.fingerprint", false, METHOD_FIELDS_7, 0},
-	{"module.inspect", false, METHOD_FIELDS_8, 3},
+	{"module.inspect", false, METHOD_FIELDS_8, 2},
 	{"txn.preview", false, METHOD_FIELDS_9, 3},
 	{"txn.commit", true, METHOD_FIELDS_10, 5},
 	{"txn.undoLast", true, METHOD_FIELDS_11, 3},
 	{"patchfile.save", true, METHOD_FIELDS_12, 3},
 	{"patchfile.saveCopy", true, METHOD_FIELDS_13, 3},
-	{"patchfile.load", true, METHOD_FIELDS_14, 4},
+	{"patchfile.load", true, METHOD_FIELDS_14, 3},
 	{"patchfile.clear", true, METHOD_FIELDS_15, 2},
 	{"probe.list", false, METHOD_FIELDS_16, 0},
 	{"probe.read", false, METHOD_FIELDS_17, 3},
@@ -294,7 +290,6 @@ struct OperationSpec { const char* op; const FieldSpec* fields; size_t fieldCoun
 static const FieldSpec OP_FIELDS_0[] = {
 	{"alias", "string"},
 	{"modelSlug", "string"},
-	{"placement", "string"},
 	{"pluginSlug", "string"},
 	{nullptr, nullptr}
 };
@@ -316,49 +311,47 @@ static const FieldSpec OP_FIELDS_3[] = {
 static const FieldSpec OP_FIELDS_4[] = {
 	{"alias", "string"},
 	{"copyCables", "boolean"},
-	{"module", "any"},
-	{"placement", "string"},
+	{"module", "object"},
 	{nullptr, nullptr}
 };
 static const FieldSpec OP_FIELDS_5[] = {
 	{"collision", "string"},
-	{"module", "any"},
+	{"module", "object"},
 	{"position", "object"},
 	{nullptr, nullptr}
 };
 static const FieldSpec OP_FIELDS_6[] = {
-	{"module", "any"},
+	{"module", "object"},
 	{nullptr, nullptr}
 };
 static const FieldSpec OP_FIELDS_7[] = {
-	{"allowLastBridge", "boolean"},
 	{"cablePolicy", "string"},
-	{"module", "any"},
+	{"module", "object"},
 	{nullptr, nullptr}
 };
 static const FieldSpec OP_FIELDS_8[] = {
-	{"module", "any"},
+	{"module", "object"},
 	{nullptr, nullptr}
 };
 static const FieldSpec OP_FIELDS_9[] = {
 	{"bypassed", "boolean"},
-	{"module", "any"},
+	{"module", "object"},
 	{nullptr, nullptr}
 };
 static const FieldSpec OP_FIELDS_10[] = {
-	{"module", "any"},
+	{"module", "object"},
 	{"paramId", "integer"},
 	{nullptr, nullptr}
 };
 static const OperationSpec OPERATION_SPECS[] = {
-	{"add_module", OP_FIELDS_0, 4},
+	{"add_module", OP_FIELDS_0, 3},
 	{"connect", OP_FIELDS_1, 3},
 	{"disconnect", OP_FIELDS_2, 1},
 	{"disconnect_port", OP_FIELDS_3, 2},
-	{"duplicate_module", OP_FIELDS_4, 4},
+	{"duplicate_module", OP_FIELDS_4, 3},
 	{"move_module", OP_FIELDS_5, 3},
 	{"randomize_module", OP_FIELDS_6, 1},
-	{"remove_module", OP_FIELDS_7, 3},
+	{"remove_module", OP_FIELDS_7, 2},
 	{"reset_module", OP_FIELDS_8, 1},
 	{"set_bypass", OP_FIELDS_9, 2},
 	{"set_parameter", OP_FIELDS_10, 2},

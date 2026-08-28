@@ -43,6 +43,14 @@ function jsonTypeOf(s: JsonSchema | undefined): string {
     const kinds = new Set(s.enum.map((v) => typeof v));
     if (kinds.size === 1 && kinds.has("string")) return "string";
   }
+  // Collapse unions whose branches all share one JSON type (e.g. ModuleRef
+  // is always an object) so the C++ validator keeps the type check.
+  const branches = s.anyOf ?? s.oneOf;
+  if (branches && branches.length > 0) {
+    const kinds = new Set(branches.map((b) => jsonTypeOf(b)));
+    if (kinds.size === 1) return [...kinds][0] as string;
+    return "any";
+  }
   const t = Array.isArray(s.type) ? undefined : s.type;
   switch (t) {
     case "string":
@@ -110,8 +118,14 @@ for (const v of opVariants) {
   });
 }
 opRows.sort((a, b) => a.op.localeCompare(b.op));
-if (opRows.length !== OPERATION_TYPES.length) {
-  throw new Error("operation variant count mismatch");
+{
+  const fromSchema = opRows.map((o) => o.op).sort();
+  const declared = [...OPERATION_TYPES].sort();
+  if (JSON.stringify(fromSchema) !== JSON.stringify(declared)) {
+    throw new Error(
+      `operation name sets disagree: schema=[${fromSchema}] declared=[${declared}]`,
+    );
+  }
 }
 
 const lines: string[] = [];

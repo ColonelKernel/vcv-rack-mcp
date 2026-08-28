@@ -91,10 +91,28 @@
         "op",
         "pluginSlug",
         "modelSlug",
-        "alias",
-        "placement"
+        "alias"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "placement": {
+                "const": "at"
+              }
+            },
+            "required": [
+              "placement"
+            ]
+          },
+          "then": {
+            "required": [
+              "position"
+            ]
+          }
+        }
+      ]
     },
     {
       "type": "object",
@@ -149,8 +167,7 @@
       "required": [
         "op",
         "module",
-        "cablePolicy",
-        "allowLastBridge"
+        "cablePolicy"
       ],
       "additionalProperties": false
     },
@@ -309,10 +326,28 @@
         "op",
         "module",
         "alias",
-        "copyCables",
-        "placement"
+        "copyCables"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "placement": {
+                "const": "at"
+              }
+            },
+            "required": [
+              "placement"
+            ]
+          },
+          "then": {
+            "required": [
+              "position"
+            ]
+          }
+        }
+      ]
     },
     {
       "type": "object",
@@ -380,7 +415,70 @@
         "module",
         "paramId"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "oneOf": [
+            {
+              "required": [
+                "value"
+              ],
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "normalized"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "display"
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "required": [
+                "normalized"
+              ],
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "value"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "display"
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "required": [
+                "display"
+              ],
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "value"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "normalized"
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
     },
     {
       "type": "object",

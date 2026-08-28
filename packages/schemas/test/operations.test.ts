@@ -85,9 +85,20 @@ describe("PatchOperation", () => {
   });
 
   it("fuzz: mutated valid operations with injected keys are rejected", () => {
+    // All legitimate add_module keys, required and optional, must be excluded.
+    const legitimateKeys = new Set([
+      "op",
+      "pluginSlug",
+      "modelSlug",
+      "alias",
+      "placement",
+      "position",
+      "initialParams",
+      "bypassed",
+    ]);
     fc.assert(
       fc.property(fc.string({ minLength: 1, maxLength: 20 }), fc.anything(), (key, val) => {
-        fc.pre(!(key in validAdd));
+        fc.pre(!legitimateKeys.has(key));
         fc.pre(val !== undefined);
         const res = PatchOperation.safeParse({ ...validAdd, [key]: val });
         expect(res.success).toBe(false);

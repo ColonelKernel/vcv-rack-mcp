@@ -55,6 +55,39 @@
         "type": "string"
       },
       "additionalProperties": {}
+    },
+    "rollback": {
+      "type": "object",
+      "properties": {
+        "rolledBack": {
+          "type": "string",
+          "enum": [
+            "complete",
+            "indeterminate"
+          ]
+        },
+        "failedOperationIndex": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "inversesExecuted": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "detail": {
+          "type": "string",
+          "maxLength": 4096
+        }
+      },
+      "required": [
+        "rolledBack",
+        "failedOperationIndex",
+        "inversesExecuted",
+        "detail"
+      ],
+      "additionalProperties": false
     }
   },
   "required": [

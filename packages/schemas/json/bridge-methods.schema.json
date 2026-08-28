@@ -237,9 +237,6 @@
             "maximum": 500
           }
         },
-        "required": [
-          "limit"
-        ],
         "additionalProperties": false
       },
       "result": {
@@ -522,9 +519,6 @@
             "maximum": 4194304
           }
         },
-        "required": [
-          "includeOpaqueState"
-        ],
         "additionalProperties": false
       },
       "result": {
@@ -996,8 +990,7 @@
         },
         "required": [
           "scope",
-          "moduleId",
-          "includeOpaqueState"
+          "moduleId"
         ],
         "additionalProperties": false
       },
@@ -1380,8 +1373,7 @@
                     "op",
                     "pluginSlug",
                     "modelSlug",
-                    "alias",
-                    "placement"
+                    "alias"
                   ],
                   "additionalProperties": false
                 },
@@ -1438,8 +1430,7 @@
                   "required": [
                     "op",
                     "module",
-                    "cablePolicy",
-                    "allowLastBridge"
+                    "cablePolicy"
                   ],
                   "additionalProperties": false
                 },
@@ -1598,8 +1589,7 @@
                     "op",
                     "module",
                     "alias",
-                    "copyCables",
-                    "placement"
+                    "copyCables"
                   ],
                   "additionalProperties": false
                 },
@@ -3200,8 +3190,7 @@
                         "op",
                         "pluginSlug",
                         "modelSlug",
-                        "alias",
-                        "placement"
+                        "alias"
                       ],
                       "additionalProperties": false
                     },
@@ -3258,8 +3247,7 @@
                       "required": [
                         "op",
                         "module",
-                        "cablePolicy",
-                        "allowLastBridge"
+                        "cablePolicy"
                       ],
                       "additionalProperties": false
                     },
@@ -3418,8 +3406,7 @@
                         "op",
                         "module",
                         "alias",
-                        "copyCables",
-                        "placement"
+                        "copyCables"
                       ],
                       "additionalProperties": false
                     },
@@ -4319,7 +4306,6 @@
         "required": [
           "scope",
           "path",
-          "setPath",
           "operationId"
         ],
         "additionalProperties": false

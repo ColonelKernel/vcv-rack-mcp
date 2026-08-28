@@ -1,6 +1,20 @@
 import { z } from "zod";
 
 /**
+ * Rollback report attached to failed transaction commits (spec section 6).
+ * Defined here (not bridge.ts) so RackMcpError can embed it without cycles.
+ */
+export const RollbackReport = z
+  .object({
+    rolledBack: z.enum(["complete", "indeterminate"]),
+    failedOperationIndex: z.number().int().min(0),
+    inversesExecuted: z.number().int().min(0),
+    detail: z.string().max(4096),
+  })
+  .strict();
+export type RollbackReport = z.infer<typeof RollbackReport>;
+
+/**
  * Stable Rack MCP error codes (spec section 12). Never renumber or rename;
  * only append. The C++ enum in the generated protocol header mirrors this list.
  */
@@ -56,6 +70,11 @@ export const RackMcpError = z
     mutationMayHaveOccurred: z.boolean(),
     /** Optional machine-readable context (entity refs, rule ids, limits hit...). */
     details: z.record(z.string(), z.unknown()).optional(),
+    /**
+     * Present on failed commit responses: the spec-required rollback report
+     * (inverse execution summary; "indeterminate" when completeness is unproven).
+     */
+    rollback: RollbackReport.optional(),
   })
   .strict();
 export type RackMcpError = z.infer<typeof RackMcpError>;

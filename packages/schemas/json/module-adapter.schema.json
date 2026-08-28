@@ -117,8 +117,7 @@
         "required": [
           "portId",
           "role",
-          "key",
-          "polyphony"
+          "key"
         ],
         "additionalProperties": false
       }
@@ -169,8 +168,7 @@
         "required": [
           "portId",
           "role",
-          "key",
-          "polyphony"
+          "key"
         ],
         "additionalProperties": false
       }
@@ -287,10 +285,6 @@
     "params",
     "inputs",
     "outputs",
-    "polyphony",
-    "opaqueStateFields",
-    "validationRules",
-    "connectionRecipes",
     "provenance"
   ],
   "additionalProperties": false
