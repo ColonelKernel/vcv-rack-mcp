@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { BRIDGE_PROTOCOL_VERSION } from "@rackmcp/schemas";
 import type { ServerConfig } from "./config.js";
 import { ConnectionManager } from "./connection.js";
+import { TransactionManager } from "./transactions.js";
 import { AuditLog } from "./audit.js";
 import { toErrorPayload } from "./errors.js";
 import { log } from "./logger.js";
@@ -19,9 +20,11 @@ export function createServer(config: ServerConfig): {
   conn: ConnectionManager;
 } {
   const conn = new ConnectionManager(config);
+  const txns = new TransactionManager(conn);
   const audit = new AuditLog(config.auditDir);
   const ctx: ToolContext = {
     conn,
+    txns,
     serverVersion: SERVER_VERSION,
     bridgeProtocolVersion: BRIDGE_PROTOCOL_VERSION,
   };

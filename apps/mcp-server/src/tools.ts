@@ -2,10 +2,13 @@ import { z } from "zod";
 import { getTool, TOOLS, type ToolSpec, LIMITS } from "@rackmcp/schemas";
 import type { ConnectionManager } from "./connection.js";
 import { ToolError } from "./errors.js";
+import { randomUUID } from "node:crypto";
+import { TransactionManager } from "./transactions.js";
 
 /** Everything a tool handler needs. */
 export interface ToolContext {
   conn: ConnectionManager;
+  txns: TransactionManager;
   serverVersion: string;
   bridgeProtocolVersion: number;
 }
@@ -192,6 +195,71 @@ const inspectParameter: ToolHandler = async (args, ctx) => {
 
 import { describePatch, validatePatch } from "./analysis.js";
 
+// ---------------------------------------------------------------------------
+// Mutation
+// ---------------------------------------------------------------------------
+
+const previewPatchTransaction: ToolHandler = async (args, ctx) => {
+  const instance = await ctx.conn.ensureConnected();
+  return ctx.txns.preview(args.label as string, args.operations as unknown[], instance);
+};
+
+const commitPatchTransaction: ToolHandler = async (args, ctx) => {
+  const instance = await ctx.conn.ensureConnected();
+  return ctx.txns.commit({
+    operationId: args.operationId as string,
+    planHash: args.planHash as string,
+    expectedFingerprint: args.expectedFingerprint as string,
+    confirmationToken: args.confirmationToken as string | undefined,
+    instance,
+  });
+};
+
+const buildPatch: ToolHandler = async (args, ctx) => {
+  const instance = await ctx.conn.ensureConnected();
+  const { preview, confirmation } = await ctx.txns.preview(
+    args.label as string,
+    args.operations as unknown[],
+    instance,
+  );
+  const autoCommit = (args.autoCommit as boolean | undefined) ?? true;
+  // Never bypass confirmation: risky plans stop at the preview with a token.
+  if (!autoCommit || confirmation.confirmationRequired) {
+    return { phase: "previewed" as const, preview, confirmation };
+  }
+  const commit = await ctx.txns.commit({
+    operationId: args.operationId as string,
+    planHash: preview.planHash,
+    expectedFingerprint: preview.baseFingerprint,
+    instance,
+  });
+  return { phase: "committed" as const, preview, confirmation, commit };
+};
+
+const undoLastMcpTransaction: ToolHandler = async (args, ctx) => {
+  const instance = await ctx.conn.ensureConnected();
+  await ctx.conn.ensureLease();
+  // The undo needs its OWN idempotency key, distinct from the transaction it
+  // targets — reusing the target's id would collide with that commit's cached
+  // result and replay it instead of undoing.
+  const undoOperationId = randomUUID();
+  const res = await ctx.conn.request<{ undone: true; newFingerprint: string; patchEpoch: number }>(
+    "txn.undoLast",
+    {
+      scope: { instanceId: instance.instanceId, sessionId: instance.sessionId, patchEpoch: 0 },
+      expectedOperationId: args.operationId,
+      operationId: undoOperationId,
+    },
+    { operationId: undoOperationId },
+  );
+  return {
+    undone: true as const,
+    undoneOperationId: args.operationId,
+    newFingerprint: res.newFingerprint,
+    patchEpoch: res.patchEpoch,
+  };
+};
+
 const HANDLERS: Record<string, ToolHandler> = {
   list_rack_instances: listRackInstances,
   select_rack_instance: selectRackInstance,
@@ -206,10 +274,10 @@ const HANDLERS: Record<string, ToolHandler> = {
   describe_patch: describePatch,
   validate_patch: validatePatch,
   // Mutation, files, telemetry: plugin handlers ship in later phases.
-  preview_patch_transaction: pending("preview_patch_transaction"),
-  commit_patch_transaction: pending("commit_patch_transaction"),
-  undo_last_mcp_transaction: pending("undo_last_mcp_transaction"),
-  build_patch: pending("build_patch"),
+  preview_patch_transaction: previewPatchTransaction,
+  commit_patch_transaction: commitPatchTransaction,
+  undo_last_mcp_transaction: undoLastMcpTransaction,
+  build_patch: buildPatch,
   list_patch_files: pending("list_patch_files"),
   create_checkpoint: pending("create_checkpoint"),
   save_patch: pending("save_patch"),

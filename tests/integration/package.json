@@ -9,7 +9,8 @@
     "test": "echo 'integration tests run explicitly: pnpm run smoke / pnpm run suite'",
     "smoke": "tsx src/smoke.ts",
     "snapshot": "tsx src/snapshot-smoke.ts",
-    "mcp": "tsx src/mcp-smoke.ts"
+    "mcp": "tsx src/mcp-smoke.ts",
+    "write": "tsx src/write-smoke.ts"
   },
   "dependencies": {
     "@rackmcp/protocol": "workspace:*",

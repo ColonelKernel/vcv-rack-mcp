@@ -50,6 +50,11 @@ public:
     void setLastOp(const std::string& summary);
     std::string lastOp();
 
+    /** Records the last committed MCP transaction (for undo eligibility). */
+    void setLastMcpTransaction(const std::string& operationId, const std::string& postFingerprint);
+    bool lastMcpTransaction(std::string& operationIdOut, std::string& postFingerprintOut);
+    void clearLastMcpTransaction();
+
     void bumpPatchEpoch() { patchEpoch_.fetch_add(1); }
     int patchEpoch() const { return patchEpoch_.load(); }
 
@@ -98,6 +103,10 @@ private:
     std::atomic<bool> savedHint_{true};
     std::mutex lastOpMutex_;
     std::string lastOp_ = "none";
+    std::mutex lastTxnMutex_;
+    bool hasLastTxn_ = false;
+    std::string lastTxnOpId_;
+    std::string lastTxnFingerprint_;
 
     std::thread heartbeatThread_;
     std::atomic<bool> stopHeartbeat_{false};

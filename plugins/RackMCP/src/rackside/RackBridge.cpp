@@ -120,6 +120,30 @@ std::string RackBridge::lastOp() {
     return lastOp_;
 }
 
+void RackBridge::setLastMcpTransaction(const std::string& operationId,
+                                       const std::string& postFingerprint) {
+    std::lock_guard<std::mutex> lock(lastTxnMutex_);
+    hasLastTxn_ = true;
+    lastTxnOpId_ = operationId;
+    lastTxnFingerprint_ = postFingerprint;
+}
+
+bool RackBridge::lastMcpTransaction(std::string& operationIdOut, std::string& postFingerprintOut) {
+    std::lock_guard<std::mutex> lock(lastTxnMutex_);
+    if (!hasLastTxn_)
+        return false;
+    operationIdOut = lastTxnOpId_;
+    postFingerprintOut = lastTxnFingerprint_;
+    return true;
+}
+
+void RackBridge::clearLastMcpTransaction() {
+    std::lock_guard<std::mutex> lock(lastTxnMutex_);
+    hasLastTxn_ = false;
+    lastTxnOpId_.clear();
+    lastTxnFingerprint_.clear();
+}
+
 UiStateCache RackBridge::uiState() {
     std::lock_guard<std::mutex> lock(uiStateMutex_);
     return uiState_;

@@ -10,6 +10,7 @@
 #include "rackmcp_plugin.hpp"
 #include "rackside/RackBridge.hpp"
 #include "rackside/Snapshot.hpp"
+#include "rackside/Transaction.hpp"
 
 namespace rackmcp {
 
@@ -195,6 +196,39 @@ static std::string handleModelInspect(const BridgeCommand& cmd) {
     return buildResOk(cmd.requestId, meta);
 }
 
+
+/** Bridges a TxnOutcome to a response frame; caller supplies cacheability. */
+static std::string txnOutcomeToFrame(const BridgeCommand& cmd, TxnOutcome& outcome) {
+    if (!outcome.errorCode.empty()) {
+        std::string frame = buildResError(cmd.requestId, outcome.errorCode.c_str(),
+                                          outcome.errorMessage, outcome.retrySafe,
+                                          outcome.mutationMayHaveOccurred);
+        if (outcome.payload)
+            json_decref(outcome.payload);
+        return frame;
+    }
+    return buildResOk(cmd.requestId, outcome.payload);
+}
+
+static std::string handleTxnPreview(const BridgeCommand& cmd) {
+    TxnOutcome outcome = txnPreview(cmd.payload);
+    return txnOutcomeToFrame(cmd, outcome);
+}
+
+static std::string handleTxnCommit(const BridgeCommand& cmd, bool& cacheable) {
+    TxnOutcome outcome = txnCommit(cmd.payload);
+    // Cache successful commits and indeterminate-rollback failures by op id so
+    // retries replay rather than reapply.
+    cacheable = outcome.errorCode.empty() || outcome.mutationMayHaveOccurred;
+    return txnOutcomeToFrame(cmd, outcome);
+}
+
+static std::string handleTxnUndo(const BridgeCommand& cmd, bool& cacheable) {
+    TxnOutcome outcome = txnUndoLast(cmd.payload);
+    cacheable = outcome.errorCode.empty();
+    return txnOutcomeToFrame(cmd, outcome);
+}
+
 std::string executeCommand(const BridgeCommand& cmd) {
     // Idempotency: replay cached mutation results by operation id.
     RackBridge& bridge = RackBridge::instance();
@@ -236,6 +270,12 @@ std::string executeCommand(const BridgeCommand& cmd) {
         result.frame = handleModelInspect(cmd);
     else if (cmd.method == "patch.fingerprint")
         result.frame = handlePatchFingerprint(cmd);
+    else if (cmd.method == "txn.preview")
+        result.frame = handleTxnPreview(cmd);
+    else if (cmd.method == "txn.commit")
+        result.frame = handleTxnCommit(cmd, result.cacheable);
+    else if (cmd.method == "txn.undoLast")
+        result.frame = handleTxnUndo(cmd, result.cacheable);
     else
         result.frame = buildResError(cmd.requestId, "UNSUPPORTED_OPERATION",
                                      "method not implemented in this bridge phase: " + cmd.method,
