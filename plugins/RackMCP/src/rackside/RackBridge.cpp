@@ -15,7 +15,7 @@
 #include "core/secret.hpp"
 #include "core/uuid.hpp"
 #include "gen/rackmcp_protocol_gen.hpp"
-#include "plugin.hpp"
+#include "rackmcp_plugin.hpp"
 
 namespace rackmcp {
 

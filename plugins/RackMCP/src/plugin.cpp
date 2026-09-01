@@ -1,4 +1,4 @@
-#include "plugin.hpp"
+#include "rackmcp_plugin.hpp"
 #include "rackside/RackBridge.hpp"
 
 rack::plugin::Plugin* pluginInstance = NULL;

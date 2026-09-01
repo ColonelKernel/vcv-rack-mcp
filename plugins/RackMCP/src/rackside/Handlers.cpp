@@ -2,12 +2,14 @@
 
 #include <rack.hpp>
 
+#include <cstdlib>
 #include <jansson.h>
 
 #include "core/frames.hpp"
 #include "gen/rackmcp_protocol_gen.hpp"
-#include "plugin.hpp"
+#include "rackmcp_plugin.hpp"
 #include "rackside/RackBridge.hpp"
+#include "rackside/Snapshot.hpp"
 
 namespace rackmcp {
 
@@ -80,6 +82,119 @@ struct HandlerResult {
     bool cacheable = false;
 };
 
+static int64_t parseDecId(json_t* obj, const char* key, bool& ok) {
+    ok = false;
+    json_t* v = obj ? json_object_get(obj, key) : NULL;
+    if (!json_is_string(v))
+        return -1;
+    const char* s = json_string_value(v);
+    if (!s || !*s)
+        return -1;
+    char* endp = NULL;
+    long long id = strtoll(s, &endp, 10);
+    if (endp && *endp == '\0' && id >= 0) {
+        ok = true;
+        return (int64_t) id;
+    }
+    return -1;
+}
+
+static bool getBoolField(json_t* obj, const char* key, bool dflt) {
+    json_t* v = obj ? json_object_get(obj, key) : NULL;
+    if (json_is_boolean(v))
+        return json_is_true(v);
+    return dflt;
+}
+
+/** Enforces the client-supplied epoch guard when present. */
+static bool epochGuardOk(json_t* payload, std::string& frameOut, const BridgeCommand& cmd) {
+    json_t* v = payload ? json_object_get(payload, "expectedPatchEpoch") : NULL;
+    if (json_is_integer(v)) {
+        int expected = (int) json_integer_value(v);
+        if (expected != RackBridge::instance().patchEpoch()) {
+            frameOut = buildResError(cmd.requestId, "STALE_PATCH_EPOCH",
+                                     "patch epoch changed; re-read the snapshot", true, false);
+            return false;
+        }
+    }
+    return true;
+}
+
+static std::string handlePatchSnapshot(const BridgeCommand& cmd) {
+    std::string err;
+    if (!epochGuardOk(cmd.payload, err, cmd))
+        return err;
+    bool opaque = getBoolField(cmd.payload, "includeOpaqueState", false);
+    json_t* snap = buildPatchSnapshot(opaque);
+    return buildResOk(cmd.requestId, snap);
+}
+
+static std::string handleModuleInspect(const BridgeCommand& cmd) {
+    std::string err;
+    if (!epochGuardOk(cmd.payload, err, cmd))
+        return err;
+    bool ok = false;
+    int64_t id = parseDecId(cmd.payload, "moduleId", ok);
+    if (!ok)
+        return buildResError(cmd.requestId, "MODULE_NOT_FOUND", "invalid moduleId", false, false);
+    bool opaque = getBoolField(cmd.payload, "includeOpaqueState", false);
+    json_t* snap = buildModuleSnapshot(id, opaque);
+    if (!snap)
+        return buildResError(cmd.requestId, "MODULE_NOT_FOUND",
+                             "no module with id " + std::to_string(id), false, false);
+    json_t* payload = json_object();
+    json_object_set_new(payload, "module", snap);
+    return buildResOk(cmd.requestId, payload);
+}
+
+static std::string handleCatalogList(const BridgeCommand& cmd) {
+    json_t* p = cmd.payload;
+    std::string cursor, query;
+    int limit = 100;
+    if (p) {
+        json_t* c = json_object_get(p, "cursor");
+        if (json_is_string(c))
+            cursor = json_string_value(c);
+        json_t* q = json_object_get(p, "query");
+        if (json_is_string(q))
+            query = json_string_value(q);
+        json_t* l = json_object_get(p, "limit");
+        if (json_is_integer(l))
+            limit = (int) json_integer_value(l);
+    }
+    if (limit < 1)
+        limit = 1;
+    if (limit > 500)
+        limit = 500;
+    json_t* catalog = buildModelCatalog(cursor, limit, query);
+    return buildResOk(cmd.requestId, catalog);
+}
+
+static std::string handlePatchFingerprint(const BridgeCommand& cmd) {
+    std::string err;
+    if (!epochGuardOk(cmd.payload, err, cmd))
+        return err;
+    json_t* payload = json_object();
+    json_object_set_new(payload, "fingerprint", json_string(computePatchFingerprint().c_str()));
+    json_object_set_new(payload, "patchEpoch", json_integer(RackBridge::instance().patchEpoch()));
+    return buildResOk(cmd.requestId, payload);
+}
+
+static std::string handleModelInspect(const BridgeCommand& cmd) {
+    json_t* p = cmd.payload;
+    json_t* psJ = p ? json_object_get(p, "pluginSlug") : NULL;
+    json_t* msJ = p ? json_object_get(p, "modelSlug") : NULL;
+    if (!json_is_string(psJ) || !json_is_string(msJ))
+        return buildResError(cmd.requestId, "MODEL_NOT_INSTALLED", "pluginSlug/modelSlug required",
+                             false, false);
+    std::string errorCode;
+    json_t* meta = inspectModelMetadata(json_string_value(psJ), json_string_value(msJ), errorCode);
+    if (!meta)
+        return buildResError(cmd.requestId, errorCode.c_str(), "model metadata unavailable", false,
+                             false);
+    return buildResOk(cmd.requestId, meta);
+}
+
 std::string executeCommand(const BridgeCommand& cmd) {
     // Idempotency: replay cached mutation results by operation id.
     RackBridge& bridge = RackBridge::instance();
@@ -111,6 +226,16 @@ std::string executeCommand(const BridgeCommand& cmd) {
         result.frame = handleStatusGet(cmd);
     else if (cmd.method == "metrics.get")
         result.frame = handleMetricsGet(cmd);
+    else if (cmd.method == "patch.snapshot")
+        result.frame = handlePatchSnapshot(cmd);
+    else if (cmd.method == "module.inspect")
+        result.frame = handleModuleInspect(cmd);
+    else if (cmd.method == "catalog.listModels")
+        result.frame = handleCatalogList(cmd);
+    else if (cmd.method == "catalog.inspectModel")
+        result.frame = handleModelInspect(cmd);
+    else if (cmd.method == "patch.fingerprint")
+        result.frame = handlePatchFingerprint(cmd);
     else
         result.frame = buildResError(cmd.requestId, "UNSUPPORTED_OPERATION",
                                      "method not implemented in this bridge phase: " + cmd.method,

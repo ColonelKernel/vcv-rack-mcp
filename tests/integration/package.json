@@ -7,7 +7,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "echo 'integration tests run explicitly: pnpm run smoke / pnpm run suite'",
-    "smoke": "tsx src/smoke.ts"
+    "smoke": "tsx src/smoke.ts",
+    "snapshot": "tsx src/snapshot-smoke.ts"
   },
   "dependencies": {
     "@rackmcp/protocol": "workspace:*",

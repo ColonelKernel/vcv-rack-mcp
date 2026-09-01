@@ -4,7 +4,7 @@
 #include <rack.hpp>
 
 #include "core/frames.hpp"
-#include "plugin.hpp"
+#include "rackmcp_plugin.hpp"
 #include "rackside/CommandPump.hpp"
 #include "rackside/RackBridge.hpp"
 
