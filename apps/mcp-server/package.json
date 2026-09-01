@@ -1,0 +1,23 @@
+{
+  "name": "@rackmcp/mcp-server",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "rack-mcp-server": "dist/index.js"
+  },
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "@rackmcp/protocol": "workspace:*",
+    "@rackmcp/schemas": "workspace:*",
+    "zod": "4.4.3"
+  }
+}

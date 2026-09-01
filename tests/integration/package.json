@@ -8,10 +8,12 @@
     "build": "tsc -p tsconfig.json",
     "test": "echo 'integration tests run explicitly: pnpm run smoke / pnpm run suite'",
     "smoke": "tsx src/smoke.ts",
-    "snapshot": "tsx src/snapshot-smoke.ts"
+    "snapshot": "tsx src/snapshot-smoke.ts",
+    "mcp": "tsx src/mcp-smoke.ts"
   },
   "dependencies": {
     "@rackmcp/protocol": "workspace:*",
-    "@rackmcp/schemas": "workspace:*"
+    "@rackmcp/schemas": "workspace:*",
+    "@modelcontextprotocol/sdk": "1.30.0"
   }
 }

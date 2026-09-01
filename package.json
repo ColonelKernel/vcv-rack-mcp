@@ -2,7 +2,7 @@
   "name": "rack-mcp",
   "version": "0.1.0",
   "private": true,
-  "description": "Rack MCP — a safe local Model Context Protocol integration for VCV Rack 2.6.6",
+  "description": "Rack MCP \u2014 a safe local Model Context Protocol integration for VCV Rack 2.6.6",
   "license": "SEE LICENSE IN LICENSE.md",
   "engines": {
     "node": ">=20"
@@ -11,8 +11,8 @@
   "scripts": {
     "build": "pnpm -r --filter './packages/**' --filter './apps/**' run build",
     "test": "pnpm -r run test",
-    "gen": "pnpm --filter @rackmcp/schemas run build && tsx scripts/gen-schemas.ts && tsx scripts/gen-cpp.ts",
-    "check:gen": "pnpm run gen && git diff --exit-code -- packages/schemas/json plugins/RackMCP/src/gen",
+    "gen": "tsx scripts/gen-schemas.ts && tsx scripts/gen-cpp.ts",
+    "check:gen": "tsx scripts/gen-schemas.ts && tsx scripts/gen-cpp.ts && git diff --exit-code -- packages/schemas/json plugins/RackMCP/src/gen",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

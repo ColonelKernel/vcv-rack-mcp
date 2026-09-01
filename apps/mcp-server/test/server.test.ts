@@ -1,0 +1,55 @@
+import { describe, expect, it } from "vitest";
+import { TOOLS } from "@rackmcp/schemas";
+import { buildToolTable } from "../src/tools.js";
+import { toErrorPayload, ToolError } from "../src/errors.js";
+import { loadConfig, defaultRackUserDir } from "../src/config.js";
+
+describe("tool table", () => {
+  it("registers a handler for every spec tool", () => {
+    const table = buildToolTable();
+    expect(table.length).toBe(TOOLS.length);
+    expect(new Set(table.map((t) => t.spec.name)).size).toBe(TOOLS.length);
+  });
+
+  it("exposes an input shape usable by the MCP SDK", () => {
+    for (const t of buildToolTable()) {
+      expect(t.inputShape).toBeDefined();
+      expect(typeof t.inputShape).toBe("object");
+    }
+  });
+});
+
+describe("error normalization", () => {
+  it("preserves ToolError code and retry semantics", () => {
+    const p = toErrorPayload(new ToolError("STALE_PATCH_EPOCH", "stale", true, false));
+    expect(p.code).toBe("STALE_PATCH_EPOCH");
+    expect(p.retrySafe).toBe(true);
+    expect(p.mutationMayHaveOccurred).toBe(false);
+  });
+
+  it("maps unknown throwables to INTERNAL", () => {
+    expect(toErrorPayload(new Error("boom")).code).toBe("INTERNAL");
+    expect(toErrorPayload("just a string").code).toBe("INTERNAL");
+  });
+
+  it("includes details only when present", () => {
+    expect(toErrorPayload(new ToolError("RACK_NOT_FOUND", "x")).details).toBeUndefined();
+    expect(
+      toErrorPayload(new ToolError("INSTANCE_NOT_SELECTED", "x", false, false, { a: 1 })).details,
+    ).toEqual({ a: 1 });
+  });
+});
+
+describe("config", () => {
+  it("derives all roots under the Rack user dir", () => {
+    const cfg = loadConfig({ RACKMCP_RACK_USER_DIR: "/tmp/rack" } as NodeJS.ProcessEnv);
+    expect(cfg.rackUserDir).toBe("/tmp/rack");
+    expect(cfg.discoveryDir).toBe("/tmp/rack/RackMCP/instances");
+    expect(cfg.checkpointsDir).toBe("/tmp/rack/RackMCP/checkpoints");
+    expect(cfg.patchesDir).toBe("/tmp/rack/patches");
+  });
+
+  it("has a platform default", () => {
+    expect(defaultRackUserDir().length).toBeGreaterThan(0);
+  });
+});

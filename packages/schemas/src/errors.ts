@@ -55,6 +55,16 @@ export const ERROR_CODES = [
 export const ErrorCode = z.enum(ERROR_CODES);
 export type ErrorCode = z.infer<typeof ErrorCode>;
 
+/** Alias used by consumers that prefer the "RackErrorCode" name. */
+export type RackErrorCode = ErrorCode;
+
+const ERROR_CODE_SET: ReadonlySet<string> = new Set(ERROR_CODES);
+
+/** Maps an arbitrary code string to a known error code, defaulting to INTERNAL. */
+export function normalizeErrorCode(code: string): ErrorCode {
+  return (ERROR_CODE_SET.has(code) ? code : "INTERNAL") as ErrorCode;
+}
+
 /**
  * Every Rack MCP error states whether retrying is safe and whether the
  * requested mutation may already have occurred. Mutating retries must reuse
