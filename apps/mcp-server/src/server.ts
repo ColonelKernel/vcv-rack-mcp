@@ -6,7 +6,7 @@ import { TransactionManager } from "./transactions.js";
 import { AuditLog } from "./audit.js";
 import { toErrorPayload } from "./errors.js";
 import { log } from "./logger.js";
-import { buildToolTable, RESULT_LIMIT_BYTES, type ToolContext } from "./tools.js";
+import { bindServerConfig, buildToolTable, RESULT_LIMIT_BYTES, type ToolContext } from "./tools.js";
 
 export const SERVER_VERSION = "0.1.0";
 
@@ -28,6 +28,7 @@ export function createServer(config: ServerConfig): {
     serverVersion: SERVER_VERSION,
     bridgeProtocolVersion: BRIDGE_PROTOCOL_VERSION,
   };
+  bindServerConfig(ctx, config);
 
   const server = new McpServer(
     { name: "rack-mcp-server", version: SERVER_VERSION },

@@ -194,6 +194,18 @@ const inspectParameter: ToolHandler = async (args, ctx) => {
 // ---------------------------------------------------------------------------
 
 import { describePatch, validatePatch } from "./analysis.js";
+import {
+  bindServerConfig,
+  commitClearPatch,
+  commitLoadPatch,
+  createCheckpoint,
+  listPatchFiles,
+  previewClearPatch,
+  previewLoadPatch,
+  restoreCheckpoint,
+  savePatch,
+} from "./patchfiles.js";
+export { bindServerConfig };
 
 // ---------------------------------------------------------------------------
 // Mutation
@@ -278,14 +290,14 @@ const HANDLERS: Record<string, ToolHandler> = {
   commit_patch_transaction: commitPatchTransaction,
   undo_last_mcp_transaction: undoLastMcpTransaction,
   build_patch: buildPatch,
-  list_patch_files: pending("list_patch_files"),
-  create_checkpoint: pending("create_checkpoint"),
-  save_patch: pending("save_patch"),
-  preview_load_patch: pending("preview_load_patch"),
-  commit_load_patch: pending("commit_load_patch"),
-  preview_clear_patch: pending("preview_clear_patch"),
-  commit_clear_patch: pending("commit_clear_patch"),
-  restore_checkpoint: pending("restore_checkpoint"),
+  list_patch_files: listPatchFiles,
+  create_checkpoint: createCheckpoint,
+  save_patch: savePatch,
+  preview_load_patch: previewLoadPatch,
+  commit_load_patch: commitLoadPatch,
+  preview_clear_patch: previewClearPatch,
+  commit_clear_patch: commitClearPatch,
+  restore_checkpoint: restoreCheckpoint,
   list_probes: pending("list_probes"),
   preview_attach_probe: pending("preview_attach_probe"),
   commit_attach_probe: pending("commit_attach_probe"),

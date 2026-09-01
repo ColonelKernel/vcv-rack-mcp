@@ -10,7 +10,8 @@
     "smoke": "tsx src/smoke.ts",
     "snapshot": "tsx src/snapshot-smoke.ts",
     "mcp": "tsx src/mcp-smoke.ts",
-    "write": "tsx src/write-smoke.ts"
+    "write": "tsx src/write-smoke.ts",
+    "files": "tsx src/files-smoke.ts"
   },
   "dependencies": {
     "@rackmcp/protocol": "workspace:*",

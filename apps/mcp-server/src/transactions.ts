@@ -33,9 +33,18 @@ interface TokenBinding {
   expiresAt: number;
 }
 
+interface LoadBinding {
+  instanceId: string;
+  sessionId: string;
+  kind: "load" | "clear";
+  path: string | null;
+  expiresAt: number;
+}
+
 export class TransactionManager {
   private readonly key = randomBytes(32);
   private plans = new Map<string, CachedPlan>();
+  private loadBindings = new Map<string, LoadBinding>();
 
   constructor(private readonly conn: ConnectionManager) {}
 
@@ -176,5 +185,51 @@ export class TransactionManager {
   cachedPlan(planHash: string): { baseFingerprint: string; confirmationRequired: boolean } | null {
     const c = this.plans.get(planHash);
     return c ? { baseFingerprint: c.baseFingerprint, confirmationRequired: c.confirmationRequired } : null;
+  }
+
+  /**
+   * Mints a confirmation token for a load/clear/restore operation. The binding
+   * (including the possibly-long path) is held server-side and keyed by a short
+   * random id, so the token stays opaque and well under the size cap.
+   */
+  mintLoadToken(binding: {
+    instanceId: string;
+    sessionId: string;
+    kind: "load" | "clear";
+    path: string | null;
+  }): string {
+    const now = Date.now();
+    for (const [k, v] of this.loadBindings) if (v.expiresAt < now) this.loadBindings.delete(k);
+    const id = randomBytes(18).toString("base64url");
+    this.loadBindings.set(id, { ...binding, expiresAt: now + LIMITS.confirmationLifetimeMs });
+    const mac = createHmac("sha256", this.key).update(id).digest("base64url");
+    return `${id}.${mac}`;
+  }
+
+  verifyLoadToken(token: string): {
+    instanceId: string;
+    sessionId: string;
+    kind: "load" | "clear";
+    path: string | null;
+  } {
+    const dot = token.indexOf(".");
+    if (dot < 0) throw new ToolError("CONFIRMATION_REQUIRED", "malformed confirmation token");
+    const id = token.slice(0, dot);
+    const mac = token.slice(dot + 1);
+    const expected = createHmac("sha256", this.key).update(id).digest("base64url");
+    const a = Buffer.from(mac);
+    const b = Buffer.from(expected);
+    if (a.length !== b.length || !timingSafeEqual(a, b)) {
+      throw new ToolError("CONFIRMATION_REQUIRED", "invalid confirmation token");
+    }
+    const binding = this.loadBindings.get(id);
+    if (!binding) {
+      throw new ToolError("CONFIRMATION_EXPIRED", "confirmation token is unknown or expired");
+    }
+    if (Date.now() > binding.expiresAt) {
+      this.loadBindings.delete(id);
+      throw new ToolError("CONFIRMATION_EXPIRED", "confirmation token has expired");
+    }
+    return { instanceId: binding.instanceId, sessionId: binding.sessionId, kind: binding.kind, path: binding.path };
   }
 }

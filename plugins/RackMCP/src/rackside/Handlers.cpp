@@ -10,6 +10,7 @@
 #include "rackmcp_plugin.hpp"
 #include "rackside/RackBridge.hpp"
 #include "rackside/Snapshot.hpp"
+#include "rackside/PatchFiles.hpp"
 #include "rackside/Transaction.hpp"
 
 namespace rackmcp {
@@ -229,6 +230,39 @@ static std::string handleTxnUndo(const BridgeCommand& cmd, bool& cacheable) {
     return txnOutcomeToFrame(cmd, outcome);
 }
 
+
+static std::string patchFileOutcomeToFrame(const BridgeCommand& cmd, PatchFileOutcome& o) {
+    if (!o.errorCode.empty()) {
+        std::string frame = buildResError(cmd.requestId, o.errorCode.c_str(), o.errorMessage, false,
+                                          o.errorCode == "INTERNAL");
+        if (o.payload)
+            json_decref(o.payload);
+        return frame;
+    }
+    return buildResOk(cmd.requestId, o.payload);
+}
+
+static std::string handlePatchSave(const BridgeCommand& cmd, bool& cacheable) {
+    PatchFileOutcome o = patchSave(cmd.payload);
+    cacheable = o.errorCode.empty();
+    return patchFileOutcomeToFrame(cmd, o);
+}
+static std::string handlePatchSaveCopy(const BridgeCommand& cmd, bool& cacheable) {
+    PatchFileOutcome o = patchSaveCopy(cmd.payload);
+    cacheable = o.errorCode.empty();
+    return patchFileOutcomeToFrame(cmd, o);
+}
+static std::string handlePatchLoad(const BridgeCommand& cmd, bool& cacheable) {
+    PatchFileOutcome o = patchLoad(cmd.payload);
+    cacheable = o.errorCode.empty();
+    return patchFileOutcomeToFrame(cmd, o);
+}
+static std::string handlePatchClear(const BridgeCommand& cmd, bool& cacheable) {
+    PatchFileOutcome o = patchClear(cmd.payload);
+    cacheable = o.errorCode.empty();
+    return patchFileOutcomeToFrame(cmd, o);
+}
+
 std::string executeCommand(const BridgeCommand& cmd) {
     // Idempotency: replay cached mutation results by operation id.
     RackBridge& bridge = RackBridge::instance();
@@ -276,6 +310,14 @@ std::string executeCommand(const BridgeCommand& cmd) {
         result.frame = handleTxnCommit(cmd, result.cacheable);
     else if (cmd.method == "txn.undoLast")
         result.frame = handleTxnUndo(cmd, result.cacheable);
+    else if (cmd.method == "patchfile.save")
+        result.frame = handlePatchSave(cmd, result.cacheable);
+    else if (cmd.method == "patchfile.saveCopy")
+        result.frame = handlePatchSaveCopy(cmd, result.cacheable);
+    else if (cmd.method == "patchfile.load")
+        result.frame = handlePatchLoad(cmd, result.cacheable);
+    else if (cmd.method == "patchfile.clear")
+        result.frame = handlePatchClear(cmd, result.cacheable);
     else
         result.frame = buildResError(cmd.requestId, "UNSUPPORTED_OPERATION",
                                      "method not implemented in this bridge phase: " + cmd.method,
