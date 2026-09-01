@@ -91,6 +91,10 @@ public:
     /** True when the connection currently holds the writer lease. */
     bool connectionIsWriter(uint64_t connectionId);
 
+    /** Lock-free hints for DSP-side status lights. */
+    int activeSessions() const { return authedSessions_.load(); }
+    bool leaseHeldHint() const { return leaseHeldHint_.load(); }
+
     LeaseManager& leases() { return leases_; }
     ServiceCounters& counters() { return counters_; }
 
@@ -132,6 +136,8 @@ private:
     std::map<uint64_t, std::shared_ptr<Session>> sessions_;
     LeaseManager leases_;
     ServiceCounters counters_;
+    std::atomic<int> authedSessions_{0};
+    std::atomic<bool> leaseHeldHint_{false};
 };
 
 } // namespace rackmcp

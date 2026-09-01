@@ -1,0 +1,16 @@
+{
+  "name": "@rackmcp/integration",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "echo 'integration tests run explicitly: pnpm run smoke / pnpm run suite'",
+    "smoke": "tsx src/smoke.ts"
+  },
+  "dependencies": {
+    "@rackmcp/protocol": "workspace:*",
+    "@rackmcp/schemas": "workspace:*"
+  }
+}

@@ -1,0 +1,4 @@
+plugin.dylib
+build/
+dist/
+*.d

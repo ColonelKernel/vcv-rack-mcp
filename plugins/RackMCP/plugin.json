@@ -1,0 +1,29 @@
+{
+  "slug": "RackMCP",
+  "name": "Rack MCP",
+  "version": "2.0.0",
+  "license": "GPL-3.0-or-later",
+  "brand": "Rack MCP",
+  "author": "Zachary Scheffler",
+  "authorEmail": "zachscheffler@gmail.com",
+  "authorUrl": "",
+  "pluginUrl": "",
+  "manualUrl": "",
+  "sourceUrl": "",
+  "donateUrl": "",
+  "changelogUrl": "",
+  "modules": [
+    {
+      "slug": "Bridge",
+      "name": "RackMCP-Bridge",
+      "description": "Control and status module for the Rack MCP local bridge: connection status, writer lease, pairing reset, and persistence warnings.",
+      "tags": ["Utility"]
+    },
+    {
+      "slug": "Probe",
+      "name": "RackMCP-Probe",
+      "description": "Signal-analysis probe for Rack MCP telemetry: per-channel min/max, peak, RMS, DC, clip and edge counts over explicit probe cables.",
+      "tags": ["Utility", "Visual"]
+    }
+  ]
+}
