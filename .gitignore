@@ -3,7 +3,7 @@ dist/
 *.tsbuildinfo
 vendor/Rack-SDK/
 vendor/*.zip
-tests/cpp-build/
+tests/cpp-build*/
 tests/cpp/build/
 plugins/RackMCP/build/
 plugins/RackMCP/plugin.dylib
