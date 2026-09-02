@@ -54,6 +54,13 @@ $ claude  # with the rack-mcp server connected
 
 </details>
 
+…and the patch those tool calls actually build, in the running Rack window —
+MIDI→CV → VCO → VCF → VCA with an ADSR envelope → Audio, wired live over the
+bridge. The **MCP Bridge** panel on the left shows the connection state
+(`op txn.commit`, read-only, one client) that the session above produced:
+
+<img src="docs/assets/rack-patch.png" width="820" alt="VCV Rack Pro 2.6.6 showing the MCP-built subtractive voice: an MCP Bridge module, MIDI-to-CV, VCO, VCF, ADSR EG, VCA and Audio, connected with cables">
+
 ## Components
 
 | Path | What | License |
