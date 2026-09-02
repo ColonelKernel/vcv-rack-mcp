@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { join } from "node:path";
+import { platform } from "node:os";
 import { TOOLS } from "@rackmcp/schemas";
 import { buildToolTable } from "../src/tools.js";
 import { toErrorPayload, ToolError } from "../src/errors.js";
@@ -53,5 +54,18 @@ describe("config", () => {
 
   it("has a platform default", () => {
     expect(defaultRackUserDir().length).toBeGreaterThan(0);
+  });
+
+  it("honours Rack's own RACK_USER_DIR, below RACKMCP_RACK_USER_DIR", () => {
+    expect(loadConfig({ RACK_USER_DIR: "/r1" } as NodeJS.ProcessEnv).rackUserDir).toBe("/r1");
+    expect(
+      loadConfig({ RACK_USER_DIR: "/r1", RACKMCP_RACK_USER_DIR: "/r2" } as NodeJS.ProcessEnv).rackUserDir,
+    ).toBe("/r2");
+  });
+
+  it("uses $XDG_DATA_HOME/Rack2 on Linux-like platforms (Rack 2.5+)", () => {
+    if (platform() === "darwin" || platform() === "win32") return;
+    expect(defaultRackUserDir({ XDG_DATA_HOME: "/xdg" } as NodeJS.ProcessEnv)).toBe(join("/xdg", "Rack2"));
+    expect(defaultRackUserDir({} as NodeJS.ProcessEnv).endsWith(join(".local", "share", "Rack2"))).toBe(true);
   });
 });

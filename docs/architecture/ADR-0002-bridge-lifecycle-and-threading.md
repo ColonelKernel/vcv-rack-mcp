@@ -154,6 +154,15 @@ while the audio engine is busy.
 
 ### Deterministic shutdown in `destroy()`
 
+> **Only `destroy()` may join threads.** An earlier implementation stopped the
+> bridge from a namespace-scope static destructor instead, on the mistaken
+> premise that Rack had no plugin-level `destroy()`. That was wrong twice over:
+> the function-local `RackBridge` singleton is destroyed *before* such a static
+> (so `~std::thread` on the still-running heartbeat thread called
+> `std::terminate()` on every quit), and on Windows the static destructor runs
+> inside `FreeLibrary`/`DllMain` under the loader lock, where a join deadlocks.
+> `tests/integration/src/quit-smoke.ts` exercises the real quit path.
+
 `RackBridge::stop()` (called from the plugin's `destroy()`) is ordered so no
 thread can touch a freed resource:
 

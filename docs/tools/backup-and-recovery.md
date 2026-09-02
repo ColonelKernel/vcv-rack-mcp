@@ -33,7 +33,7 @@ Platform defaults for the Rack user directory:
 | --- | --- |
 | macOS | `~/Library/Application Support/Rack2` |
 | Windows | `%LOCALAPPDATA%\Rack2` |
-| Linux | `~/.Rack2` |
+| Linux | `~/.local/share/Rack2` |
 
 There is no separate discovery- or checkpoint-directory environment variable —
 every subdirectory is derived from the user dir. Point `RACKMCP_RACK_USER_DIR`

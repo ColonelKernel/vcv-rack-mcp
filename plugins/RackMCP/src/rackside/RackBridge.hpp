@@ -88,6 +88,10 @@ public:
 
 private:
     RackBridge() = default;
+    /** Safety net: stop() joins heartbeatThread_ before ~std::thread would
+     *  std::terminate() on a joinable thread. Normally a no-op, since Rack's
+     *  destroy() callback has already stopped the bridge. */
+    ~RackBridge() { stop(); }
     void heartbeatLoop();
     void writeManifestNow();
 

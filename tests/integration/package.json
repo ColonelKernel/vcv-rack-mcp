@@ -15,7 +15,8 @@
     "probe": "tsx src/probe-smoke.ts",
     "recipes": "tsx src/recipes-smoke.ts",
     "demo": "tsx src/demo.ts",
-    "screenshot:hold": "tsx src/screenshot-hold.ts"
+    "screenshot:hold": "tsx src/screenshot-hold.ts",
+    "quit": "tsx src/quit-smoke.ts"
   },
   "dependencies": {
     "@rackmcp/adapters": "workspace:*",

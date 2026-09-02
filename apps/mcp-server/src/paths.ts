@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, realpathSync, statSync } from "node:fs";
 import { basename, resolve, sep } from "node:path";
+import { platform } from "node:os";
 import type { ServerConfig } from "./config.js";
 import { ToolError } from "./errors.js";
 
@@ -10,19 +11,47 @@ import { ToolError } from "./errors.js";
  */
 export type PatchRoot = "patches" | "checkpoints";
 
-function isUrl(p: string): boolean {
-  return /^[a-z][a-z0-9+.-]*:\/\//i.test(p) || p.startsWith("file:");
+const IS_WINDOWS = platform() === "win32";
+
+/**
+ * URL detector. A scheme must be at least two characters: a single letter
+ * followed by "://" is a Windows drive path with doubled slashes (C://x), not a URL.
+ */
+export function isUrl(p: string): boolean {
+  return /^[a-z][a-z0-9+.-]+:\/\//i.test(p) || /^file:/i.test(p);
 }
 
-/** Real, canonical path of an existing directory (resolves symlinks). */
+/**
+ * Windows reserved device names (CON, PRN, AUX, NUL, COM1-9, LPT1-9) name a
+ * DEVICE in any directory and with any extension, so saving to `nul.vcv` would
+ * silently discard the patch. Win32 also strips trailing dots and spaces, so
+ * such names never round-trip. Enforced on Windows only.
+ */
+export function isReservedWindowsName(name: string): boolean {
+  return /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$/i.test(name) || /[. ]$/.test(name);
+}
+
+/**
+ * Canonical form of an existing path: symlinks and junctions resolved, and on
+ * Windows the on-disk casing and long (non-8.3) form. The native realpath is
+ * required for that: the JS implementation never case-canonicalizes on Windows.
+ */
+function realCanonical(p: string): string {
+  return realpathSync.native(p);
+}
+
+/** Real, canonical path of an existing directory (created if missing). */
 function canonicalDir(dir: string): string {
   mkdirSync(dir, { recursive: true, mode: 0o700 });
-  return realpathSync(dir);
+  return realCanonical(dir);
 }
 
-function within(root: string, target: string): boolean {
-  const r = root.endsWith(sep) ? root : root + sep;
-  return target === root || target.startsWith(r);
+/** Root containment with a separator boundary; case-insensitive on Windows. */
+export function within(root: string, target: string, caseInsensitive: boolean = IS_WINDOWS): boolean {
+  const norm = (s: string) => (caseInsensitive ? s.toLowerCase() : s);
+  const r = norm(root.endsWith(sep) ? root : root + sep);
+  const t = norm(target);
+  return t === norm(root) || t.startsWith(r);
 }
 
 export interface ResolvedPath {
@@ -51,6 +80,12 @@ export function resolvePatchPath(
   if (!requested.toLowerCase().endsWith(".vcv")) {
     throw new ToolError("PATH_NOT_ALLOWED", "only .vcv patch files are permitted");
   }
+  if (IS_WINDOWS && isReservedWindowsName(basename(requested))) {
+    throw new ToolError(
+      "PATH_NOT_ALLOWED",
+      "file name is a reserved Windows device name or ends with a dot or space",
+    );
+  }
 
   const patchesRoot = canonicalDir(config.patchesDir);
   const checkpointsRoot = canonicalDir(config.checkpointsDir);
@@ -60,7 +95,7 @@ export function resolvePatchPath(
   let canonical: string;
   const exists = existsSync(absolute);
   if (exists) {
-    canonical = realpathSync(absolute);
+    canonical = realCanonical(absolute);
     if (!statSync(canonical).isFile()) {
       throw new ToolError("PATH_NOT_ALLOWED", "path is not a regular file");
     }
@@ -70,7 +105,7 @@ export function resolvePatchPath(
     if (!existsSync(parent)) {
       throw new ToolError("PATH_NOT_ALLOWED", "parent directory does not exist");
     }
-    canonical = resolve(realpathSync(parent), basename(absolute));
+    canonical = resolve(realCanonical(parent), basename(absolute));
   }
 
   let root: PatchRoot | null = null;

@@ -23,4 +23,9 @@ bool rotateSecret(const std::string& dirPath, std::string& secretOut);
 /** Writes a file atomically (temp + rename) with owner-only permissions. */
 bool writePrivateFileAtomic(const std::string& path, const std::string& contents);
 
+#if defined(_WIN32)
+/** UTF-8 -> UTF-16 for Win32 *W APIs (Rack hands plugins UTF-8 paths). Empty on invalid input. */
+std::wstring utf8ToWide(const std::string& utf8);
+#endif
+
 } // namespace rackmcp

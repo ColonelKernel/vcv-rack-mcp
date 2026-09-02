@@ -17,21 +17,27 @@ export interface ServerConfig {
   requestDeadlineMs: number;
 }
 
-/** Rack's default user directory per platform (Rack 2). */
-export function defaultRackUserDir(): string {
+/**
+ * Rack's default user directory per platform, matching Rack 2.6.6's asset.cpp:
+ * macOS `~/Library/Application Support/Rack2`, Windows `%LOCALAPPDATA%\Rack2`,
+ * Linux `$XDG_DATA_HOME/Rack2` (default `~/.local/share/Rack2`; Rack migrates the
+ * pre-2.5 `~/.Rack2` itself).
+ */
+export function defaultRackUserDir(env: NodeJS.ProcessEnv = process.env): string {
   const home = homedir();
   switch (platform()) {
     case "darwin":
       return join(home, "Library", "Application Support", "Rack2");
     case "win32":
-      return join(process.env.LOCALAPPDATA ?? join(home, "AppData", "Local"), "Rack2");
+      return join(env.LOCALAPPDATA ?? join(home, "AppData", "Local"), "Rack2");
     default:
-      return join(home, ".Rack2");
+      return join(env.XDG_DATA_HOME ?? join(home, ".local", "share"), "Rack2");
   }
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
-  const rackUserDir = env.RACKMCP_RACK_USER_DIR ?? defaultRackUserDir();
+  // Rack itself honours RACK_USER_DIR (asset.cpp); ours takes precedence, then Rack's.
+  const rackUserDir = env.RACKMCP_RACK_USER_DIR ?? env.RACK_USER_DIR ?? defaultRackUserDir(env);
   const rackmcpDir = join(rackUserDir, "RackMCP");
   return {
     rackUserDir,

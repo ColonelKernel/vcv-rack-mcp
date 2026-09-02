@@ -243,6 +243,13 @@ bool BridgeServer::handleFrame(Session& session, const std::string& frame) {
             }
             else {
                 session.nonce = randomHex(32);
+                if (session.nonce.empty()) {
+                    // Fail closed: never issue a challenge without OS-grade randomness
+                    // (an empty/constant nonce would make the HMAC response replayable).
+                    enqueueOutbound(session, buildAuthResult(false, "INTERNAL", "secure random source unavailable"));
+                    keep = false;
+                }
+                else {
                 WelcomeInfo info;
                 info.version = gen::BRIDGE_PROTOCOL_VERSION;
                 info.instanceId = config_.instanceId;
@@ -254,6 +261,7 @@ bool BridgeServer::handleFrame(Session& session, const std::string& frame) {
                 info.nonce = session.nonce;
                 enqueueOutbound(session, buildWelcome(info));
                 session.state = Session::State::ExpectAuth;
+                }
             }
         }
     }

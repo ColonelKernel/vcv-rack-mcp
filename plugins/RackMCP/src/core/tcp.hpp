@@ -5,6 +5,8 @@
 #include <cstdint>
 #include <string>
 
+#include <atomic>
+
 namespace rackmcp {
 
 #if defined(_WIN32)
@@ -40,7 +42,7 @@ public:
     void close();
 
 private:
-    SocketHandle fd_ = (SocketHandle) -1;
+    std::atomic<SocketHandle> fd_{(SocketHandle) -1};
     uint16_t port_ = 0;
 };
 
@@ -66,7 +68,7 @@ public:
     void close();
 
 private:
-    SocketHandle fd_;
+    std::atomic<SocketHandle> fd_;
     bool timedOut_ = false;
 };
 

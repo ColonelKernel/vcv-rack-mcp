@@ -22,6 +22,21 @@ typedef int socklen_t;
 #define RMCP_SHUT_RDWR SHUT_RDWR
 #endif
 
+// Native socket type for the C APIs: SOCKET (UINT_PTR) on Windows, int elsewhere.
+#if defined(_WIN32)
+#define RMCP_SOCK(h) ((SOCKET) (h))
+#else
+#define RMCP_SOCK(h) ((int) (h))
+#endif
+// Never let a peer that vanished mid-write raise SIGPIPE and kill the host
+// process: MSG_NOSIGNAL on Linux, SO_NOSIGPIPE (set per socket) on macOS/BSD;
+// Windows has no SIGPIPE.
+#if defined(MSG_NOSIGNAL)
+#define RMCP_SEND_FLAGS MSG_NOSIGNAL
+#else
+#define RMCP_SEND_FLAGS 0
+#endif
+
 namespace rackmcp {
 
 const SocketHandle INVALID_SOCKET_HANDLE = (SocketHandle) -1;
@@ -67,86 +82,94 @@ bool TcpListener::listen(uint16_t port) {
     if (fd == INVALID_SOCKET_HANDLE)
         return false;
     int yes = 1;
-    setsockopt((int) fd, SOL_SOCKET, SO_REUSEADDR, (const char*) &yes, sizeof(yes));
+#if defined(_WIN32)
+    // On Windows SO_REUSEADDR lets ANY local process bind the same port while we
+    // are listening (port hijacking); SO_EXCLUSIVEADDRUSE is the safe default.
+    setsockopt(RMCP_SOCK(fd), SOL_SOCKET, SO_EXCLUSIVEADDRUSE, (const char*) &yes, sizeof(yes));
+#else
+    setsockopt(RMCP_SOCK(fd), SOL_SOCKET, SO_REUSEADDR, (const char*) &yes, sizeof(yes));
+#endif
     sockaddr_in addr;
     std::memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     // Loopback only. Never INADDR_ANY.
     addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     addr.sin_port = htons(port);
-    if (bind((int) fd, (sockaddr*) &addr, sizeof(addr)) != 0) {
-        RMCP_CLOSESOCK((int) fd);
+    if (bind(RMCP_SOCK(fd), (sockaddr*) &addr, sizeof(addr)) != 0) {
+        RMCP_CLOSESOCK(RMCP_SOCK(fd));
         return false;
     }
-    if (::listen((int) fd, 8) != 0) {
-        RMCP_CLOSESOCK((int) fd);
+    if (::listen(RMCP_SOCK(fd), 8) != 0) {
+        RMCP_CLOSESOCK(RMCP_SOCK(fd));
         return false;
     }
     socklen_t len = sizeof(addr);
-    if (getsockname((int) fd, (sockaddr*) &addr, &len) != 0) {
-        RMCP_CLOSESOCK((int) fd);
+    if (getsockname(RMCP_SOCK(fd), (sockaddr*) &addr, &len) != 0) {
+        RMCP_CLOSESOCK(RMCP_SOCK(fd));
         return false;
     }
-    fd_ = fd;
+    fd_.store(fd);
     port_ = ntohs(addr.sin_port);
     return true;
 }
 
 SocketHandle TcpListener::accept(int timeoutMs) {
-    SocketHandle fd = fd_;
+    SocketHandle fd = fd_.load();
     if (fd == INVALID_SOCKET_HANDLE)
         return INVALID_SOCKET_HANDLE;
     if (!waitReadable(fd, timeoutMs))
         return INVALID_SOCKET_HANDLE;
     sockaddr_in peer;
     socklen_t len = sizeof(peer);
-    SocketHandle client = (SocketHandle) ::accept((int) fd, (sockaddr*) &peer, &len);
+    SocketHandle client = (SocketHandle) ::accept(RMCP_SOCK(fd), (sockaddr*) &peer, &len);
     if (client == INVALID_SOCKET_HANDLE)
         return INVALID_SOCKET_HANDLE;
     // Defense in depth: refuse non-loopback peers even though we bind loopback.
     if (peer.sin_addr.s_addr != htonl(INADDR_LOOPBACK)) {
-        RMCP_CLOSESOCK((int) client);
+        RMCP_CLOSESOCK(RMCP_SOCK(client));
         return INVALID_SOCKET_HANDLE;
     }
     int yes = 1;
-    setsockopt((int) client, IPPROTO_TCP, TCP_NODELAY, (const char*) &yes, sizeof(yes));
+    setsockopt(RMCP_SOCK(client), IPPROTO_TCP, TCP_NODELAY, (const char*) &yes, sizeof(yes));
+#if defined(SO_NOSIGPIPE)
+    setsockopt(RMCP_SOCK(client), SOL_SOCKET, SO_NOSIGPIPE, (const char*) &yes, sizeof(yes));
+#endif
     return client;
 }
 
 bool TcpListener::isOpen() const {
-    return fd_ != INVALID_SOCKET_HANDLE;
+    return fd_.load() != INVALID_SOCKET_HANDLE;
 }
 
 void TcpListener::close() {
-    SocketHandle fd = fd_;
-    fd_ = INVALID_SOCKET_HANDLE;
+    SocketHandle fd = fd_.exchange(INVALID_SOCKET_HANDLE);
     if (fd != INVALID_SOCKET_HANDLE) {
-        shutdown((int) fd, RMCP_SHUT_RDWR);
-        RMCP_CLOSESOCK((int) fd);
+        shutdown(RMCP_SOCK(fd), RMCP_SHUT_RDWR);
+        RMCP_CLOSESOCK(RMCP_SOCK(fd));
     }
 }
 
 int TcpStream::read(uint8_t* buf, size_t maxLen, int timeoutMs) {
     timedOut_ = false;
-    SocketHandle fd = fd_;
+    SocketHandle fd = fd_.load();
     if (fd == INVALID_SOCKET_HANDLE)
         return -1;
     if (!waitReadable(fd, timeoutMs)) {
         timedOut_ = true;
         return 0;
     }
-    int n = (int) recv((int) fd, (char*) buf, (int) maxLen, 0);
+    int n = (int) recv(RMCP_SOCK(fd), (char*) buf, (int) maxLen, 0);
     return n;
 }
 
 bool TcpStream::writeAll(const void* buf, size_t len) {
-    SocketHandle fd = fd_;
+    SocketHandle fd = fd_.load();
     if (fd == INVALID_SOCKET_HANDLE)
         return false;
     const char* p = (const char*) buf;
     size_t sent = 0;
     while (sent < len) {
-        int n = (int) send((int) fd, p + sent, (int) (len - sent), 0);
+        int n = (int) send(RMCP_SOCK(fd), p + sent, (int) (len - sent), RMCP_SEND_FLAGS);
         if (n <= 0)
             return false;
         sent += (size_t) n;
@@ -155,15 +178,14 @@ bool TcpStream::writeAll(const void* buf, size_t len) {
 }
 
 bool TcpStream::isOpen() const {
-    return fd_ != INVALID_SOCKET_HANDLE;
+    return fd_.load() != INVALID_SOCKET_HANDLE;
 }
 
 void TcpStream::close() {
-    SocketHandle fd = fd_;
-    fd_ = INVALID_SOCKET_HANDLE;
+    SocketHandle fd = fd_.exchange(INVALID_SOCKET_HANDLE);
     if (fd != INVALID_SOCKET_HANDLE) {
-        shutdown((int) fd, RMCP_SHUT_RDWR);
-        RMCP_CLOSESOCK((int) fd);
+        shutdown(RMCP_SOCK(fd), RMCP_SHUT_RDWR);
+        RMCP_CLOSESOCK(RMCP_SOCK(fd));
     }
 }
 
@@ -177,12 +199,15 @@ SocketHandle tcpConnectLoopback(uint16_t port, int timeoutMs) {
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     addr.sin_port = htons(port);
-    if (connect((int) fd, (sockaddr*) &addr, sizeof(addr)) != 0) {
-        RMCP_CLOSESOCK((int) fd);
+    if (connect(RMCP_SOCK(fd), (sockaddr*) &addr, sizeof(addr)) != 0) {
+        RMCP_CLOSESOCK(RMCP_SOCK(fd));
         return INVALID_SOCKET_HANDLE;
     }
     int yes = 1;
-    setsockopt((int) fd, IPPROTO_TCP, TCP_NODELAY, (const char*) &yes, sizeof(yes));
+    setsockopt(RMCP_SOCK(fd), IPPROTO_TCP, TCP_NODELAY, (const char*) &yes, sizeof(yes));
+#if defined(SO_NOSIGPIPE)
+    setsockopt(RMCP_SOCK(fd), SOL_SOCKET, SO_NOSIGPIPE, (const char*) &yes, sizeof(yes));
+#endif
     return fd;
 }
 

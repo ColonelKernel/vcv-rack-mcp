@@ -278,6 +278,47 @@ following are explicitly outside the model:
   `BRIDGE_NOT_READY`). Rack MCP degrades safely — it drops or refuses rather than
   crashing — but does not guarantee availability against a hostile local process.
 
+## Platform notes (Windows)
+
+The security properties above are implemented with different primitives on
+Windows; the guarantees are the same, the mechanisms differ. These were fixed
+after an adversarial review of the Windows code paths once CI first compiled
+them (they had never executed on Windows before).
+
+- **Port hijacking.** The listener sets `SO_EXCLUSIVEADDRUSE`, never
+  `SO_REUSEADDR`. On Windows the latter lets any local process bind the same
+  `127.0.0.1:<port>` while the bridge is listening and receive its connections;
+  on POSIX it has no such effect.
+- **Secret and manifest permissions.** There is no `0600`/`0700`; the
+  `RackMCP` directory and the secret file get a protected, owner-only DACL
+  (`D:P(A;OICI;FA;;;OW)`), applied to the directory before any secret is
+  written and pinned on the file before the atomic rename. If the ACL cannot be
+  applied (for example on a FAT volume), secret creation fails closed and the
+  bridge stays disabled, matching the POSIX `chmod` behaviour.
+- **Paths.** Rack hands plugins UTF-8 paths; every file operation converts to
+  UTF-16 and uses the `*W` APIs, so non-ASCII user names work. Atomic replace
+  uses `MoveFileEx(MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)`, because
+  `rename()` does not overwrite an existing file on Windows. Temp files carry
+  the writer's PID so two Rack instances sharing a user dir cannot clobber each
+  other's in-flight write.
+- **Patch path policy.** Root containment compares case-insensitively and uses
+  the native realpath (on-disk casing, 8.3 short names expanded); reserved
+  device names (`nul.vcv`, `con.vcv`, `com1.vcv`, …) and names ending in a dot or
+  space are rejected, since Win32 would route such a write to a device or
+  silently rename the file.
+- **Shutdown.** Threads are joined only from Rack's `destroy()` callback, never
+  from a static destructor: on Windows that would run inside
+  `FreeLibrary`/`DllMain` under the loader lock, where joining a thread
+  deadlocks (and on every platform it would run after `RackBridge`'s own
+  destructor had already torn down a joinable thread).
+- **Randomness.** `BCryptGenRandom` is the only source. If it fails the bridge
+  refuses to issue an auth challenge rather than using an empty or constant
+  nonce; the same fail-closed rule applies to `/dev/urandom` elsewhere.
+
+Availability on POSIX, found by the same review: sends use `MSG_NOSIGNAL`
+(Linux) or the socket carries `SO_NOSIGPIPE` (macOS), so a client that
+disconnects mid-write cannot deliver `SIGPIPE` and terminate Rack.
+
 ## Related documents
 
 - [Rack MCP specification, section 14](../spec/rack-mcp-spec.md) — normative

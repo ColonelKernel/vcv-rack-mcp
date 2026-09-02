@@ -152,6 +152,7 @@ isolated user directory:
 pnpm --filter @rackmcp/integration run write     # transaction lifecycle
 pnpm --filter @rackmcp/integration run recipes   # adapters, recipes, resources
 pnpm --filter @rackmcp/integration run probe     # telemetry plumbing
+pnpm --filter @rackmcp/integration run quit      # graceful quit runs destroy() cleanly
 ```
 
 New here? Start with the

@@ -193,11 +193,12 @@ unset, use these locations:
 | --- | --- | --- |
 | macOS | `~/Library/Application Support/Rack2` | `<dir>/plugins/` |
 | Windows | `%LOCALAPPDATA%\Rack2` (falls back to `~\AppData\Local\Rack2` if `LOCALAPPDATA` is unset) | `<dir>\plugins\` |
-| Linux / other | `~/.Rack2` | `<dir>/plugins/` |
+| Linux / other | `$XDG_DATA_HOME/Rack2` (default `~/.local/share/Rack2`) | `<dir>/plugins/` |
 
-> **Linux note:** the code returns `~/.Rack2` (the `default` branch of
-> `defaultRackUserDir()`), **not** `~/.local/share/Rack2`. If your Rack build uses a
-> different location, launch the server with `RACKMCP_RACK_USER_DIR` pointing at it.
+> These match Rack 2.6.6's own defaults (`asset.cpp`). Rack 2.5+ moved the Linux
+> directory from `~/.Rack2` to the XDG data dir and migrates the old folder itself.
+> The server also honours Rack's `RACK_USER_DIR` environment variable; its own
+> `RACKMCP_RACK_USER_DIR` takes precedence over both.
 
 ## Verifying the install
 

@@ -35,7 +35,7 @@ startup, pairing, and persistence events there. Default locations (Rack 2):
 | --- | --- | --- |
 | macOS | `~/Library/Application Support/Rack2` | `~/Library/Application Support/Rack2/log.txt` |
 | Windows | `%LOCALAPPDATA%\Rack2` | `%LOCALAPPDATA%\Rack2\log.txt` |
-| Linux | `~/.Rack2` | `~/.Rack2/log.txt` |
+| Linux | `~/.local/share/Rack2` | `~/.local/share/Rack2/log.txt` |
 
 If you launched Rack against a non-default user directory, `log.txt` lives under **that**
 directory. The MCP server must be pointed at the same directory (see

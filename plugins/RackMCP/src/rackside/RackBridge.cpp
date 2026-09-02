@@ -92,6 +92,7 @@ void RackBridge::stop() {
     }
     // Scrub the in-memory secret.
     std::fill(secret_.begin(), secret_.end(), '\0');
+    INFO("RackMCP: bridge stopped (threads joined, manifest removed)");
 }
 
 bool RackBridge::enqueueCommand(BridgeCommand& cmd) {

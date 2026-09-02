@@ -32,7 +32,7 @@ Default Rack user directory:
 
 - macOS: `~/Library/Application Support/Rack2`
 - Windows: `%LOCALAPPDATA%\Rack2`
-- Linux: `~/.Rack2`
+- Linux: `~/.local/share/Rack2`
 
 ## Prerequisites
 

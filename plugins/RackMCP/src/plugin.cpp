@@ -3,21 +3,22 @@
 
 rack::plugin::Plugin* pluginInstance = NULL;
 
-/**
- * Deterministic service shutdown. Rack has no plugin-level destroy() callback,
- * so the bridge is stopped from a static destructor: threads are joined and
- * sockets closed without touching any Rack API (safe after Rack teardown).
- */
-namespace {
-struct ServiceLifecycle {
-    ~ServiceLifecycle() { rackmcp::RackBridge::instance().stop(); }
-};
-static ServiceLifecycle serviceLifecycle;
-} // namespace
-
 void init(rack::plugin::Plugin* p) {
     pluginInstance = p;
     p->addModel(modelBridge);
     p->addModel(modelProbe);
     rackmcp::RackBridge::instance().start();
+}
+
+/**
+ * Deterministic service shutdown. Rack calls destroy() on the UI thread before
+ * it unloads the plugin library (plugin/callbacks.hpp), with the bridge threads
+ * still alive and, on Windows, without the loader lock held. That makes it the
+ * only correct place to join threads: a static destructor would run inside
+ * FreeLibrary/DllMain(DLL_PROCESS_DETACH), where joining a thread deadlocks,
+ * and would in any case run after RackBridge's own destructor. stop() is
+ * idempotent, so the RackBridge destructor is a harmless safety net.
+ */
+void destroy() {
+    rackmcp::RackBridge::instance().stop();
 }

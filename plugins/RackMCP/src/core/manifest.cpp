@@ -81,7 +81,13 @@ bool writeManifest(const std::string& instancesDir, const ManifestData& data) {
 }
 
 void removeManifest(const std::string& instancesDir, const std::string& instanceId) {
+#if defined(_WIN32)
+    std::wstring w = utf8ToWide(manifestPath(instancesDir, instanceId));
+    if (!w.empty())
+        DeleteFileW(w.c_str());
+#else
     std::remove(manifestPath(instancesDir, instanceId).c_str());
+#endif
 }
 
 } // namespace rackmcp
