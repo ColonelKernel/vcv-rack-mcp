@@ -64,11 +64,30 @@ export function createServer(config: ServerConfig): {
           if (Buffer.byteLength(serialized, "utf8") > RESULT_LIMIT_BYTES) {
             throw new Error(`result exceeds ${RESULT_LIMIT_BYTES} bytes`);
           }
+          // Validate the result against the tool's declared output schema.
+          // Non-fatal by design: a mismatch means the schema and the actual
+          // wire shape (typically the bridge payload) have drifted, which we
+          // surface loudly rather than silently return unchecked data — but we
+          // never turn a working read into a hard error over it. The live
+          // snapshot-smoke integration test parses the real payload strictly,
+          // so genuine drift also fails CI loudly.
+          const outcome = tool.spec.output.safeParse(structured);
+          if (!outcome.success) {
+            const issues = outcome.error.issues
+              .slice(0, 8)
+              .map((i) => `${i.path.join(".") || "<root>"}: ${i.message}`);
+            log.error("tool output failed schema validation", {
+              tool: tool.spec.name,
+              issueCount: outcome.error.issues.length,
+              issues,
+            });
+          }
           audit.record({
             tool: tool.spec.name,
             outcome: "ok",
             instanceId: conn.selectedInstance?.instanceId,
             durationMs: Date.now() - started,
+            ...(outcome.success ? {} : { schemaValid: false }),
           });
           return {
             content: [{ type: "text" as const, text: serialized }],

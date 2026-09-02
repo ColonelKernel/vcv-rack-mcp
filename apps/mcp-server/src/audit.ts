@@ -30,6 +30,12 @@ export class AuditLog {
     operationId?: string | undefined;
     errorCode?: string | undefined;
     durationMs?: number | undefined;
+    /**
+     * False when the tool result failed validation against its declared output
+     * schema (see server.ts). Omitted when the result validated. Recorded so
+     * schema drift between the bridge and packages/schemas is auditable.
+     */
+    schemaValid?: boolean | undefined;
   }): void {
     const file = this.ensureFile();
     if (!file) return;

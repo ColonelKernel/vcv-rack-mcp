@@ -16,10 +16,6 @@
         "unknown"
       ]
     },
-    "bridgeVersion": {
-      "type": "string",
-      "maxLength": 64
-    },
     "instanceId": {
       "type": "string",
       "format": "uuid",
@@ -35,26 +31,23 @@
       "minimum": 1,
       "maximum": 9007199254740991
     },
-    "patchPath": {
+    "patchName": {
       "anyOf": [
         {
           "type": "string",
-          "maxLength": 4096
+          "maxLength": 512
         },
         {
           "type": "null"
         }
       ]
     },
-    "pathDisclosed": {
-      "type": "boolean"
-    },
     "saved": {
       "type": "boolean"
     },
-    "fingerprint": {
-      "type": "string",
-      "pattern": "^[0-9a-f]{64}$"
+    "sampleRate": {
+      "type": "number",
+      "minimum": 0
     },
     "modules": {
       "maxItems": 4096,
@@ -71,46 +64,66 @@
             "minLength": 1,
             "maxLength": 255
           },
+          "pluginVersion": {
+            "type": "string",
+            "maxLength": 64
+          },
           "modelSlug": {
             "type": "string",
             "minLength": 1,
             "maxLength": 255
           },
-          "pluginVersion": {
-            "type": "string",
-            "maxLength": 64
-          },
-          "name": {
+          "modelName": {
             "type": "string",
             "maxLength": 256
           },
-          "position": {
-            "type": "object",
-            "properties": {
-              "x": {
-                "type": "integer",
-                "minimum": -4096,
-                "maximum": 4096
-              },
-              "y": {
-                "type": "integer",
-                "minimum": -256,
-                "maximum": 256
-              }
-            },
-            "required": [
-              "x",
-              "y"
-            ],
-            "additionalProperties": false
-          },
-          "sizeHp": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 1024
-          },
           "bypassed": {
             "type": "boolean"
+          },
+          "isBridge": {
+            "type": "boolean"
+          },
+          "isProbe": {
+            "type": "boolean"
+          },
+          "gridPosition": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "integer",
+                    "minimum": -4096,
+                    "maximum": 4096
+                  },
+                  "y": {
+                    "type": "integer",
+                    "minimum": -256,
+                    "maximum": 256
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "gridWidth": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1024
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "params": {
             "maxItems": 4096,
@@ -127,51 +140,79 @@
                   "type": "string",
                   "maxLength": 256
                 },
-                "unit": {
-                  "type": "string",
-                  "maxLength": 64
-                },
                 "value": {
                   "type": "number"
                 },
                 "minValue": {
-                  "type": "number"
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "maxValue": {
-                  "type": "number"
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "defaultValue": {
-                  "type": "number"
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "normalizedValue": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "displayValue": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 256
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "unit": {
                   "type": "string",
-                  "maxLength": 256
+                  "maxLength": 64
                 },
-                "labels": {
-                  "maxItems": 64,
-                  "type": "array",
-                  "items": {
-                    "type": "string",
-                    "maxLength": 128
-                  }
-                },
-                "warnings": {
-                  "type": "array",
-                  "items": {
-                    "type": "string",
-                    "maxLength": 512
-                  }
+                "snapped": {
+                  "type": "boolean"
                 }
               },
               "required": [
                 "paramId",
                 "name",
-                "unit",
                 "value",
                 "minValue",
                 "maxValue",
                 "defaultValue",
-                "displayValue"
+                "normalizedValue",
+                "displayValue",
+                "unit",
+                "snapped"
               ],
               "additionalProperties": false
             }
@@ -187,27 +228,32 @@
                   "minimum": 0,
                   "maximum": 65535
                 },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "input",
+                    "output"
+                  ]
+                },
                 "name": {
                   "type": "string",
                   "maxLength": 256
                 },
-                "description": {
-                  "type": "string",
-                  "maxLength": 1024
+                "channels": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 16
                 },
-                "connectedCableIds": {
-                  "maxItems": 1024,
-                  "type": "array",
-                  "items": {
-                    "type": "string",
-                    "pattern": "^(0|[1-9][0-9]{0,18})$"
-                  }
+                "connected": {
+                  "type": "boolean"
                 }
               },
               "required": [
                 "portId",
+                "type",
                 "name",
-                "connectedCableIds"
+                "channels",
+                "connected"
               ],
               "additionalProperties": false
             }
@@ -223,85 +269,88 @@
                   "minimum": 0,
                   "maximum": 65535
                 },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "input",
+                    "output"
+                  ]
+                },
                 "name": {
                   "type": "string",
                   "maxLength": 256
                 },
-                "description": {
-                  "type": "string",
-                  "maxLength": 1024
+                "channels": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 16
                 },
-                "connectedCableIds": {
-                  "maxItems": 1024,
-                  "type": "array",
-                  "items": {
-                    "type": "string",
-                    "pattern": "^(0|[1-9][0-9]{0,18})$"
-                  }
+                "connected": {
+                  "type": "boolean"
                 }
               },
               "required": [
                 "portId",
+                "type",
                 "name",
-                "connectedCableIds"
+                "channels",
+                "connected"
               ],
               "additionalProperties": false
             }
           },
-          "leftExpanderModuleId": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^(0|[1-9][0-9]{0,18})$"
+          "expanders": {
+            "type": "object",
+            "properties": {
+              "left": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]{0,18})$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
-              {
-                "type": "null"
+              "right": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]{0,18})$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               }
-            ]
-          },
-          "rightExpanderModuleId": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^(0|[1-9][0-9]{0,18})$"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "isBridge": {
-            "type": "boolean"
-          },
-          "isProbe": {
-            "type": "boolean"
+            },
+            "required": [
+              "left",
+              "right"
+            ],
+            "additionalProperties": false
           },
           "opaqueState": {},
-          "warnings": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "maxLength": 512
-            }
+          "opaqueStateDisclosed": {
+            "type": "boolean"
           }
         },
         "required": [
           "moduleId",
           "pluginSlug",
-          "modelSlug",
           "pluginVersion",
-          "name",
-          "position",
-          "sizeHp",
+          "modelSlug",
+          "modelName",
           "bypassed",
+          "isBridge",
+          "isProbe",
+          "gridPosition",
+          "gridWidth",
           "params",
           "inputs",
           "outputs",
-          "leftExpanderModuleId",
-          "rightExpanderModuleId",
-          "isBridge",
-          "isProbe",
-          "warnings"
+          "expanders"
         ],
         "additionalProperties": false
       }
@@ -320,7 +369,7 @@
             "type": "string",
             "pattern": "^(0|[1-9][0-9]{0,18})$"
           },
-          "outputPortId": {
+          "outputId": {
             "type": "integer",
             "minimum": 0,
             "maximum": 65535
@@ -329,40 +378,48 @@
             "type": "string",
             "pattern": "^(0|[1-9][0-9]{0,18})$"
           },
-          "inputPortId": {
+          "inputId": {
             "type": "integer",
             "minimum": 0,
             "maximum": 65535
           },
           "color": {
-            "type": "string",
-            "pattern": "^#[0-9a-fA-F]{6}$"
+            "anyOf": [
+              {
+                "type": "string",
+                "const": ""
+              },
+              {
+                "type": "string",
+                "pattern": "^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$"
+              }
+            ]
           }
         },
         "required": [
           "cableId",
           "outputModuleId",
-          "outputPortId",
+          "outputId",
           "inputModuleId",
-          "inputPortId",
+          "inputId",
           "color"
         ],
         "additionalProperties": false
       }
     },
-    "bridgePresent": {
-      "type": "boolean"
+    "bridgeModuleCount": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
     },
-    "probeModuleIds": {
-      "maxItems": 64,
-      "type": "array",
-      "items": {
-        "type": "string",
-        "pattern": "^(0|[1-9][0-9]{0,18})$"
-      }
+    "probeModuleCount": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
     },
-    "includesOpaqueState": {
-      "type": "boolean"
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
     },
     "warnings": {
       "type": "array",
@@ -375,19 +432,17 @@
   "required": [
     "rackVersion",
     "rackEdition",
-    "bridgeVersion",
     "instanceId",
     "sessionId",
     "patchEpoch",
-    "patchPath",
-    "pathDisclosed",
+    "patchName",
     "saved",
-    "fingerprint",
+    "sampleRate",
     "modules",
     "cables",
-    "bridgePresent",
-    "probeModuleIds",
-    "includesOpaqueState",
+    "bridgeModuleCount",
+    "probeModuleCount",
+    "fingerprint",
     "warnings"
   ],
   "additionalProperties": false

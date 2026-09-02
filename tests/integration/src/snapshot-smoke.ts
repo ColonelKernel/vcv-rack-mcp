@@ -6,6 +6,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { BridgeClient, BridgeRequestError, loadPairingSecret } from "@rackmcp/protocol";
+import { PatchSnapshot } from "@rackmcp/schemas";
 import { RackHarness } from "./harness.js";
 
 const scratch = process.env.RACKMCP_TEST_DIR ?? mkdtempSync(join(tmpdir(), "rackmcp-"));
@@ -118,6 +119,20 @@ try {
     ok("bridge moduleId is decimal string", /^\d+$/.test(bridge.moduleId as string));
     ok("bridge has grid position", bridge.gridPosition !== null);
     ok("bridge params array present", Array.isArray(bridge.params));
+  }
+  // The declared PatchSnapshot schema must match the real bridge wire shape.
+  {
+    const parsed = PatchSnapshot.safeParse(snap);
+    ok(
+      "snapshot matches PatchSnapshot schema",
+      parsed.success,
+      parsed.success
+        ? ""
+        : parsed.error.issues
+            .slice(0, 8)
+            .map((i) => `${i.path.join(".") || "<root>"}: ${i.message}`)
+            .join("; "),
+    );
   }
   ok("snapshot bridgeModuleCount", (snap.bridgeModuleCount as number) >= 1);
   ok(
