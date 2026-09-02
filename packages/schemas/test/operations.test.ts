@@ -96,11 +96,19 @@ describe("PatchOperation", () => {
       "initialParams",
       "bypassed",
     ]);
+    // Keys that a spread does not materialize as an own enumerable property
+    // (they mutate the prototype or are non-enumerable), so injecting them does
+    // not actually add an extra field for the schema to reject.
+    const nonOwnKeys = new Set(["__proto__", "constructor", "prototype"]);
     fc.assert(
       fc.property(fc.string({ minLength: 1, maxLength: 20 }), fc.anything(), (key, val) => {
         fc.pre(!legitimateKeys.has(key));
+        fc.pre(!nonOwnKeys.has(key));
         fc.pre(val !== undefined);
-        const res = PatchOperation.safeParse({ ...validAdd, [key]: val });
+        const injected = { ...validAdd, [key]: val };
+        // Guard against any other key that fails to land as an own property.
+        fc.pre(Object.prototype.hasOwnProperty.call(injected, key));
+        const res = PatchOperation.safeParse(injected);
         expect(res.success).toBe(false);
       }),
       { numRuns: 300 },

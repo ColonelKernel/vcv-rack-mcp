@@ -206,6 +206,13 @@ import {
   savePatch,
 } from "./patchfiles.js";
 export { bindServerConfig };
+import {
+  commitAttachProbe,
+  detachProbe,
+  listProbes,
+  previewAttachProbe,
+  readProbe,
+} from "./telemetry.js";
 
 // ---------------------------------------------------------------------------
 // Mutation
@@ -298,11 +305,11 @@ const HANDLERS: Record<string, ToolHandler> = {
   preview_clear_patch: previewClearPatch,
   commit_clear_patch: commitClearPatch,
   restore_checkpoint: restoreCheckpoint,
-  list_probes: pending("list_probes"),
-  preview_attach_probe: pending("preview_attach_probe"),
-  commit_attach_probe: pending("commit_attach_probe"),
-  read_probe: pending("read_probe"),
-  detach_probe: pending("detach_probe"),
+  list_probes: listProbes,
+  preview_attach_probe: previewAttachProbe,
+  commit_attach_probe: commitAttachProbe,
+  read_probe: readProbe,
+  detach_probe: detachProbe,
 };
 
 export interface RegisteredTool {

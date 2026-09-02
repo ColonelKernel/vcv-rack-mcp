@@ -54,6 +54,12 @@ export class RackHarness {
           autoCheckUpdates: false,
           checkAppUpdates: false,
           autosaveInterval: 15.0,
+          // Mirror a realistic engine config.
+          sampleRate: 44100.0,
+          threadCount: 1,
+          safeMode: false,
+          cpuMeter: false,
+          frameRateLimit: 60.0,
         },
         null,
         2,
@@ -77,21 +83,17 @@ export class RackHarness {
   private seedAutosave(): void {
     const autosaveDir = join(this.userDir, "autosave");
     mkdirSync(autosaveDir, { recursive: true });
-    const patch = {
-      version: "2.6.6",
-      zoom: 1.0,
-      modules: [
-        {
-          id: 1,
-          plugin: "RackMCP",
-          model: "Bridge",
-          version: "2.0.0",
-          params: [{ id: 0, value: 0.0 }],
-          pos: [0, 0],
-        },
-      ],
-      cables: [],
-    };
+    const modules: unknown[] = [
+      {
+        id: 1,
+        plugin: "RackMCP",
+        model: "Bridge",
+        version: "2.0.0",
+        params: [{ id: 0, value: 0.0 }],
+        pos: [0, 0],
+      },
+    ];
+    const patch = { version: "2.6.6", zoom: 1.0, modules, cables: [] };
     writeFileSync(join(autosaveDir, "patch.json"), JSON.stringify(patch, null, 2));
   }
 
@@ -104,6 +106,10 @@ export class RackHarness {
     // windows?" prompt would block the next launch forever. One reversible
     // per-user preference key; Rack manages its own window state anyway.
     spawnSync("defaults", ["write", "com.vcvrack.rack2pro", "ApplePersistenceIgnoreState", "-bool", "true"]);
+    // Disable macOS App Nap for Rack: launched in the background (the test driver
+    // holds focus), an automated GUI app is otherwise a candidate for napping,
+    // which throttles its threads. Cheap, reversible, and good hygiene.
+    spawnSync("defaults", ["write", "com.vcvrack.rack2pro", "NSAppSleepDisabled", "-bool", "true"]);
     // Clear macOS window-restore state so a previously crashed/killed test
     // run cannot trigger the blocking "reopen windows?" prompt at launch.
     rmSync(join(homedir(), "Library", "Saved Application State", "com.vcvrack.rack2pro.savedState"), {

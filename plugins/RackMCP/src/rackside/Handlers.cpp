@@ -11,6 +11,7 @@
 #include "rackside/RackBridge.hpp"
 #include "rackside/Snapshot.hpp"
 #include "rackside/PatchFiles.hpp"
+#include "rackside/Telemetry.hpp"
 #include "rackside/Transaction.hpp"
 
 namespace rackmcp {
@@ -57,8 +58,10 @@ static std::string handleStatusGet(const BridgeCommand& cmd) {
 static std::string handleMetricsGet(const BridgeCommand& cmd) {
     RackBridge& bridge = RackBridge::instance();
     ServiceCounters& c = bridge.server().counters();
+    int64_t engineBlock = APP->engine ? APP->engine->getBlock() : -1;
+    int64_t engineFrame = APP->engine ? APP->engine->getFrame() : -1;
     json_t* payload = json_pack(
-        "{s:I, s:I, s:I, s:I, s:I, s:I, s:I, s:I, s:f, s:f, s:f}",
+        "{s:I, s:I, s:I, s:I, s:I, s:I, s:I, s:I, s:f, s:f, s:f, s:I, s:I}",
         "commandQueueDepth", (json_int_t) bridge.commandQueue().size(),
         "commandQueueMaxDepth", (json_int_t) bridge.commandQueue().maxDepth(),
         "requestsHandled", (json_int_t) (c.requestsInline.load() + c.requestsEnqueued.load()),
@@ -69,7 +72,9 @@ static std::string handleMetricsGet(const BridgeCommand& cmd) {
         "bridgeReconnects", (json_int_t) c.connectionsAccepted.load(),
         "uiPumpLastDrainMs", (double) bridge.pumpLastDrainMs.load(),
         "uiPumpMaxDrainMs", (double) bridge.pumpMaxDrainMs.load(),
-        "requestLatencyEwmaMs", 0.0);
+        "requestLatencyEwmaMs", 0.0,
+        "engineBlock", (json_int_t) engineBlock,
+        "engineFrame", (json_int_t) engineFrame);
     return buildResOk(cmd.requestId, payload);
 }
 
@@ -263,6 +268,26 @@ static std::string handlePatchClear(const BridgeCommand& cmd, bool& cacheable) {
     return patchFileOutcomeToFrame(cmd, o);
 }
 
+
+static std::string handleProbeList(const BridgeCommand& cmd) {
+    return buildResOk(cmd.requestId, buildProbeList());
+}
+
+static std::string handleProbeRead(const BridgeCommand& cmd) {
+    json_t* p = cmd.payload;
+    const char* midStr = p ? json_string_value(json_object_get(p, "probeModuleId")) : NULL;
+    if (!midStr)
+        return buildResError(cmd.requestId, "MODULE_NOT_FOUND", "probeModuleId required", false, false);
+    int64_t mid = strtoll(midStr, NULL, 10);
+    int inputId = (int) json_integer_value(json_object_get(p, "probeInputId"));
+    std::string errorCode;
+    json_t* reading = buildProbeReading(mid, inputId, errorCode);
+    if (!reading)
+        return buildResError(cmd.requestId, errorCode.c_str(), "probe telemetry unavailable", false,
+                             false);
+    return buildResOk(cmd.requestId, reading);
+}
+
 std::string executeCommand(const BridgeCommand& cmd) {
     // Idempotency: replay cached mutation results by operation id.
     RackBridge& bridge = RackBridge::instance();
@@ -318,6 +343,10 @@ std::string executeCommand(const BridgeCommand& cmd) {
         result.frame = handlePatchLoad(cmd, result.cacheable);
     else if (cmd.method == "patchfile.clear")
         result.frame = handlePatchClear(cmd, result.cacheable);
+    else if (cmd.method == "probe.list")
+        result.frame = handleProbeList(cmd);
+    else if (cmd.method == "probe.read")
+        result.frame = handleProbeRead(cmd);
     else
         result.frame = buildResError(cmd.requestId, "UNSUPPORTED_OPERATION",
                                      "method not implemented in this bridge phase: " + cmd.method,

@@ -164,6 +164,11 @@ export const BridgeMetrics = z
     uiPumpLastDrainMs: z.number().min(0),
     uiPumpMaxDrainMs: z.number().min(0),
     requestLatencyEwmaMs: z.number().min(0),
+    // Engine progress counters. Advance only while the audio/fallback engine
+    // thread is stepping; a stalled engine (e.g. no master module and paused)
+    // holds them constant. Useful for troubleshoot-silence diagnostics.
+    engineBlock: z.number().int().min(0).optional(),
+    engineFrame: z.number().int().min(0).optional(),
   })
   .strict();
 export type BridgeMetrics = z.infer<typeof BridgeMetrics>;
