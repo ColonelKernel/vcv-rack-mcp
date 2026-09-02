@@ -3,6 +3,7 @@
 // available only for inputs fed by an explicit Probe cable — there is no
 // arbitrary output-port sampling.
 #include <string>
+#include <cstdint>
 
 typedef struct json_t json_t;
 

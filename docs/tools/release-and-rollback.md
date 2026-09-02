@@ -109,7 +109,7 @@ each platform to an SDK target and a runner:
 | `platform.name` | Runner | SDK target | `ARCH_NAME` in the filename |
 | --- | --- | --- | --- |
 | `mac-arm64` | `macos-latest` | `mac-arm64` | `mac-arm64` |
-| `mac-x64` | `macos-13` | `mac-x64` | `mac-x64` |
+| `mac-x64` | `macos-15-intel` | `mac-x64` | `mac-x64` |
 | `lin-x64` | `ubuntu-latest` | `lin-x64` | `lin-x64` |
 | `win-x64` | `windows-latest` (MSYS2 MINGW64) | `win-x64` | `win-x64` |
 

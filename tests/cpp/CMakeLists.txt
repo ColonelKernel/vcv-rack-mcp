@@ -50,8 +50,9 @@ endif()
 add_library(rackmcp_core STATIC ${RACKMCP_CORE_SOURCES})
 target_include_directories(rackmcp_core PUBLIC ${RACKMCP_PLUGIN_SRC})
 if(WIN32)
-  # tcp.cpp uses Winsock2 on Windows (MSVC honours the #pragma comment; MinGW does not).
-  target_link_libraries(rackmcp_core PUBLIC ws2_32)
+  # tcp.cpp uses Winsock2 and crypto.cpp uses BCryptGenRandom on Windows
+  # (MSVC honours #pragma comment(lib); MinGW does not, so link explicitly).
+  target_link_libraries(rackmcp_core PUBLIC ws2_32 bcrypt)
 endif()
 if(JANSSON_FOUND)
   target_link_libraries(rackmcp_core PUBLIC PkgConfig::JANSSON)

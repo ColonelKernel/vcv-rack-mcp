@@ -11,6 +11,7 @@
 #include "core/manifest.hpp"
 #include "core/queues.hpp"
 #include "core/service.hpp"
+#include <cstdint>
 
 namespace rackmcp {
 

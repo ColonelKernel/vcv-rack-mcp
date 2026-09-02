@@ -68,7 +68,7 @@ packaged but not locally verified against a running Rack.
 | Platform | Arch | Plugin build | Server build | Status |
 | --- | --- | --- | --- | --- |
 | macOS | arm64 (Apple Silicon) | CI (`mac-arm64`) | CI (macos-latest) | **Verified live** |
-| macOS | x64 (Intel) | CI (`mac-x64`, macos-13) | CI (macos-latest) | CI-built only |
+| macOS | x64 (Intel) | CI (`mac-x64`, macos-15-intel) | CI (macos-latest) | CI-built only |
 | Linux | x64 | CI (`lin-x64`, ubuntu-latest) | CI (ubuntu-latest) | CI-built only |
 | Windows | x64 | CI (`win-x64`, windows-latest, MSYS2 MINGW64) | CI (windows-latest) | CI-built only |
 

@@ -14,4 +14,12 @@ SOURCES += $(wildcard src/rackside/*.cpp)
 DISTRIBUTABLES += res
 DISTRIBUTABLES += LICENSE
 
+# arch.mk is safe to include early (plugin.mk includes it again). On Windows
+# the bridge needs Winsock2 (tcp.cpp) and CNG (crypto.cpp: BCryptGenRandom);
+# MinGW does not honour #pragma comment(lib), so link them explicitly.
+include $(RACK_DIR)/arch.mk
+ifdef ARCH_WIN
+	LDFLAGS += -lws2_32 -lbcrypt
+endif
+
 include $(RACK_DIR)/plugin.mk

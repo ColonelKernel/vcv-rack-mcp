@@ -3,6 +3,7 @@
 // these read live Rack engine/widget state. Opaque module `data` is excluded
 // unless explicitly requested. All values are serialized as jansson json_t.
 #include <string>
+#include <cstdint>
 
 typedef struct json_t json_t;
 

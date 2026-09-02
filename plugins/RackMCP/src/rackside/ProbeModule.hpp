@@ -7,6 +7,7 @@
 
 #include "core/queues.hpp"
 #include "core/telemetry.hpp"
+#include <cstdint>
 
 namespace rackmcp {
 
