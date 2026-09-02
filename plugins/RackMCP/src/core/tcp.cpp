@@ -31,7 +31,7 @@ typedef int socklen_t;
 // Never let a peer that vanished mid-write raise SIGPIPE and kill the host
 // process: MSG_NOSIGNAL on Linux, SO_NOSIGPIPE (set per socket) on macOS/BSD;
 // Windows has no SIGPIPE.
-#if defined(MSG_NOSIGNAL)
+#if defined(MSG_NOSIGNAL) && !defined(_WIN32)
 #define RMCP_SEND_FLAGS MSG_NOSIGNAL
 #else
 #define RMCP_SEND_FLAGS 0
