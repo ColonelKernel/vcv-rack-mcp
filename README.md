@@ -13,11 +13,45 @@ and recovery, and read signal telemetry through a dedicated Probe module —
 all locally, over an authenticated loopback bridge, with explicit confirmation
 for destructive changes.
 
-**Repository:** <https://github.com/ColonelKernel/vcv-rack-mcp> (private)
+**Repository:** <https://github.com/ColonelKernel/vcv-rack-mcp>
 
 ```bash
 git clone https://github.com/ColonelKernel/vcv-rack-mcp.git
 ```
+
+## Demo
+
+A live session — building and validating a subtractive-synth voice through the
+MCP against a running Rack instance. This is **real tool output**, captured by
+`pnpm --filter @rackmcp/integration run demo`:
+
+![Rack MCP live session: discover a Rack instance, build the basic subtractive recipe, then describe and validate the patch — all with zero errors](docs/assets/demo.svg)
+
+<details>
+<summary>Transcript (text)</summary>
+
+```text
+$ claude  # with the rack-mcp server connected
+
+→ list_rack_instances
+  ← 1 instance   id 4b1c944e…  (patch: Untitled)
+→ get_rack_status
+  ← connected   Rack 2.6.6 Pro   bridge protocol v1
+→ list_installed_models
+  ← 53 models installed  (Core, Fundamental, RackMCP)
+
+→ resolve recipe "basic_mono_subtractive"
+  ← resolved   6 roles → installed models, 0 unresolved
+→ build_patch  (19 operations)
+  ← committed   19 ops applied   fingerprint d197ec233a98…
+
+→ describe_patch
+  ← Signal path into Audio 2: VCO → VCF → MIDI to CV → ADSR EG → VCA → Audio 2
+→ validate_patch
+  ← valid ✓   0 errors · 0 warnings · 0 info
+```
+
+</details>
 
 ## Components
 

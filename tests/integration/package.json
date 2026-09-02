@@ -13,7 +13,8 @@
     "write": "tsx src/write-smoke.ts",
     "files": "tsx src/files-smoke.ts",
     "probe": "tsx src/probe-smoke.ts",
-    "recipes": "tsx src/recipes-smoke.ts"
+    "recipes": "tsx src/recipes-smoke.ts",
+    "demo": "tsx src/demo.ts"
   },
   "dependencies": {
     "@rackmcp/adapters": "workspace:*",

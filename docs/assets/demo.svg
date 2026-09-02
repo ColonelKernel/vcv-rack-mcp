@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="504" viewBox="0 0 820 504" role="img" aria-label="Rack MCP live session transcript">
+  <rect x="0.5" y="0.5" width="819" height="503" rx="11" fill="#0d1117" stroke="#30363d"/>
+  <rect x="0.5" y="0.5" width="819" height="44" rx="11" fill="#161b22"/>
+  <rect x="0.5" y="33" width="819" height="12" fill="#161b22"/>
+  <circle cx="24" cy="22" r="6" fill="#ff5f56"/>
+  <circle cx="44" cy="22" r="6" fill="#febc2e"/>
+  <circle cx="64" cy="22" r="6" fill="#27c93f"/>
+  <text x="410" y="27" text-anchor="middle" fill="#768390" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="12.5">rack-mcp — live MCP session (real output)</text>
+  <g font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13.5" xml:space="preserve">
+    <text x="22" y="79.5" fill="#7ee787">$ claude  # with the rack-mcp server connected</text>
+    <text x="22" y="121.5" fill="#58a6ff">→ list_rack_instances</text>
+    <text x="22" y="142.5" fill="#adbac7">  ← 1 instance   id 4b1c944e…  (patch: Untitled)</text>
+    <text x="22" y="163.5" fill="#58a6ff">→ get_rack_status</text>
+    <text x="22" y="184.5" fill="#56d364">  ← connected   Rack 2.6.6 Pro   bridge protocol v1</text>
+    <text x="22" y="205.5" fill="#58a6ff">→ list_installed_models</text>
+    <text x="22" y="226.5" fill="#adbac7">  ← 53 models installed  (Core, Fundamental, RackMCP)</text>
+    <text x="22" y="268.5" fill="#58a6ff">→ resolve recipe "basic_mono_subtractive"</text>
+    <text x="22" y="289.5" fill="#56d364">  ← resolved   6 roles → installed models, 0 unresolved</text>
+    <text x="22" y="310.5" fill="#58a6ff">→ build_patch  (19 operations)</text>
+    <text x="22" y="331.5" fill="#56d364">  ← committed   19 ops applied   fingerprint d197ec233a98…</text>
+    <text x="22" y="373.5" fill="#58a6ff">→ describe_patch</text>
+    <text x="22" y="394.5" fill="#adbac7">  ← Signal path into Audio 2: VCO → VCF → MIDI to CV → ADSR EG → VCA → Audio 2</text>
+    <text x="22" y="415.5" fill="#58a6ff">→ validate_patch</text>
+    <text x="22" y="436.5" fill="#56d364">  ← valid ✓   0 errors · 0 warnings · 0 info</text>
+    <text x="22" y="478.5" fill="#768390" font-style="italic"># a subtractive voice, built and validated through MCP — safely, reversibly.</text>
+  </g>
+</svg>
