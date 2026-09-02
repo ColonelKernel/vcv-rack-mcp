@@ -12,10 +12,13 @@
     "mcp": "tsx src/mcp-smoke.ts",
     "write": "tsx src/write-smoke.ts",
     "files": "tsx src/files-smoke.ts",
-    "probe": "tsx src/probe-smoke.ts"
+    "probe": "tsx src/probe-smoke.ts",
+    "recipes": "tsx src/recipes-smoke.ts"
   },
   "dependencies": {
+    "@rackmcp/adapters": "workspace:*",
     "@rackmcp/protocol": "workspace:*",
+    "@rackmcp/recipes": "workspace:*",
     "@rackmcp/schemas": "workspace:*",
     "@modelcontextprotocol/sdk": "1.30.0"
   }

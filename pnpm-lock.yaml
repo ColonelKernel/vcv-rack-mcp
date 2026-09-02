@@ -35,9 +35,15 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: 1.30.0
         version: 1.30.0(zod@4.4.3)
+      '@rackmcp/adapters':
+        specifier: workspace:*
+        version: link:../../packages/adapters
       '@rackmcp/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
+      '@rackmcp/recipes':
+        specifier: workspace:*
+        version: link:../../packages/recipes
       '@rackmcp/schemas':
         specifier: workspace:*
         version: link:../../packages/schemas
@@ -45,8 +51,29 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
 
+  packages/adapters:
+    dependencies:
+      '@rackmcp/schemas':
+        specifier: workspace:*
+        version: link:../schemas
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
+
   packages/protocol:
     dependencies:
+      '@rackmcp/schemas':
+        specifier: workspace:*
+        version: link:../schemas
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
+
+  packages/recipes:
+    dependencies:
+      '@rackmcp/adapters':
+        specifier: workspace:*
+        version: link:../adapters
       '@rackmcp/schemas':
         specifier: workspace:*
         version: link:../schemas
@@ -65,9 +92,15 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: 1.30.0
         version: 1.30.0(zod@4.4.3)
+      '@rackmcp/adapters':
+        specifier: workspace:*
+        version: link:../../packages/adapters
       '@rackmcp/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
+      '@rackmcp/recipes':
+        specifier: workspace:*
+        version: link:../../packages/recipes
       '@rackmcp/schemas':
         specifier: workspace:*
         version: link:../../packages/schemas

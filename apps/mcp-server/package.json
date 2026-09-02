@@ -9,14 +9,16 @@
   },
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && node copy-assets.mjs",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
     "test": "vitest run"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.0",
+    "@rackmcp/adapters": "workspace:*",
     "@rackmcp/protocol": "workspace:*",
+    "@rackmcp/recipes": "workspace:*",
     "@rackmcp/schemas": "workspace:*",
     "zod": "4.4.3"
   }

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { getTool, TOOLS, type ToolSpec, LIMITS } from "@rackmcp/schemas";
+import { getAdapter, hasAdapter } from "@rackmcp/adapters";
 import type { ConnectionManager } from "./connection.js";
 import { ToolError } from "./errors.js";
 import { randomUUID } from "node:crypto";
@@ -144,10 +145,11 @@ const inspectModel: ToolHandler = async (args, ctx) => {
     pluginSlug: args.pluginSlug,
     modelSlug: args.modelSlug,
   });
+  const adapter = getAdapter(String(args.pluginSlug), String(args.modelSlug));
   return {
     ...meta,
-    adapterAvailable: false,
-    adapterVersionRange: null,
+    adapterAvailable: adapter !== undefined,
+    adapterVersionRange: adapter?.pluginVersionRange ?? null,
   };
 };
 
@@ -164,10 +166,13 @@ const inspectModule: ToolHandler = async (args, ctx) => {
     includeOpaqueState: args.includeOpaqueState ?? false,
     expectedPatchEpoch: args.expectedPatchEpoch,
   });
+  const pluginSlug = String(res.module.pluginSlug ?? "");
+  const modelSlug = String(res.module.modelSlug ?? "");
+  const available = hasAdapter(pluginSlug, modelSlug);
   return {
     module: res.module,
-    adapterAvailable: false,
-    semanticsConfidence: "none",
+    adapterAvailable: available,
+    semanticsConfidence: available ? "adapter" : "none",
   };
 };
 
@@ -181,11 +186,16 @@ const inspectParameter: ToolHandler = async (args, ctx) => {
   if (!param) {
     throw new ToolError("PARAMETER_NOT_FOUND", `module ${args.moduleId} has no param ${args.paramId}`);
   }
+  const pluginSlug = String(res.module.pluginSlug ?? "");
+  const modelSlug = String(res.module.modelSlug ?? "");
+  const role = getAdapter(pluginSlug, modelSlug)?.params.find(
+    (p) => p.paramId === (args.paramId as number),
+  )?.role;
   return {
     param,
     moduleId: args.moduleId,
-    adapterRole: null,
-    semanticsConfidence: "none",
+    adapterRole: role ?? null,
+    semanticsConfidence: role ? "adapter" : "none",
   };
 };
 

@@ -1,0 +1,6279 @@
+[
+  {
+    "pluginSlug": "Core",
+    "modelSlug": "AudioInterface",
+    "modelName": "Audio 8",
+    "pluginVersion": "2.6.6",
+    "params": [],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "To \"device output 1\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "To \"device output 2\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "input",
+        "name": "To \"device output 3\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "input",
+        "name": "To \"device output 4\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "input",
+        "name": "To \"device output 5\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "input",
+        "name": "To \"device output 6\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 6,
+        "type": "input",
+        "name": "To \"device output 7\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 7,
+        "type": "input",
+        "name": "To \"device output 8\"",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "From \"device input 1\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "output",
+        "name": "From \"device input 2\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "output",
+        "name": "From \"device input 3\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "output",
+        "name": "From \"device input 4\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "output",
+        "name": "From \"device input 5\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "output",
+        "name": "From \"device input 6\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 6,
+        "type": "output",
+        "name": "From \"device input 7\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 7,
+        "type": "output",
+        "name": "From \"device input 8\"",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Core",
+    "modelSlug": "AudioInterface16",
+    "modelName": "Audio 16",
+    "pluginVersion": "2.6.6",
+    "params": [],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "To \"device output 1\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "To \"device output 2\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "input",
+        "name": "To \"device output 3\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "input",
+        "name": "To \"device output 4\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "input",
+        "name": "To \"device output 5\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "input",
+        "name": "To \"device output 6\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 6,
+        "type": "input",
+        "name": "To \"device output 7\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 7,
+        "type": "input",
+        "name": "To \"device output 8\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 8,
+        "type": "input",
+        "name": "To \"device output 9\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 9,
+        "type": "input",
+        "name": "To \"device output 10\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 10,
+        "type": "input",
+        "name": "To \"device output 11\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 11,
+        "type": "input",
+        "name": "To \"device output 12\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 12,
+        "type": "input",
+        "name": "To \"device output 13\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 13,
+        "type": "input",
+        "name": "To \"device output 14\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 14,
+        "type": "input",
+        "name": "To \"device output 15\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 15,
+        "type": "input",
+        "name": "To \"device output 16\"",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "From \"device input 1\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "output",
+        "name": "From \"device input 2\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "output",
+        "name": "From \"device input 3\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "output",
+        "name": "From \"device input 4\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "output",
+        "name": "From \"device input 5\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "output",
+        "name": "From \"device input 6\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 6,
+        "type": "output",
+        "name": "From \"device input 7\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 7,
+        "type": "output",
+        "name": "From \"device input 8\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 8,
+        "type": "output",
+        "name": "From \"device input 9\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 9,
+        "type": "output",
+        "name": "From \"device input 10\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 10,
+        "type": "output",
+        "name": "From \"device input 11\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 11,
+        "type": "output",
+        "name": "From \"device input 12\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 12,
+        "type": "output",
+        "name": "From \"device input 13\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 13,
+        "type": "output",
+        "name": "From \"device input 14\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 14,
+        "type": "output",
+        "name": "From \"device input 15\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 15,
+        "type": "output",
+        "name": "From \"device input 16\"",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Core",
+    "modelSlug": "AudioInterface2",
+    "modelName": "Audio 2",
+    "pluginVersion": "2.6.6",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "Level",
+        "value": 1,
+        "minValue": 0,
+        "maxValue": 2,
+        "defaultValue": 1,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": " dB",
+        "snapped": false
+      }
+    ],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "To \"device output 1\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "To \"device output 2\"",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "From \"device input 1\"",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "output",
+        "name": "From \"device input 2\"",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Core",
+    "modelSlug": "Blank",
+    "modelName": "Blank",
+    "pluginVersion": "2.6.6",
+    "params": [],
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "pluginSlug": "Core",
+    "modelSlug": "CV-CC",
+    "modelName": "CV to MIDI CC",
+    "pluginVersion": "2.6.6",
+    "params": [],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "Cell 1",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "Cell 2",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "input",
+        "name": "Cell 3",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "input",
+        "name": "Cell 4",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "input",
+        "name": "Cell 5",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "input",
+        "name": "Cell 6",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 6,
+        "type": "input",
+        "name": "Cell 7",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 7,
+        "type": "input",
+        "name": "Cell 8",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 8,
+        "type": "input",
+        "name": "Cell 9",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 9,
+        "type": "input",
+        "name": "Cell 10",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 10,
+        "type": "input",
+        "name": "Cell 11",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 11,
+        "type": "input",
+        "name": "Cell 12",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 12,
+        "type": "input",
+        "name": "Cell 13",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 13,
+        "type": "input",
+        "name": "Cell 14",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 14,
+        "type": "input",
+        "name": "Cell 15",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 15,
+        "type": "input",
+        "name": "Cell 16",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "pluginSlug": "Core",
+    "modelSlug": "CV-Gate",
+    "modelName": "Gate to MIDI",
+    "pluginVersion": "2.6.6",
+    "params": [],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "Cell 1",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "Cell 2",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "input",
+        "name": "Cell 3",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "input",
+        "name": "Cell 4",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "input",
+        "name": "Cell 5",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "input",
+        "name": "Cell 6",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 6,
+        "type": "input",
+        "name": "Cell 7",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 7,
+        "type": "input",
+        "name": "Cell 8",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 8,
+        "type": "input",
+        "name": "Cell 9",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 9,
+        "type": "input",
+        "name": "Cell 10",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 10,
+        "type": "input",
+        "name": "Cell 11",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 11,
+        "type": "input",
+        "name": "Cell 12",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 12,
+        "type": "input",
+        "name": "Cell 13",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 13,
+        "type": "input",
+        "name": "Cell 14",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 14,
+        "type": "input",
+        "name": "Cell 15",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 15,
+        "type": "input",
+        "name": "Cell 16",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "pluginSlug": "Core",
+    "modelSlug": "CV-MIDI",
+    "modelName": "CV to MIDI",
+    "pluginVersion": "2.6.6",
+    "params": [],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "1V/octave pitch",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "Gate",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "input",
+        "name": "Velocity",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "input",
+        "name": "Aftertouch",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "input",
+        "name": "Pitch wheel",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "input",
+        "name": "Mod wheel",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 6,
+        "type": "input",
+        "name": "Clock",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 7,
+        "type": "input",
+        "name": "Volume",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 8,
+        "type": "input",
+        "name": "Pan",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 9,
+        "type": "input",
+        "name": "Start trigger",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 10,
+        "type": "input",
+        "name": "Stop trigger",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 11,
+        "type": "input",
+        "name": "Continue trigger",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "pluginSlug": "Core",
+    "modelSlug": "MIDI-Map",
+    "modelName": "MIDI Map",
+    "pluginVersion": "2.6.6",
+    "params": [],
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "pluginSlug": "Core",
+    "modelSlug": "MIDICCToCVInterface",
+    "modelName": "MIDI CC to CV",
+    "pluginVersion": "2.6.6",
+    "params": [],
+    "inputs": [],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Cell 1",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "output",
+        "name": "Cell 2",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "output",
+        "name": "Cell 3",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "output",
+        "name": "Cell 4",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "output",
+        "name": "Cell 5",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "output",
+        "name": "Cell 6",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 6,
+        "type": "output",
+        "name": "Cell 7",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 7,
+        "type": "output",
+        "name": "Cell 8",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 8,
+        "type": "output",
+        "name": "Cell 9",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 9,
+        "type": "output",
+        "name": "Cell 10",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 10,
+        "type": "output",
+        "name": "Cell 11",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 11,
+        "type": "output",
+        "name": "Cell 12",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 12,
+        "type": "output",
+        "name": "Cell 13",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 13,
+        "type": "output",
+        "name": "Cell 14",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 14,
+        "type": "output",
+        "name": "Cell 15",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 15,
+        "type": "output",
+        "name": "Cell 16",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Core",
+    "modelSlug": "MIDIToCVInterface",
+    "modelName": "MIDI to CV",
+    "pluginVersion": "2.6.6",
+    "params": [],
+    "inputs": [],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "1V/octave pitch",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "output",
+        "name": "Gate",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "output",
+        "name": "Velocity",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "output",
+        "name": "Aftertouch",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "output",
+        "name": "Pitch wheel",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "output",
+        "name": "Mod wheel",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 6,
+        "type": "output",
+        "name": "Retrigger",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 7,
+        "type": "output",
+        "name": "Clock",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 8,
+        "type": "output",
+        "name": "Clock divider",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 9,
+        "type": "output",
+        "name": "Start trigger",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 10,
+        "type": "output",
+        "name": "Stop trigger",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 11,
+        "type": "output",
+        "name": "Continue trigger",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Core",
+    "modelSlug": "MIDITriggerToCVInterface",
+    "modelName": "MIDI to Gate",
+    "pluginVersion": "2.6.6",
+    "params": [],
+    "inputs": [],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Gate 1",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "output",
+        "name": "Gate 2",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "output",
+        "name": "Gate 3",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "output",
+        "name": "Gate 4",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "output",
+        "name": "Gate 5",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "output",
+        "name": "Gate 6",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 6,
+        "type": "output",
+        "name": "Gate 7",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 7,
+        "type": "output",
+        "name": "Gate 8",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 8,
+        "type": "output",
+        "name": "Gate 9",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 9,
+        "type": "output",
+        "name": "Gate 10",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 10,
+        "type": "output",
+        "name": "Gate 11",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 11,
+        "type": "output",
+        "name": "Gate 12",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 12,
+        "type": "output",
+        "name": "Gate 13",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 13,
+        "type": "output",
+        "name": "Gate 14",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 14,
+        "type": "output",
+        "name": "Gate 15",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 15,
+        "type": "output",
+        "name": "Gate 16",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Core",
+    "modelSlug": "Notes",
+    "modelName": "Notes",
+    "pluginVersion": "2.6.6",
+    "params": [],
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "8vert",
+    "modelName": "8vert",
+    "pluginVersion": "2.6.4",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "Row 1 gain",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 1,
+        "name": "Row 2 gain",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 2,
+        "name": "Row 3 gain",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 3,
+        "name": "Row 4 gain",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 4,
+        "name": "Row 5 gain",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 5,
+        "name": "Row 6 gain",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 6,
+        "name": "Row 7 gain",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 7,
+        "name": "Row 8 gain",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      }
+    ],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "Row 1",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "Row 2",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "input",
+        "name": "Row 3",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "input",
+        "name": "Row 4",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "input",
+        "name": "Row 5",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "input",
+        "name": "Row 6",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 6,
+        "type": "input",
+        "name": "Row 7",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 7,
+        "type": "input",
+        "name": "Row 8",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Row 1",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "output",
+        "name": "Row 2",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "output",
+        "name": "Row 3",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "output",
+        "name": "Row 4",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "output",
+        "name": "Row 5",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "output",
+        "name": "Row 6",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 6,
+        "type": "output",
+        "name": "Row 7",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 7,
+        "type": "output",
+        "name": "Row 8",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "ADSR",
+    "modelName": "ADSR EG",
+    "pluginVersion": "2.6.4",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "Attack",
+        "value": 0.5,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0.5,
+        "normalizedValue": 0.5,
+        "displayValue": "100",
+        "unit": " ms",
+        "snapped": false
+      },
+      {
+        "paramId": 1,
+        "name": "Decay",
+        "value": 0.5,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0.5,
+        "normalizedValue": 0.5,
+        "displayValue": "100",
+        "unit": " ms",
+        "snapped": false
+      },
+      {
+        "paramId": 2,
+        "name": "Sustain",
+        "value": 0.5,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0.5,
+        "normalizedValue": 0.5,
+        "displayValue": "50",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 3,
+        "name": "Release",
+        "value": 0.5,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0.5,
+        "normalizedValue": 0.5,
+        "displayValue": "100",
+        "unit": " ms",
+        "snapped": false
+      },
+      {
+        "paramId": 4,
+        "name": "Attack CV",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 5,
+        "name": "Decay CV",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 6,
+        "name": "Sustain CV",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 7,
+        "name": "Release CV",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 8,
+        "name": "Push",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      }
+    ],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "Attack",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "Decay",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "input",
+        "name": "Sustain",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "input",
+        "name": "Release",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "input",
+        "name": "Gate",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "input",
+        "name": "Retrigger",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Envelope",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "CVMix",
+    "modelName": "CV Mix",
+    "pluginVersion": "2.6.4",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "Level 1",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 1,
+        "name": "Level 2",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 2,
+        "name": "Level 3",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      }
+    ],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "CV 1",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "CV 2",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "input",
+        "name": "CV 3",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Mix",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "Compare",
+    "modelName": "Compare",
+    "pluginVersion": "2.6.4",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "B offset",
+        "value": 0,
+        "minValue": -10,
+        "maxValue": 10,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": " V",
+        "snapped": false
+      }
+    ],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "A",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "B",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Maximum",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "output",
+        "name": "Minimum",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "output",
+        "name": "Clip",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "output",
+        "name": "Limit",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "output",
+        "name": "Clip gate",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "output",
+        "name": "Limit gate",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 6,
+        "type": "output",
+        "name": "A>B",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 7,
+        "type": "output",
+        "name": "A<B",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "Delay",
+    "modelName": "Delay",
+    "pluginVersion": "2.6.4",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "Time",
+        "value": 0.6747425198554993,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0.6747425198554993,
+        "normalizedValue": 0.6747425198554993,
+        "displayValue": "0.5",
+        "unit": " s",
+        "snapped": false
+      },
+      {
+        "paramId": 1,
+        "name": "Feedback",
+        "value": 0.5,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0.5,
+        "normalizedValue": 0.5,
+        "displayValue": "50",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 2,
+        "name": "Tone",
+        "value": 0.5,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0.5,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 3,
+        "name": "Mix",
+        "value": 0.5,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0.5,
+        "normalizedValue": 0.5,
+        "displayValue": "50",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 4,
+        "name": "Time CV",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 5,
+        "name": "Feedback CV",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 6,
+        "name": "Tone CV",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 7,
+        "name": "Mix CV",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      }
+    ],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "Time",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "Feedback",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "input",
+        "name": "Tone",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "input",
+        "name": "Mix",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "input",
+        "name": "Audio",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "input",
+        "name": "Clock",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Mix",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "output",
+        "name": "Wet",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "Fade",
+    "modelName": "Fade",
+    "pluginVersion": "2.6.4",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "Crossfade",
+        "value": 0.5,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0.5,
+        "normalizedValue": 0.5,
+        "displayValue": "50",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 1,
+        "name": "Crossfade CV",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      }
+    ],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "Crossfade",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "Ch 1",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "input",
+        "name": "Ch 2",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Ch 1",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "output",
+        "name": "Ch 2",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "Gates",
+    "modelName": "Gates",
+    "pluginVersion": "2.6.4",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "Gate length",
+        "value": -3.321928024291992,
+        "minValue": -9.965784072875977,
+        "maxValue": 3.321928024291992,
+        "defaultValue": -3.321928024291992,
+        "normalizedValue": 0.5,
+        "displayValue": "100",
+        "unit": " ms",
+        "snapped": false
+      },
+      {
+        "paramId": 1,
+        "name": "Reset flip/flop",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      }
+    ],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "Gate length",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "Gate",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "input",
+        "name": "Reset flip/flop",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Rising edge trigger",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "output",
+        "name": "Falling edge trigger",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "output",
+        "name": "Flip",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "output",
+        "name": "Flop",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "output",
+        "name": "Gate",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "output",
+        "name": "Gate delay",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "LFO",
+    "modelName": "LFO",
+    "pluginVersion": "2.6.4",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "Offset",
+        "value": 1,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 1,
+        "normalizedValue": 1,
+        "displayValue": "Unipolar",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 1,
+        "name": "Invert",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 2,
+        "name": "Frequency",
+        "value": 1,
+        "minValue": -8,
+        "maxValue": 10,
+        "defaultValue": 1,
+        "normalizedValue": 0.5,
+        "displayValue": "1",
+        "unit": "x",
+        "snapped": false
+      },
+      {
+        "paramId": 3,
+        "name": "Frequency modulation",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 4,
+        "name": "",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "0",
+        "unit": "",
+        "snapped": false
+      },
+      {
+        "paramId": 5,
+        "name": "Pulse width",
+        "value": 0.5,
+        "minValue": 0.009999999776482582,
+        "maxValue": 0.9900000095367432,
+        "defaultValue": 0.5,
+        "normalizedValue": 0.5,
+        "displayValue": "50",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 6,
+        "name": "Pulse width modulation",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      }
+    ],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "Frequency modulation",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "#2",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "input",
+        "name": "Reset",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "input",
+        "name": "Pulse width modulation",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "input",
+        "name": "Clock",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Sine",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "output",
+        "name": "Triangle",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "output",
+        "name": "Sawtooth",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "output",
+        "name": "Square",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "LFO2",
+    "modelName": "Wavetable LFO",
+    "pluginVersion": "2.6.4",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "Offset",
+        "value": 1,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 1,
+        "normalizedValue": 1,
+        "displayValue": "Unipolar",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 1,
+        "name": "Invert",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 2,
+        "name": "Frequency",
+        "value": 1,
+        "minValue": -8,
+        "maxValue": 10,
+        "defaultValue": 1,
+        "normalizedValue": 0.5,
+        "displayValue": "1",
+        "unit": "x",
+        "snapped": false
+      },
+      {
+        "paramId": 3,
+        "name": "Wavetable position",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 4,
+        "name": "Frequency modulation",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 5,
+        "name": "Wavetable position CV",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      }
+    ],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "Frequency modulation",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "Reset",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "input",
+        "name": "Wavetable position",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "input",
+        "name": "Clock",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Wavetable",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "Logic",
+    "modelName": "Logic",
+    "pluginVersion": "2.6.4",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "B",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      }
+    ],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "A",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "B",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "NOT A",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "output",
+        "name": "NOT B",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "output",
+        "name": "OR",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "output",
+        "name": "NOR",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "output",
+        "name": "AND",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "output",
+        "name": "NAND",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 6,
+        "type": "output",
+        "name": "XOR",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 7,
+        "type": "output",
+        "name": "XNOR",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "Merge",
+    "modelName": "Merge",
+    "pluginVersion": "2.6.4",
+    "params": [],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "Channel 1",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "Channel 2",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "input",
+        "name": "Channel 3",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "input",
+        "name": "Channel 4",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "input",
+        "name": "Channel 5",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "input",
+        "name": "Channel 6",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 6,
+        "type": "input",
+        "name": "Channel 7",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 7,
+        "type": "input",
+        "name": "Channel 8",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 8,
+        "type": "input",
+        "name": "Channel 9",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 9,
+        "type": "input",
+        "name": "Channel 10",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 10,
+        "type": "input",
+        "name": "Channel 11",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 11,
+        "type": "input",
+        "name": "Channel 12",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 12,
+        "type": "input",
+        "name": "Channel 13",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 13,
+        "type": "input",
+        "name": "Channel 14",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 14,
+        "type": "input",
+        "name": "Channel 15",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 15,
+        "type": "input",
+        "name": "Channel 16",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Polyphonic",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "MidSide",
+    "modelName": "Mid/Side",
+    "pluginVersion": "2.6.4",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "Encoder width",
+        "value": 1,
+        "minValue": 0,
+        "maxValue": 2,
+        "defaultValue": 1,
+        "normalizedValue": 0.5,
+        "displayValue": "100",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 1,
+        "name": "Decoder width",
+        "value": 1,
+        "minValue": 0,
+        "maxValue": 2,
+        "defaultValue": 1,
+        "normalizedValue": 0.5,
+        "displayValue": "100",
+        "unit": "%",
+        "snapped": false
+      }
+    ],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "Encoder width",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "Encoder left",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "input",
+        "name": "Encoder right",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "input",
+        "name": "Decoder width",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "input",
+        "name": "Decoder mid",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "input",
+        "name": "Decoder side",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Encoder mid",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "output",
+        "name": "Encoder side",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "output",
+        "name": "Decoder left",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "output",
+        "name": "Decoder right",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "Mixer",
+    "modelName": "Mix",
+    "pluginVersion": "2.6.4",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "Level",
+        "value": 1,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 1,
+        "normalizedValue": 1,
+        "displayValue": "100",
+        "unit": "%",
+        "snapped": false
+      }
+    ],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "Channel 1",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "Channel 2",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "input",
+        "name": "Channel 3",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "input",
+        "name": "Channel 4",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "input",
+        "name": "Channel 5",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "input",
+        "name": "Channel 6",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Mix",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "Mult",
+    "modelName": "Mult",
+    "pluginVersion": "2.6.4",
+    "params": [],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "Mult",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Mult 1",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "output",
+        "name": "Mult 2",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "output",
+        "name": "Mult 3",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "output",
+        "name": "Mult 4",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "output",
+        "name": "Mult 5",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "output",
+        "name": "Mult 6",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 6,
+        "type": "output",
+        "name": "Mult 7",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 7,
+        "type": "output",
+        "name": "Mult 8",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "Mutes",
+    "modelName": "Mutes",
+    "pluginVersion": "2.6.4",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "Row 1 mute",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 1,
+        "name": "Row 2 mute",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 2,
+        "name": "Row 3 mute",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 3,
+        "name": "Row 4 mute",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 4,
+        "name": "Row 5 mute",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 5,
+        "name": "Row 6 mute",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 6,
+        "name": "Row 7 mute",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 7,
+        "name": "Row 8 mute",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 8,
+        "name": "Row 9 mute",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 9,
+        "name": "Row 10 mute",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      }
+    ],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "Row 1",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "Row 2",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "input",
+        "name": "Row 3",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "input",
+        "name": "Row 4",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "input",
+        "name": "Row 5",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "input",
+        "name": "Row 6",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 6,
+        "type": "input",
+        "name": "Row 7",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 7,
+        "type": "input",
+        "name": "Row 8",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 8,
+        "type": "input",
+        "name": "Row 9",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 9,
+        "type": "input",
+        "name": "Row 10",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Row 1",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "output",
+        "name": "Row 2",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "output",
+        "name": "Row 3",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "output",
+        "name": "Row 4",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "output",
+        "name": "Row 5",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "output",
+        "name": "Row 6",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 6,
+        "type": "output",
+        "name": "Row 7",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 7,
+        "type": "output",
+        "name": "Row 8",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 8,
+        "type": "output",
+        "name": "Row 9",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 9,
+        "type": "output",
+        "name": "Row 10",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "Noise",
+    "modelName": "Noise",
+    "pluginVersion": "2.6.4",
+    "params": [],
+    "inputs": [],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "White noise",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "output",
+        "name": "Pink noise",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "output",
+        "name": "Red noise",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "output",
+        "name": "Violet noise",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "output",
+        "name": "Blue noise",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "output",
+        "name": "Gray noise",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 6,
+        "type": "output",
+        "name": "Black noise",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "Octave",
+    "modelName": "Octave",
+    "pluginVersion": "2.6.4",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "Shift",
+        "value": 0,
+        "minValue": -4,
+        "maxValue": 4,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": " oct",
+        "snapped": true
+      }
+    ],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "1V/octave pitch",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "Octave shift CV",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Pitch",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "Process",
+    "modelName": "Process",
+    "pluginVersion": "2.6.4",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "Slew",
+        "value": -9.965784072875977,
+        "minValue": -9.965784072875977,
+        "maxValue": 3.321928024291992,
+        "defaultValue": -9.965784072875977,
+        "normalizedValue": 0,
+        "displayValue": "0",
+        "unit": " ms/V",
+        "snapped": false
+      },
+      {
+        "paramId": 1,
+        "name": "Gate",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      }
+    ],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "Slew",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "Voltage",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "input",
+        "name": "Gate",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Sample & hold",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "output",
+        "name": "Sample & hold 2",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "output",
+        "name": "Track & hold",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "output",
+        "name": "Hold & track",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "output",
+        "name": "Slew",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "output",
+        "name": "Glide",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "Pulses",
+    "modelName": "Pulses",
+    "pluginVersion": "2.6.4",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "Row 1 push",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 1,
+        "name": "Row 2 push",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 2,
+        "name": "Row 3 push",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 3,
+        "name": "Row 4 push",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 4,
+        "name": "Row 5 push",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 5,
+        "name": "Row 6 push",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 6,
+        "name": "Row 7 push",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 7,
+        "name": "Row 8 push",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 8,
+        "name": "Row 9 push",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 9,
+        "name": "Row 10 push",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      }
+    ],
+    "inputs": [],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Row 1 trigger",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "output",
+        "name": "Row 2 trigger",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "output",
+        "name": "Row 3 trigger",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "output",
+        "name": "Row 4 trigger",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "output",
+        "name": "Row 5 trigger",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "output",
+        "name": "Row 6 trigger",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 6,
+        "type": "output",
+        "name": "Row 7 trigger",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 7,
+        "type": "output",
+        "name": "Row 8 trigger",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 8,
+        "type": "output",
+        "name": "Row 9 trigger",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 9,
+        "type": "output",
+        "name": "Row 10 trigger",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 10,
+        "type": "output",
+        "name": "Row 1 gate",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 11,
+        "type": "output",
+        "name": "Row 2 gate",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 12,
+        "type": "output",
+        "name": "Row 3 gate",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 13,
+        "type": "output",
+        "name": "Row 4 gate",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 14,
+        "type": "output",
+        "name": "Row 5 gate",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 15,
+        "type": "output",
+        "name": "Row 6 gate",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 16,
+        "type": "output",
+        "name": "Row 7 gate",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 17,
+        "type": "output",
+        "name": "Row 8 gate",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 18,
+        "type": "output",
+        "name": "Row 9 gate",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 19,
+        "type": "output",
+        "name": "Row 10 gate",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "Push",
+    "modelName": "Push",
+    "pluginVersion": "2.6.4",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "Push",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 1,
+        "name": "Hold",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      }
+    ],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "Hold",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "Push",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Trigger",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "output",
+        "name": "Gate",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "Quantizer",
+    "modelName": "Quantizer",
+    "pluginVersion": "2.6.4",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "Pre-offset",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": " semitones",
+        "snapped": false
+      }
+    ],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "1V/octave pitch",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Pitch",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "Random",
+    "modelName": "Random",
+    "pluginVersion": "2.6.4",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "Internal trigger rate",
+        "value": 1,
+        "minValue": -8.965784072875977,
+        "maxValue": 10.965784072875977,
+        "defaultValue": 1,
+        "normalizedValue": 0.5,
+        "displayValue": "2",
+        "unit": " Hz",
+        "snapped": false
+      },
+      {
+        "paramId": 1,
+        "name": "Shape",
+        "value": 1,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 1,
+        "normalizedValue": 1,
+        "displayValue": "100",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 2,
+        "name": "Offset",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "Bipolar",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 3,
+        "name": "",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "0",
+        "unit": "",
+        "snapped": false
+      },
+      {
+        "paramId": 4,
+        "name": "Trigger probability",
+        "value": 1,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 1,
+        "normalizedValue": 1,
+        "displayValue": "100",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 5,
+        "name": "Random spread",
+        "value": 1,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 1,
+        "normalizedValue": 1,
+        "displayValue": "100",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 6,
+        "name": "Internal trigger rate CV",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 7,
+        "name": "Shape CV",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 8,
+        "name": "Trigger probability CV",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 9,
+        "name": "Random spread CV",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      }
+    ],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "Internal trigger rate",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "Shape",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "input",
+        "name": "Trigger",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "input",
+        "name": "External",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "input",
+        "name": "Trigger probability",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "input",
+        "name": "Random spread",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Stepped",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "output",
+        "name": "Linear",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "output",
+        "name": "Smooth",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "output",
+        "name": "Exponential",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "output",
+        "name": "Trigger",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "RandomValues",
+    "modelName": "Random Values",
+    "pluginVersion": "2.6.4",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "Push",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      }
+    ],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "Trigger",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Random 1",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "output",
+        "name": "Random 2",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "output",
+        "name": "Random 3",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "output",
+        "name": "Random 4",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "output",
+        "name": "Random 5",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "output",
+        "name": "Random 6",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 6,
+        "type": "output",
+        "name": "Random 7",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "Rescale",
+    "modelName": "Rescale",
+    "pluginVersion": "2.6.4",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "Gain",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 1,
+        "name": "Offset",
+        "value": 0,
+        "minValue": -10,
+        "maxValue": 10,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": " V",
+        "snapped": false
+      },
+      {
+        "paramId": 2,
+        "name": "Maximum",
+        "value": 10,
+        "minValue": -10,
+        "maxValue": 10,
+        "defaultValue": 10,
+        "normalizedValue": 1,
+        "displayValue": "10",
+        "unit": " V",
+        "snapped": false
+      },
+      {
+        "paramId": 3,
+        "name": "Minimum",
+        "value": -10,
+        "minValue": -10,
+        "maxValue": 10,
+        "defaultValue": -10,
+        "normalizedValue": 0,
+        "displayValue": "-10",
+        "unit": " V",
+        "snapped": false
+      }
+    ],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "Signal",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Signal",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "SEQ3",
+    "modelName": "SEQ 3",
+    "pluginVersion": "2.6.4",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "Tempo",
+        "value": 1,
+        "minValue": -2,
+        "maxValue": 4,
+        "defaultValue": 1,
+        "normalizedValue": 0.5,
+        "displayValue": "120",
+        "unit": " bpm",
+        "snapped": false
+      },
+      {
+        "paramId": 1,
+        "name": "Run",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 2,
+        "name": "Reset",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 3,
+        "name": "Steps",
+        "value": 8,
+        "minValue": 1,
+        "maxValue": 8,
+        "defaultValue": 8,
+        "normalizedValue": 1,
+        "displayValue": "8",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 4,
+        "name": "CV 1 step 1",
+        "value": 0,
+        "minValue": -10,
+        "maxValue": 10,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": " V",
+        "snapped": false
+      },
+      {
+        "paramId": 5,
+        "name": "CV 1 step 2",
+        "value": 0,
+        "minValue": -10,
+        "maxValue": 10,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": " V",
+        "snapped": false
+      },
+      {
+        "paramId": 6,
+        "name": "CV 1 step 3",
+        "value": 0,
+        "minValue": -10,
+        "maxValue": 10,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": " V",
+        "snapped": false
+      },
+      {
+        "paramId": 7,
+        "name": "CV 1 step 4",
+        "value": 0,
+        "minValue": -10,
+        "maxValue": 10,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": " V",
+        "snapped": false
+      },
+      {
+        "paramId": 8,
+        "name": "CV 1 step 5",
+        "value": 0,
+        "minValue": -10,
+        "maxValue": 10,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": " V",
+        "snapped": false
+      },
+      {
+        "paramId": 9,
+        "name": "CV 1 step 6",
+        "value": 0,
+        "minValue": -10,
+        "maxValue": 10,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": " V",
+        "snapped": false
+      },
+      {
+        "paramId": 10,
+        "name": "CV 1 step 7",
+        "value": 0,
+        "minValue": -10,
+        "maxValue": 10,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": " V",
+        "snapped": false
+      },
+      {
+        "paramId": 11,
+        "name": "CV 1 step 8",
+        "value": 0,
+        "minValue": -10,
+        "maxValue": 10,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": " V",
+        "snapped": false
+      },
+      {
+        "paramId": 12,
+        "name": "CV 2 step 1",
+        "value": 0,
+        "minValue": -10,
+        "maxValue": 10,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": " V",
+        "snapped": false
+      },
+      {
+        "paramId": 13,
+        "name": "CV 2 step 2",
+        "value": 0,
+        "minValue": -10,
+        "maxValue": 10,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": " V",
+        "snapped": false
+      },
+      {
+        "paramId": 14,
+        "name": "CV 2 step 3",
+        "value": 0,
+        "minValue": -10,
+        "maxValue": 10,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": " V",
+        "snapped": false
+      },
+      {
+        "paramId": 15,
+        "name": "CV 2 step 4",
+        "value": 0,
+        "minValue": -10,
+        "maxValue": 10,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": " V",
+        "snapped": false
+      },
+      {
+        "paramId": 16,
+        "name": "CV 2 step 5",
+        "value": 0,
+        "minValue": -10,
+        "maxValue": 10,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": " V",
+        "snapped": false
+      },
+      {
+        "paramId": 17,
+        "name": "CV 2 step 6",
+        "value": 0,
+        "minValue": -10,
+        "maxValue": 10,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": " V",
+        "snapped": false
+      },
+      {
+        "paramId": 18,
+        "name": "CV 2 step 7",
+        "value": 0,
+        "minValue": -10,
+        "maxValue": 10,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": " V",
+        "snapped": false
+      },
+      {
+        "paramId": 19,
+        "name": "CV 2 step 8",
+        "value": 0,
+        "minValue": -10,
+        "maxValue": 10,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": " V",
+        "snapped": false
+      },
+      {
+        "paramId": 20,
+        "name": "CV 3 step 1",
+        "value": 0,
+        "minValue": -10,
+        "maxValue": 10,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": " V",
+        "snapped": false
+      },
+      {
+        "paramId": 21,
+        "name": "CV 3 step 2",
+        "value": 0,
+        "minValue": -10,
+        "maxValue": 10,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": " V",
+        "snapped": false
+      },
+      {
+        "paramId": 22,
+        "name": "CV 3 step 3",
+        "value": 0,
+        "minValue": -10,
+        "maxValue": 10,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": " V",
+        "snapped": false
+      },
+      {
+        "paramId": 23,
+        "name": "CV 3 step 4",
+        "value": 0,
+        "minValue": -10,
+        "maxValue": 10,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": " V",
+        "snapped": false
+      },
+      {
+        "paramId": 24,
+        "name": "CV 3 step 5",
+        "value": 0,
+        "minValue": -10,
+        "maxValue": 10,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": " V",
+        "snapped": false
+      },
+      {
+        "paramId": 25,
+        "name": "CV 3 step 6",
+        "value": 0,
+        "minValue": -10,
+        "maxValue": 10,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": " V",
+        "snapped": false
+      },
+      {
+        "paramId": 26,
+        "name": "CV 3 step 7",
+        "value": 0,
+        "minValue": -10,
+        "maxValue": 10,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": " V",
+        "snapped": false
+      },
+      {
+        "paramId": 27,
+        "name": "CV 3 step 8",
+        "value": 0,
+        "minValue": -10,
+        "maxValue": 10,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": " V",
+        "snapped": false
+      },
+      {
+        "paramId": 28,
+        "name": "Step 1 trigger",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 29,
+        "name": "Step 2 trigger",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 30,
+        "name": "Step 3 trigger",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 31,
+        "name": "Step 4 trigger",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 32,
+        "name": "Step 5 trigger",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 33,
+        "name": "Step 6 trigger",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 34,
+        "name": "Step 7 trigger",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 35,
+        "name": "Step 8 trigger",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 36,
+        "name": "Tempo CV",
+        "value": 1,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 1,
+        "normalizedValue": 1,
+        "displayValue": "100",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 37,
+        "name": "Steps CV",
+        "value": 1,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 1,
+        "normalizedValue": 1,
+        "displayValue": "100",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 38,
+        "name": "Clock",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      }
+    ],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "Tempo",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "Clock",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "input",
+        "name": "Reset",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "input",
+        "name": "Steps",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "input",
+        "name": "Run",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Trigger",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "output",
+        "name": "CV 1",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "output",
+        "name": "CV 2",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "output",
+        "name": "CV 3",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "output",
+        "name": "Step 1",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "output",
+        "name": "Step 2",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 6,
+        "type": "output",
+        "name": "Step 3",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 7,
+        "type": "output",
+        "name": "Step 4",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 8,
+        "type": "output",
+        "name": "Step 5",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 9,
+        "type": "output",
+        "name": "Step 6",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 10,
+        "type": "output",
+        "name": "Step 7",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 11,
+        "type": "output",
+        "name": "Step 8",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 12,
+        "type": "output",
+        "name": "Steps",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 13,
+        "type": "output",
+        "name": "Clock",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 14,
+        "type": "output",
+        "name": "Run",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 15,
+        "type": "output",
+        "name": "Reset",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "SHASR",
+    "modelName": "Sample & Hold Analog Shift Register",
+    "pluginVersion": "2.6.4",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "Randomize",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 1,
+        "name": "Push",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 2,
+        "name": "Clear",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      }
+    ],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "Sample 1",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "Sample 2",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "input",
+        "name": "Sample 3",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "input",
+        "name": "Sample 4",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "input",
+        "name": "Sample 5",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "input",
+        "name": "Sample 6",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 6,
+        "type": "input",
+        "name": "Sample 7",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 7,
+        "type": "input",
+        "name": "Sample 8",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 8,
+        "type": "input",
+        "name": "Trigger 1",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 9,
+        "type": "input",
+        "name": "Trigger 2",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 10,
+        "type": "input",
+        "name": "Trigger 3",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 11,
+        "type": "input",
+        "name": "Trigger 4",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 12,
+        "type": "input",
+        "name": "Trigger 5",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 13,
+        "type": "input",
+        "name": "Trigger 6",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 14,
+        "type": "input",
+        "name": "Trigger 7",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 15,
+        "type": "input",
+        "name": "Trigger 8",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Sample 1",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "output",
+        "name": "Sample 2",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "output",
+        "name": "Sample 3",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "output",
+        "name": "Sample 4",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "output",
+        "name": "Sample 5",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "output",
+        "name": "Sample 6",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 6,
+        "type": "output",
+        "name": "Sample 7",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 7,
+        "type": "output",
+        "name": "Sample 8",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "Scope",
+    "modelName": "Scope",
+    "pluginVersion": "2.6.4",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "Gain 1",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 8,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "20",
+        "unit": " V/screen",
+        "snapped": true
+      },
+      {
+        "paramId": 1,
+        "name": "Offset 1",
+        "value": 0,
+        "minValue": -10,
+        "maxValue": 10,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": " V",
+        "snapped": false
+      },
+      {
+        "paramId": 2,
+        "name": "Gain 2",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 8,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "20",
+        "unit": " V/screen",
+        "snapped": true
+      },
+      {
+        "paramId": 3,
+        "name": "Offset 2",
+        "value": 0,
+        "minValue": -10,
+        "maxValue": 10,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": " V",
+        "snapped": false
+      },
+      {
+        "paramId": 4,
+        "name": "Time",
+        "value": 1,
+        "minValue": -5.643856048583984,
+        "maxValue": 7.643856048583984,
+        "defaultValue": 1,
+        "normalizedValue": 0.5,
+        "displayValue": "500",
+        "unit": " ms/screen",
+        "snapped": false
+      },
+      {
+        "paramId": 5,
+        "name": "Scope mode",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "1 & 2",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 6,
+        "name": "Trigger threshold",
+        "value": 0,
+        "minValue": -10,
+        "maxValue": 10,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": " V",
+        "snapped": false
+      },
+      {
+        "paramId": 7,
+        "name": "Trigger",
+        "value": 1,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 1,
+        "normalizedValue": 1,
+        "displayValue": "Disabled",
+        "unit": "",
+        "snapped": true
+      }
+    ],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "Ch 1",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "Ch 2",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "input",
+        "name": "External trigger",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Ch 1",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "output",
+        "name": "Ch 2",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "SequentialSwitch1",
+    "modelName": "Sequential Switch 1 to 4",
+    "pluginVersion": "2.6.4",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "Steps",
+        "value": 2,
+        "minValue": 0,
+        "maxValue": 2,
+        "defaultValue": 2,
+        "normalizedValue": 1,
+        "displayValue": "4",
+        "unit": "",
+        "snapped": true
+      }
+    ],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "Clock",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "Reset",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "input",
+        "name": "Main",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Channel 1",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "output",
+        "name": "Channel 2",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "output",
+        "name": "Channel 3",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "output",
+        "name": "Channel 4",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "SequentialSwitch2",
+    "modelName": "Sequential Switch 4 to 1",
+    "pluginVersion": "2.6.4",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "Steps",
+        "value": 2,
+        "minValue": 0,
+        "maxValue": 2,
+        "defaultValue": 2,
+        "normalizedValue": 1,
+        "displayValue": "4",
+        "unit": "",
+        "snapped": true
+      }
+    ],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "Clock",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "Reset",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "input",
+        "name": "Channel 1",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "input",
+        "name": "Channel 2",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "input",
+        "name": "Channel 3",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "input",
+        "name": "Channel 4",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Main",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "Split",
+    "modelName": "Split",
+    "pluginVersion": "2.6.4",
+    "params": [],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "Polyphonic",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Channel 1",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "output",
+        "name": "Channel 2",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "output",
+        "name": "Channel 3",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "output",
+        "name": "Channel 4",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "output",
+        "name": "Channel 5",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "output",
+        "name": "Channel 6",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 6,
+        "type": "output",
+        "name": "Channel 7",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 7,
+        "type": "output",
+        "name": "Channel 8",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 8,
+        "type": "output",
+        "name": "Channel 9",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 9,
+        "type": "output",
+        "name": "Channel 10",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 10,
+        "type": "output",
+        "name": "Channel 11",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 11,
+        "type": "output",
+        "name": "Channel 12",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 12,
+        "type": "output",
+        "name": "Channel 13",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 13,
+        "type": "output",
+        "name": "Channel 14",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 14,
+        "type": "output",
+        "name": "Channel 15",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 15,
+        "type": "output",
+        "name": "Channel 16",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "Sum",
+    "modelName": "Sum",
+    "pluginVersion": "2.6.4",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "Level",
+        "value": 1,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 1,
+        "normalizedValue": 1,
+        "displayValue": "100",
+        "unit": "%",
+        "snapped": false
+      }
+    ],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "Polyphonic",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Monophonic",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "Unity",
+    "modelName": "Unity",
+    "pluginVersion": "2.6.4",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "Channel 1 mode",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "Sum",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 1,
+        "name": "Channel 2 mode",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "Sum",
+        "unit": "",
+        "snapped": true
+      }
+    ],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "Channel 1 #1",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "Channel 1 #2",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "input",
+        "name": "Channel 1 #3",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "input",
+        "name": "Channel 1 #4",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "input",
+        "name": "Channel 1 #5",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "input",
+        "name": "Channel 1 #6",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 6,
+        "type": "input",
+        "name": "Channel 2 #1",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 7,
+        "type": "input",
+        "name": "Channel 2 #2",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 8,
+        "type": "input",
+        "name": "Channel 2 #3",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 9,
+        "type": "input",
+        "name": "Channel 2 #4",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 10,
+        "type": "input",
+        "name": "Channel 2 #5",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 11,
+        "type": "input",
+        "name": "Channel 2 #6",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Channel 1 mix",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "output",
+        "name": "Channel 1 inverse mix",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "output",
+        "name": "Channel 2 mix",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "output",
+        "name": "Channel 2 inverse mix",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "VCA",
+    "modelName": "VCA-2",
+    "pluginVersion": "2.6.4",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "Channel 1 level",
+        "value": 1,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 1,
+        "normalizedValue": 1,
+        "displayValue": "100",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 1,
+        "name": "Channel 2 level",
+        "value": 1,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 1,
+        "normalizedValue": 1,
+        "displayValue": "100",
+        "unit": "%",
+        "snapped": false
+      }
+    ],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "Channel 1 exponential CV",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "Channel 1 linear CV",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "input",
+        "name": "Channel 1",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "input",
+        "name": "Channel 2 exponential CV",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "input",
+        "name": "Channel 2 linear CV",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "input",
+        "name": "Channel 2",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Channel 1",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "output",
+        "name": "Channel 2",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "VCA-1",
+    "modelName": "VCA",
+    "pluginVersion": "2.6.4",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "Level",
+        "value": 1,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 1,
+        "normalizedValue": 1,
+        "displayValue": "100",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 1,
+        "name": "Response mode",
+        "value": 1,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 1,
+        "normalizedValue": 1,
+        "displayValue": "Linear",
+        "unit": "",
+        "snapped": true
+      }
+    ],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "CV",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "Channel",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Channel",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "VCF",
+    "modelName": "VCF",
+    "pluginVersion": "2.6.4",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "Cutoff frequency",
+        "value": 0.5,
+        "minValue": 0.006557554006576538,
+        "maxValue": 0.9934424161911011,
+        "defaultValue": 0.5,
+        "normalizedValue": 0.5000000596046448,
+        "displayValue": "261.63",
+        "unit": " Hz",
+        "snapped": false
+      },
+      {
+        "paramId": 1,
+        "name": "",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "0",
+        "unit": "",
+        "snapped": false
+      },
+      {
+        "paramId": 2,
+        "name": "Resonance",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 3,
+        "name": "Cutoff frequency CV",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 4,
+        "name": "Drive",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "100",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 5,
+        "name": "Resonance CV",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 6,
+        "name": "Drive CV",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      }
+    ],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "Frequency",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "Resonance",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "input",
+        "name": "Drive",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "input",
+        "name": "Audio",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Lowpass filter",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "output",
+        "name": "Highpass filter",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "VCMixer",
+    "modelName": "VCA Mix",
+    "pluginVersion": "2.6.4",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "Mix level",
+        "value": 1,
+        "minValue": 0,
+        "maxValue": 2,
+        "defaultValue": 1,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": " dB",
+        "snapped": false
+      },
+      {
+        "paramId": 1,
+        "name": "Channel 1 level",
+        "value": 1,
+        "minValue": 0,
+        "maxValue": 1.4142135381698608,
+        "defaultValue": 1,
+        "normalizedValue": 0.7071067690849304,
+        "displayValue": "0",
+        "unit": " dB",
+        "snapped": false
+      },
+      {
+        "paramId": 2,
+        "name": "Channel 2 level",
+        "value": 1,
+        "minValue": 0,
+        "maxValue": 1.4142135381698608,
+        "defaultValue": 1,
+        "normalizedValue": 0.7071067690849304,
+        "displayValue": "0",
+        "unit": " dB",
+        "snapped": false
+      },
+      {
+        "paramId": 3,
+        "name": "Channel 3 level",
+        "value": 1,
+        "minValue": 0,
+        "maxValue": 1.4142135381698608,
+        "defaultValue": 1,
+        "normalizedValue": 0.7071067690849304,
+        "displayValue": "0",
+        "unit": " dB",
+        "snapped": false
+      },
+      {
+        "paramId": 4,
+        "name": "Channel 4 level",
+        "value": 1,
+        "minValue": 0,
+        "maxValue": 1.4142135381698608,
+        "defaultValue": 1,
+        "normalizedValue": 0.7071067690849304,
+        "displayValue": "0",
+        "unit": " dB",
+        "snapped": false
+      }
+    ],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "Mix CV",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "Channel 1",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "input",
+        "name": "Channel 2",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "input",
+        "name": "Channel 3",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "input",
+        "name": "Channel 4",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "input",
+        "name": "Channel 1 CV",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 6,
+        "type": "input",
+        "name": "Channel 2 CV",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 7,
+        "type": "input",
+        "name": "Channel 3 CV",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 8,
+        "type": "input",
+        "name": "Channel 4 CV",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Mix",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "output",
+        "name": "Channel 1",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "output",
+        "name": "Channel 2",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "output",
+        "name": "Channel 3",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "output",
+        "name": "Channel 4",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "VCO",
+    "modelName": "VCO",
+    "pluginVersion": "2.6.4",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "0",
+        "unit": "",
+        "snapped": false
+      },
+      {
+        "paramId": 1,
+        "name": "Sync mode",
+        "value": 1,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 1,
+        "normalizedValue": 1,
+        "displayValue": "Hard",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 2,
+        "name": "Frequency",
+        "value": 0,
+        "minValue": -54,
+        "maxValue": 54,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "261.63",
+        "unit": " Hz",
+        "snapped": false
+      },
+      {
+        "paramId": 3,
+        "name": "",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "0",
+        "unit": "",
+        "snapped": false
+      },
+      {
+        "paramId": 4,
+        "name": "Frequency modulation",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 5,
+        "name": "Pulse width",
+        "value": 0.5,
+        "minValue": 0.009999999776482582,
+        "maxValue": 0.9900000095367432,
+        "defaultValue": 0.5,
+        "normalizedValue": 0.5,
+        "displayValue": "50",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 6,
+        "name": "Pulse width modulation",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 7,
+        "name": "FM mode",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "1V/octave",
+        "unit": "",
+        "snapped": true
+      }
+    ],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "1V/octave pitch",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "Frequency modulation",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "input",
+        "name": "Sync",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "input",
+        "name": "Pulse width modulation",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Sine",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "output",
+        "name": "Triangle",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "output",
+        "name": "Sawtooth",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "output",
+        "name": "Square",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "VCO2",
+    "modelName": "Wavetable VCO",
+    "pluginVersion": "2.6.4",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "0",
+        "unit": "",
+        "snapped": false
+      },
+      {
+        "paramId": 1,
+        "name": "Sync",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "Hard",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 2,
+        "name": "Frequency",
+        "value": 0,
+        "minValue": -75,
+        "maxValue": 75,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "261.63",
+        "unit": " Hz",
+        "snapped": false
+      },
+      {
+        "paramId": 3,
+        "name": "Wavetable position",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 4,
+        "name": "Frequency modulation",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 5,
+        "name": "Wavetable position CV",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 6,
+        "name": "FM mode",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "1V/octave",
+        "unit": "",
+        "snapped": true
+      }
+    ],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "Frequency modulation",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "Sync",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "input",
+        "name": "Wavetable position",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "input",
+        "name": "1V/octave pitch",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Wavetable",
+        "channels": 0,
+        "connected": false
+      }
+    ]
+  },
+  {
+    "pluginSlug": "Fundamental",
+    "modelSlug": "Viz",
+    "modelName": "Viz",
+    "pluginVersion": "2.6.4",
+    "params": [],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "Polyphonic",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "pluginSlug": "RackMCP",
+    "modelSlug": "Bridge",
+    "modelName": "RackMCP-Bridge",
+    "pluginVersion": "2.0.0",
+    "params": [
+      {
+        "paramId": 0,
+        "name": "Reset pairing secret",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "",
+        "unit": "",
+        "snapped": true
+      }
+    ],
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "pluginSlug": "RackMCP",
+    "modelSlug": "Probe",
+    "modelName": "RackMCP-Probe",
+    "pluginVersion": "2.0.0",
+    "params": [],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "Probe 1",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "Probe 2",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "input",
+        "name": "Probe 3",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "input",
+        "name": "Probe 4",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 4,
+        "type": "input",
+        "name": "Probe 5",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 5,
+        "type": "input",
+        "name": "Probe 6",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 6,
+        "type": "input",
+        "name": "Probe 7",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 7,
+        "type": "input",
+        "name": "Probe 8",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": []
+  }
+]

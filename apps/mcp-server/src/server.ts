@@ -7,6 +7,8 @@ import { AuditLog } from "./audit.js";
 import { toErrorPayload } from "./errors.js";
 import { log } from "./logger.js";
 import { bindServerConfig, buildToolTable, RESULT_LIMIT_BYTES, type ToolContext } from "./tools.js";
+import { registerPrompts } from "./prompts/index.js";
+import { registerResources } from "./resources.js";
 
 export const SERVER_VERSION = "0.1.0";
 
@@ -96,6 +98,9 @@ export function createServer(config: ServerConfig): {
       },
     );
   }
+
+  registerPrompts(server);
+  registerResources(server, { conn, audit, resultLimitBytes: RESULT_LIMIT_BYTES });
 
   log.info("rack-mcp-server built", { tools: buildToolTable().length });
   return { server, conn };

@@ -1,4 +1,4 @@
-import { appendFileSync, mkdirSync } from "node:fs";
+import { appendFileSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { log } from "./logger.js";
 
@@ -38,5 +38,28 @@ export class AuditLog {
     } catch (e) {
       log.warn("audit append failed", { error: String(e) });
     }
+  }
+
+  /** Returns up to `limit` most-recent audit entries, newest last. Never throws. */
+  recent(limit = 50): Array<Record<string, unknown>> {
+    const file = this.ensureFile();
+    if (!file) return [];
+    let text: string;
+    try {
+      text = readFileSync(file, "utf8");
+    } catch {
+      return [];
+    }
+    const lines = text.split("\n").filter((l) => l.trim().length > 0);
+    const tail = lines.slice(-Math.max(0, limit));
+    const out: Array<Record<string, unknown>> = [];
+    for (const line of tail) {
+      try {
+        out.push(JSON.parse(line) as Record<string, unknown>);
+      } catch {
+        /* skip malformed line */
+      }
+    }
+    return out;
   }
 }

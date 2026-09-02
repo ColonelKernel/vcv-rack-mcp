@@ -106,11 +106,14 @@ try {
 
   if (engineLive || (reading.channelCount as number) > 0) {
     ok("read_probe reports 1 channel", reading.channelCount === 1, `${reading.channelCount}`);
-    const ch = (reading.channels as Array<Record<string, number>>)[0]!;
-    ok("probe measures a +-5V sine (peak)", ch.peakAbs > 4.0 && ch.peakAbs < 6.0, `peak ${ch.peakAbs?.toFixed(3)}`);
-    ok("probe RMS ~ 5/sqrt2", ch.rms > 2.8 && ch.rms < 4.2, `rms ${ch.rms?.toFixed(3)}`);
-    ok("probe mean ~ 0 (DC)", Math.abs(ch.mean) < 0.6, `mean ${ch.mean?.toFixed(3)}`);
-    ok("probe min < 0 < max", ch.min < -1 && ch.max > 1, `min ${ch.min?.toFixed(2)} max ${ch.max?.toFixed(2)}`);
+    interface ProbeChannel {
+      peakAbs: number; rms: number; mean: number; min: number; max: number; nonFiniteCount: number;
+    }
+    const ch = (reading.channels as ProbeChannel[])[0]!;
+    ok("probe measures a +-5V sine (peak)", ch.peakAbs > 4.0 && ch.peakAbs < 6.0, `peak ${ch.peakAbs.toFixed(3)}`);
+    ok("probe RMS ~ 5/sqrt2", ch.rms > 2.8 && ch.rms < 4.2, `rms ${ch.rms.toFixed(3)}`);
+    ok("probe mean ~ 0 (DC)", Math.abs(ch.mean) < 0.6, `mean ${ch.mean.toFixed(3)}`);
+    ok("probe min < 0 < max", ch.min < -1 && ch.max > 1, `min ${ch.min.toFixed(2)} max ${ch.max.toFixed(2)}`);
     ok("probe no non-finite samples", ch.nonFiniteCount === 0);
     ok("read_probe sequence advances", (reading.sequence as number) > 0, `${reading.sequence}`);
   } else {
