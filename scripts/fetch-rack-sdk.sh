@@ -6,9 +6,9 @@ cd "$(dirname "$0")/.."
 RACK_SDK_VERSION="2.6.6"
 case "${1:-$(uname -s)-$(uname -m)}" in
   Darwin-arm64|mac-arm64) PLATFORM="mac-arm64"; SHA256="29414e52417992cbafa47e30f947c3c0c7a34e5c424bb83c5a0af8c24840481f" ;;
-  Darwin-x86_64|mac-x64)  PLATFORM="mac-x64";   SHA256="" ;;
+  Darwin-x86_64|mac-x64)  PLATFORM="mac-x64";   SHA256="9b8b0d7582ca25fac879f8f64de40f2481df2fd903b65f3abb5d6801689060ec" ;;
   Linux-x86_64|lin-x64)   PLATFORM="lin-x64";   SHA256="420da2452def7b195f98e3a0650c35f1e0f058a98a71840b4347d3d203618532" ;;
-  win-x64|MINGW*|MSYS*)   PLATFORM="win-x64";   SHA256="" ;;
+  win-x64|MINGW*|MSYS*)   PLATFORM="win-x64";   SHA256="12f2043311db98592bdf73a7797e8a957c47950c3c8c17c7ff6421eb0015a05c" ;;
   *) echo "unsupported platform: ${1:-$(uname -s)-$(uname -m)}" >&2; exit 1 ;;
 esac
 
