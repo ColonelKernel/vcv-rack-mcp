@@ -12,6 +12,7 @@
     "build": "pnpm -r --filter './packages/**' --filter './apps/**' run build",
     "test": "pnpm -r run test",
     "gen": "tsx scripts/gen-schemas.ts && tsx scripts/gen-cpp.ts",
+  "docs:tools": "tsx scripts/gen-tool-reference.ts",
     "check:gen": "tsx scripts/gen-schemas.ts && tsx scripts/gen-cpp.ts && git diff --exit-code -- packages/schemas/json plugins/RackMCP/src/gen",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
