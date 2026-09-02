@@ -113,6 +113,22 @@ pnpm --filter @rackmcp/integration run probe     # telemetry plumbing
 New here? Start with the
 [clean-machine install walkthrough](docs/tools/clean-machine-install.md).
 
+## Use it from Claude Code
+
+This repo ships a project-scoped [`.mcp.json`](.mcp.json) that wires up the
+`rack-mcp` server for Claude Code. After building the server, open the repo in
+Claude Code and approve the server when prompted:
+
+```bash
+pnpm install && pnpm -r build          # produces apps/mcp-server/dist/index.js
+```
+
+The server points at your real Rack user directory, so start VCV Rack 2.6.6 with
+the RackMCP plugin (add a Bridge module) before using the tools. For other hosts
+(Claude Desktop, etc.), or to run the self-contained bundle, see the
+[configuration examples](docs/tools/configuration-examples.md) and the
+[installation guide](docs/tools/installation.md).
+
 ## Unsupported environments
 
 Stated plainly: Rack Pro inside a DAW, headless Rack, and Rack versions other
