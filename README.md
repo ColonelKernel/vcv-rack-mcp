@@ -127,7 +127,7 @@ test in CI. See the [compatibility matrix](docs/tools/compatibility-matrix.md).
 ```bash
 pnpm install
 pnpm run build          # build all TS packages + the server
-pnpm run test           # 112 unit/contract tests across the workspace
+pnpm run test           # unit/contract tests across the workspace
 pnpm run gen            # regenerate JSON Schema + C++ protocol artifacts
 pnpm run check:gen      # fail if generated protocol artifacts are stale
 pnpm run docs:tools     # regenerate docs/tools/tool-reference.md from the schema

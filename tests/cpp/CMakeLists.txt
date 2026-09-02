@@ -12,7 +12,13 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Debug)
 endif()
 
-add_compile_options(-Wall -Wextra -Wpedantic)
+# Warning flags per compiler family: MSVC rejects GCC-style -W options
+# ("invalid numeric argument '/Wextra'").
+if(MSVC)
+  add_compile_options(/W4)
+else()
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
 
 set(RACKMCP_PLUGIN_SRC ${CMAKE_CURRENT_SOURCE_DIR}/../../plugins/RackMCP/src)
 set(RACKMCP_THIRD_PARTY ${CMAKE_CURRENT_SOURCE_DIR}/../../third_party)
@@ -43,6 +49,10 @@ endif()
 
 add_library(rackmcp_core STATIC ${RACKMCP_CORE_SOURCES})
 target_include_directories(rackmcp_core PUBLIC ${RACKMCP_PLUGIN_SRC})
+if(WIN32)
+  # tcp.cpp uses Winsock2 on Windows (MSVC honours the #pragma comment; MinGW does not).
+  target_link_libraries(rackmcp_core PUBLIC ws2_32)
+endif()
 if(JANSSON_FOUND)
   target_link_libraries(rackmcp_core PUBLIC PkgConfig::JANSSON)
   target_compile_definitions(rackmcp_core PUBLIC RACKMCP_HAVE_JANSSON=1)

@@ -61,14 +61,15 @@ jobs:
       fail-fast: false
       matrix:
         platform:
-          - { name: mac-arm64, os: macos-latest, sdk: mac-arm64 }
-          - { name: mac-x64, os: macos-13, sdk: mac-x64 }
-          - { name: lin-x64, os: ubuntu-latest, sdk: lin-x64 }
-          - { name: win-x64, os: windows-latest, sdk: win-x64 }
+          - { name: mac-arm64, os: macos-latest, sdk: mac-arm64, shell: bash }
+          - { name: mac-x64, os: macos-15-intel, sdk: mac-x64, shell: bash }
+          - { name: lin-x64, os: ubuntu-latest, sdk: lin-x64, shell: bash }
+          - { name: win-x64, os: windows-latest, sdk: win-x64, shell: "msys2 {0}" }
     runs-on: ${{ matrix.platform.os }}
     defaults:
       run:
-        shell: bash
+        # win-x64 must run inside the MSYS2 MINGW64 shell so the Rack toolchain is on PATH.
+        shell: ${{ matrix.platform.shell }}
     steps:
       - uses: actions/checkout@v4
       - name: Install Linux build deps
@@ -79,7 +80,7 @@ jobs:
         uses: msys2/setup-msys2@v2
         with:
           msystem: MINGW64
-          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake make unzip zip curl
+          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake make unzip zip curl zstd
       - name: Fetch Rack SDK
         run: ./scripts/fetch-rack-sdk.sh ${{ matrix.platform.sdk }}
       - name: Build plugin
