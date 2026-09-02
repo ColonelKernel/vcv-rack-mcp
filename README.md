@@ -25,7 +25,8 @@ A live session — building and validating a subtractive-synth voice through the
 MCP against a running Rack instance. This is **real tool output**, captured by
 `pnpm --filter @rackmcp/integration run demo`:
 
-![Rack MCP live session: discover a Rack instance, build the basic subtractive recipe, then describe and validate the patch — all with zero errors](docs/assets/demo.svg)
+<img src="docs/assets/demo.png" width="820" alt="Rack MCP live session: discover a Rack instance, build the basic subtractive recipe, then describe and validate the patch — all with zero errors">
+
 
 <details>
 <summary>Transcript (text)</summary>
