@@ -10,6 +10,12 @@ and recovery, and read signal telemetry through a dedicated Probe module —
 all locally, over an authenticated loopback bridge, with explicit confirmation
 for destructive changes.
 
+**Repository:** <https://github.com/ColonelKernel/vcv-rack-mcp> (private)
+
+```bash
+git clone https://github.com/ColonelKernel/vcv-rack-mcp.git
+```
+
 ## Components
 
 | Path | What | License |

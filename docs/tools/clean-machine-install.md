@@ -53,8 +53,8 @@ You also need **VCV Rack 2.6.6** (Free or Pro) installed as a standalone app fro
 ## 2. Clone the repository
 
 ```bash
-git clone <your-clone-url> rack-mcp
-cd rack-mcp
+git clone https://github.com/ColonelKernel/vcv-rack-mcp.git
+cd vcv-rack-mcp
 ```
 
 The monorepo layout: `apps/mcp-server` (TS stdio server), `plugins/RackMCP` (C++11
