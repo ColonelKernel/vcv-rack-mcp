@@ -133,7 +133,7 @@ pnpm run gen            # regenerate JSON Schema + C++ protocol artifacts
 pnpm run check:gen      # fail if generated protocol artifacts are stale
 pnpm run docs:tools     # regenerate docs/tools/tool-reference.md from the schema
 
-# C++ core tests (framing, queues, crypto, JSON limits, telemetry, service)
+# C++ core tests (framing, queues, crypto, JSON limits, telemetry, service, secret/manifest files)
 cmake -S tests/cpp -B tests/cpp-build && cmake --build tests/cpp-build && ctest --test-dir tests/cpp-build
 
 # Build and package the Rack plugin

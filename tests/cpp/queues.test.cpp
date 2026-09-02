@@ -1,5 +1,6 @@
 #include <doctest.h>
 #include <atomic>
+#include <chrono>
 #include <string>
 #include <thread>
 #include <vector>

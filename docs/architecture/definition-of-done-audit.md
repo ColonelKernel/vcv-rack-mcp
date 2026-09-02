@@ -7,10 +7,10 @@ evidence — a test, a live smoke, or the code that enforces it — and any hone
 caveat.
 
 Verification tiers used below:
-- **Unit** — `pnpm -r test` (112 TypeScript tests across schemas, protocol,
-  adapters, recipes, and the server) and the C++ `ctest` suite (54 doctest
+- **Unit** — `pnpm -r test` (128 TypeScript tests across schemas, protocol,
+  adapters, recipes, and the server) and the C++ `ctest` suite (59 doctest
   cases: framing, queues, crypto, canonical/JSON-limits, telemetry math,
-  protocol-gen, service).
+  protocol-gen, service, secret/manifest files).
 - **Live** — integration smokes in `tests/integration/` that launch the
   installed VCV Rack 2 Pro 2.6.6 against an isolated user directory and drive it
   through the real MCP server over stdio. Verified on **macOS arm64**.

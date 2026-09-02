@@ -1,6 +1,8 @@
 #include <doctest.h>
 #include <jansson.h>
 #include <cmath>
+#include <limits>
+#include <string>
 #include "core/canonical.hpp"
 
 using namespace rackmcp;

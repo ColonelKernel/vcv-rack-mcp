@@ -2,6 +2,7 @@
 #include <jansson.h>
 #include <chrono>
 #include <mutex>
+#include <string>
 #include <thread>
 #include <vector>
 #include "core/crypto.hpp"
