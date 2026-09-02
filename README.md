@@ -1,6 +1,7 @@
 # Rack MCP
 
 [![License: MIT + GPL-3.0-or-later](https://img.shields.io/badge/license-MIT_%2B_GPL--3.0--or--later-blue.svg)](docs/security/licensing.md)
+[![MCP server: rack-mcp](https://img.shields.io/badge/MCP-rack--mcp-6E56CF.svg)](#use-it-from-claude-code)
 
 A production-quality, safety-first [Model Context Protocol](https://modelcontextprotocol.io)
 integration for [VCV Rack](https://vcvrack.com) 2.6.6 (Free or Pro, standalone GUI mode).
