@@ -3,6 +3,9 @@
 #include <limits>
 #include "core/telemetry.hpp"
 
+// kPi is not part of standard C++ (MSVC omits it without _USE_MATH_DEFINES).
+static const double kPi = 3.14159265358979323846;
+
 using namespace rackmcp;
 
 static ChannelStats runWindow(const float* samples, uint32_t n, ChannelAccumulator& acc) {
@@ -35,7 +38,7 @@ TEST_CASE("sine statistics: rms = amp/sqrt(2), mean ~ 0") {
     static float samples[N];
     const float AMP = 5.f;
     for (uint32_t i = 0; i < N; i++)
-        samples[i] = AMP * std::sin(2.0 * M_PI * 100.0 * i / N);
+        samples[i] = AMP * std::sin(2.0 * kPi * 100.0 * i / N);
     ChannelStats s = runWindow(samples, N, acc);
     CHECK(s.rms == doctest::Approx(AMP / std::sqrt(2.f)).epsilon(0.001));
     CHECK(s.mean == doctest::Approx(0.f).epsilon(0.001));

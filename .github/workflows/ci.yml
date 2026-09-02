@@ -80,7 +80,7 @@ jobs:
         uses: msys2/setup-msys2@v2
         with:
           msystem: MINGW64
-          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake make unzip zip curl zstd
+          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake make unzip zip curl zstd jq rsync
       - name: Fetch Rack SDK
         run: ./scripts/fetch-rack-sdk.sh ${{ matrix.platform.sdk }}
       - name: Build plugin

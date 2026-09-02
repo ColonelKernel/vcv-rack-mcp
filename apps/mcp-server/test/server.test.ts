@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { join } from "node:path";
 import { TOOLS } from "@rackmcp/schemas";
 import { buildToolTable } from "../src/tools.js";
 import { toErrorPayload, ToolError } from "../src/errors.js";
@@ -44,9 +45,10 @@ describe("config", () => {
   it("derives all roots under the Rack user dir", () => {
     const cfg = loadConfig({ RACKMCP_RACK_USER_DIR: "/tmp/rack" } as NodeJS.ProcessEnv);
     expect(cfg.rackUserDir).toBe("/tmp/rack");
-    expect(cfg.discoveryDir).toBe("/tmp/rack/RackMCP/instances");
-    expect(cfg.checkpointsDir).toBe("/tmp/rack/RackMCP/checkpoints");
-    expect(cfg.patchesDir).toBe("/tmp/rack/patches");
+    // Derived roots are joined with the platform separator (backslashes on Windows).
+    expect(cfg.discoveryDir).toBe(join("/tmp/rack", "RackMCP", "instances"));
+    expect(cfg.checkpointsDir).toBe(join("/tmp/rack", "RackMCP", "checkpoints"));
+    expect(cfg.patchesDir).toBe(join("/tmp/rack", "patches"));
   });
 
   it("has a platform default", () => {
