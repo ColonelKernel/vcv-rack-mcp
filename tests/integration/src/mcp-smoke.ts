@@ -99,14 +99,17 @@ try {
     (validation.findings as Array<Record<string, unknown>>).some((f) => /audio/i.test(String(f.ruleId))),
   );
 
-  // A pending mutation tool returns a structured UNSUPPORTED_OPERATION error.
-  const pendingResult = await client.callTool({
+  // A tool that cannot proceed returns a structured error with a stable code:
+  // save_patch with no path, against a patch that has never been saved, has
+  // nowhere to write.
+  const noPathResult = await client.callTool({
     name: "save_patch",
     arguments: { operationId: "6c5c48b2-3b0f-4f2a-9df9-1f4a30f10a10" },
   });
-  ok("pending tool returns isError", (pendingResult as { isError?: boolean }).isError === true);
-  const errStruct = structured(pendingResult).error as Record<string, unknown>;
-  ok("pending tool error code", errStruct.code === "UNSUPPORTED_OPERATION", String(errStruct?.code));
+  ok("pathless save returns isError", (noPathResult as { isError?: boolean }).isError === true);
+  const errStruct = structured(noPathResult).error as Record<string, unknown>;
+  ok("pathless save error code", errStruct.code === "PATH_NOT_ALLOWED", String(errStruct?.code));
+  ok("pathless save explains itself", /provide one/i.test(String(errStruct.message)), String(errStruct.message));
 
   // Lease acquire/release round trip via MCP.
   const lease = structured(await client.callTool({ name: "acquire_writer_lease", arguments: {} }));

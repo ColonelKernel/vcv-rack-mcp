@@ -204,7 +204,125 @@ describe("validatePatch adapter-backed rules", () => {
   });
 });
 
+describe("validatePatch adapter advisories", () => {
+  it("flags a gate output driving a 1V/oct input as pitch/gate confusion", async () => {
+    // MIDI-to-CV gate output (port 1) into the VCO's pitch input (port 0).
+    const midi = mod({ moduleId: "1", pluginSlug: "Core", modelSlug: "MIDIToCVInterface", inputs: ports(0), outputs: ports(12) });
+    const vco = mod({ moduleId: "2", pluginSlug: "Fundamental", modelSlug: "VCO", inputs: ports(4), outputs: ports(4) });
+    const r = await runValidate([midi, vco], [cable("10", "1", 1, "2", 0)]);
+    const f = r.findings.find((x) => x.ruleId === "adapter.pitchGateConfusion");
+    expect(f).toBeDefined();
+    // Advisory only: the spec forbids calling a role mismatch an incompatibility.
+    expect(f!.severity).toBe("info");
+    expect(f!.confidence).toBe("adapter");
+    expect(r.valid).toBe(true);
+  });
+
+  it("does not flag the correct pitch and gate wiring", async () => {
+    const midi = mod({ moduleId: "1", pluginSlug: "Core", modelSlug: "MIDIToCVInterface", inputs: ports(0), outputs: ports(12) });
+    const vco = mod({ moduleId: "2", pluginSlug: "Fundamental", modelSlug: "VCO", inputs: ports(4), outputs: ports(4) });
+    const adsr = mod({ moduleId: "3", pluginSlug: "Fundamental", modelSlug: "ADSR", inputs: ports(6), outputs: ports(1) });
+    const r = await runValidate(
+      [midi, vco, adsr],
+      [cable("10", "1", 0, "2", 0), cable("11", "1", 1, "3", 4)], // pitch→pitch, gate→gate
+    );
+    expect(ruleIds(r)).not.toContain("adapter.pitchGateConfusion");
+  });
+
+  it("flags a parameter outside the adapter's safe range but inside its hard bounds", async () => {
+    // VCF resonance: hard bounds [0,1], adapter safeRange [0,0.9].
+    const vcf = mod({
+      moduleId: "1", pluginSlug: "Fundamental", modelSlug: "VCF",
+      params: [{ paramId: 2, value: 0.98, minValue: 0, maxValue: 1, name: "Resonance" }],
+    });
+    const r = await runValidate([vcf], []);
+    const f = r.findings.find((x) => x.ruleId === "param.outsideSafeRange");
+    expect(f).toBeDefined();
+    expect(f!.confidence).toBe("adapter");
+    expect(f!.severity).toBe("info");
+    // The stronger hard-bounds rule must not also fire for a legal value.
+    expect(ruleIds(r)).not.toContain("param.outOfRange");
+  });
+
+  it("stays quiet for a parameter inside the safe range", async () => {
+    const vcf = mod({
+      moduleId: "1", pluginSlug: "Fundamental", modelSlug: "VCF",
+      params: [{ paramId: 2, value: 0.5, minValue: 0, maxValue: 1, name: "Resonance" }],
+    });
+    expect(ruleIds(await runValidate([vcf], []))).not.toContain("param.outsideSafeRange");
+  });
+});
+
 describe("describePatch", () => {
+  /** Runs describe_patch against a crafted snapshot. */
+  async function runDescribe(modules: Mod[], cables: Cable[]) {
+    const snap = { modules, cables, bridgeModuleCount: 1, patchEpoch: 1 };
+    const ctx = { conn: { request: async () => snap } } as unknown as ToolContext;
+    return (await describePatch({}, ctx)) as unknown as {
+      chains: Array<{ description: string; moduleIds: string[]; confidence: string }>;
+      unknownModuleCount: number;
+      summary: string;
+    };
+  }
+
+  it("describes only real cables in a branching patch", async () => {
+    // The shipped basic_mono_subtractive topology: MIDI feeds both the VCO and
+    // the envelope, so a flat traversal order would put VCF next to MIDI-to-CV.
+    const midi = mod({ moduleId: "1", modelName: "MIDI to CV", pluginSlug: "Core", modelSlug: "MIDIToCVInterface", inputs: ports(0), outputs: ports(12) });
+    const vco = mod({ moduleId: "2", modelName: "VCO", pluginSlug: "Fundamental", modelSlug: "VCO", inputs: ports(4), outputs: ports(4) });
+    const vcf = mod({ moduleId: "3", modelName: "VCF", pluginSlug: "Fundamental", modelSlug: "VCF", inputs: ports(4), outputs: ports(2) });
+    const env = mod({ moduleId: "4", modelName: "ADSR EG", pluginSlug: "Fundamental", modelSlug: "ADSR", inputs: ports(6), outputs: ports(1) });
+    const vca = mod({ moduleId: "5", modelName: "VCA", pluginSlug: "Fundamental", modelSlug: "VCA", inputs: ports(4), outputs: ports(2) });
+    const audio = mod({ moduleId: "6", modelName: "Audio 2", pluginSlug: "Core", modelSlug: "AudioInterface2", inputs: ports(2), outputs: ports(2) });
+    const cables = [
+      cable("10", "1", 0, "2", 0), // MIDI pitch -> VCO
+      cable("11", "1", 1, "4", 4), // MIDI gate  -> ADSR
+      cable("12", "2", 2, "3", 3), // VCO -> VCF
+      cable("13", "4", 0, "5", 0), // ADSR -> VCA CV
+      cable("14", "3", 0, "5", 1), // VCF -> VCA
+      cable("15", "5", 0, "6", 0), // VCA -> Audio
+      cable("16", "5", 0, "6", 1),
+    ];
+    const r = await runDescribe([midi, vco, vcf, env, vca, audio], cables);
+    expect(r.chains).toHaveLength(1);
+    const { description, moduleIds } = r.chains[0]!;
+
+    // Every arrow in the description must correspond to a real cable.
+    const nameToId = new Map([["MIDI to CV", "1"], ["VCO", "2"], ["VCF", "3"], ["ADSR EG", "4"], ["VCA", "5"], ["Audio 2", "6"]]);
+    const realPairs = new Set(cables.map((c) => `${c.outputModuleId}->${c.inputModuleId}`));
+    const segments = description.replace(/^[^:]*:\s*/, "").split("; also feeding it: ");
+    for (const segment of segments) {
+      for (const clause of segment.split(", ")) {
+        const names = clause.split(" → ");
+        for (let i = 1; i < names.length; i++) {
+          const from = nameToId.get(names[i - 1]!.trim());
+          const to = nameToId.get(names[i]!.trim());
+          expect(from, `unknown module name in "${clause}"`).toBeDefined();
+          expect(realPairs.has(`${from}->${to}`), `"${names[i - 1]} → ${names[i]}" is not a real cable`).toBe(true);
+        }
+      }
+    }
+    // The specific edge the old traversal fabricated.
+    expect(description).not.toContain("VCF → MIDI to CV");
+    // Both branches are still reported.
+    expect(description).toContain("ADSR EG");
+    expect(moduleIds).toContain("4");
+    expect(new Set(moduleIds).size).toBe(moduleIds.length);
+  });
+
+  it("handles a feedback loop without inventing an edge or hanging", async () => {
+    const a = mod({ moduleId: "1", modelName: "A", pluginSlug: "Fundamental", modelSlug: "VCO" });
+    const b = mod({ moduleId: "2", modelName: "B", pluginSlug: "Fundamental", modelSlug: "VCF" });
+    const audio = mod({ moduleId: "3", modelName: "Audio 2", pluginSlug: "Core", modelSlug: "AudioInterface2", inputs: ports(2), outputs: ports(2) });
+    const r = await runDescribe(
+      [a, b, audio],
+      [cable("10", "1", 0, "2", 3), cable("11", "2", 0, "1", 1), cable("12", "2", 0, "3", 0)],
+    );
+    const { description, moduleIds } = r.chains[0]!;
+    expect(description).toContain("Audio 2");
+    expect(new Set(moduleIds).size).toBe(moduleIds.length);
+  });
+
   it("summarizes chains and counts unadaptered modules", async () => {
     const vco = mod({ moduleId: "1", pluginSlug: "Fundamental", modelSlug: "VCO" });
     const audio = mod({ moduleId: "2", pluginSlug: "Core", modelSlug: "AudioInterface2", inputs: ports(2), outputs: ports(2) });

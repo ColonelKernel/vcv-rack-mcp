@@ -22,6 +22,8 @@ export class ConnectionManager {
   private client: BridgeClient | null = null;
   private selected: SelectedInstance | null = null;
   private leaseId: string | null = null;
+  /** Tail of the connect chain; serializes every connect/authenticate attempt. */
+  private connectChain: Promise<unknown> = Promise.resolve();
 
   constructor(private readonly config: ServerConfig) {}
 
@@ -40,6 +42,41 @@ export class ConnectionManager {
   }
 
   async select(instanceId: string): Promise<SelectedInstance> {
+    const selected = await this.runExclusive(() => this.connectTo(instanceId));
+    // The command pump attaches a frame or two after Rack's Bridge widget
+    // first steps; status/inspection requests return BRIDGE_NOT_READY until
+    // then. Wait briefly so a freshly launched instance is usable on return.
+    // Outside the connect lock: this issues requests that re-enter
+    // ensureConnected().
+    await this.waitForReady(15000).catch(() => {
+      log.warn("command pump not ready within timeout after select", {
+        instanceId: selected.instanceId,
+      });
+    });
+    return selected;
+  }
+
+  /**
+   * Serializes connect attempts. Two overlapping ones would each build a
+   * BridgeClient and the loser would be orphaned: its socket, heartbeat and
+   * any writer lease it acquired stay alive on the plugin with nothing
+   * referencing them.
+   */
+  private runExclusive(fn: () => Promise<SelectedInstance>): Promise<SelectedInstance> {
+    const run = this.connectChain.then(fn, fn);
+    this.connectChain = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    return run;
+  }
+
+  /** Connects and authenticates. Runs under the connect lock; issues no requests. */
+  private async connectTo(instanceId: string): Promise<SelectedInstance> {
+    // A concurrent caller may have connected while we waited for the lock.
+    if (this.client?.isConnected && this.selected?.instanceId === instanceId) {
+      return this.selected;
+    }
     const found = this.listInstances().find((i) => i.manifest.instanceId === instanceId);
     if (!found) {
       throw new ToolError("RACK_NOT_FOUND", `no discoverable Rack instance ${instanceId}`, true);
@@ -47,8 +84,11 @@ export class ConnectionManager {
     if (found.stale) {
       throw new ToolError("RACK_DISCONNECTED", `instance ${instanceId} is stale (no heartbeat)`, true);
     }
-    // Drop any prior session.
+    // Drop any prior session, selection included: a failed connect must not
+    // leave the previous instance selected, or later calls would silently
+    // reconnect to an instance the caller did not ask for.
     this.disconnect();
+    this.selected = null;
 
     let secret: Buffer;
     try {
@@ -85,14 +125,6 @@ export class ConnectionManager {
       pid: found.manifest.pid,
     };
     log.info("selected instance", { instanceId: welcome.instanceId, port: found.manifest.port });
-    // The command pump attaches a frame or two after Rack's Bridge widget
-    // first steps; status/inspection requests return BRIDGE_NOT_READY until
-    // then. Wait briefly so a freshly launched instance is usable on return.
-    await this.waitForReady(15000).catch(() => {
-      log.warn("command pump not ready within timeout after select", {
-        instanceId: welcome.instanceId,
-      });
-    });
     return this.selected;
   }
 

@@ -38,6 +38,12 @@ interface Pending {
   timer: NodeJS.Timeout;
 }
 
+interface HandshakeWaiter {
+  resolve: (frame: Record<string, unknown>) => void;
+  reject: (err: Error) => void;
+  timer: NodeJS.Timeout;
+}
+
 /**
  * Bridge protocol client: framing, hello/welcome/auth handshake, request
  * multiplexing with per-request deadlines, ping heartbeats, and event hooks.
@@ -47,7 +53,7 @@ export class BridgeClient {
   private decoder = new FrameDecoder();
   private pending = new Map<string, Pending>();
   private welcomeData: WelcomeData | null = null;
-  private handshakeQueue: Array<(frame: Record<string, unknown>) => void> = [];
+  private handshakeQueue: HandshakeWaiter[] = [];
   private closed = false;
   private heartbeatTimer: NodeJS.Timeout | null = null;
 
@@ -166,7 +172,19 @@ export class BridgeClient {
         timer,
       });
     });
-    this.send(frame);
+    try {
+      this.send(frame);
+    } catch (e) {
+      // The frame never reached the wire (oversize body, socket gone). Drop the
+      // pending entry and its deadline timer, or that timer would later reject
+      // `result`, which nobody awaits once we throw here.
+      const entry = this.pending.get(id);
+      if (entry) {
+        this.pending.delete(id);
+        clearTimeout(entry.timer);
+      }
+      throw e;
+    }
     return result;
   }
 
@@ -187,13 +205,20 @@ export class BridgeClient {
   ): Promise<Record<string, unknown>> {
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error("handshake timeout")), timeoutMs);
-      this.handshakeQueue.push((incoming) => {
-        clearTimeout(timer);
-        resolve(incoming);
+      this.handshakeQueue.push({
+        resolve: (incoming) => {
+          clearTimeout(timer);
+          resolve(incoming);
+        },
+        reject,
+        timer,
       });
       try {
         this.send(frame);
       } catch (e) {
+        // Nothing reached the wire, so no reply will ever arrive: drop the
+        // waiter we just queued so it cannot swallow a later frame.
+        this.handshakeQueue.pop();
         clearTimeout(timer);
         reject(e as Error);
       }
@@ -236,7 +261,7 @@ export class BridgeClient {
     const kind = frame.kind;
     if (kind === "welcome" || kind === "authResult") {
       const waiter = this.handshakeQueue.shift();
-      waiter?.(frame);
+      waiter?.resolve(frame);
       return;
     }
     if (kind === "res") {
@@ -276,12 +301,29 @@ export class BridgeClient {
     const socket = this.socket;
     this.socket = null;
     socket?.destroy();
+    // The socket died with requests in flight. For a mutating method the UI
+    // thread may already have applied it and we simply never saw the res, so
+    // the error contract (spec section 12) must report the outcome as unknown
+    // rather than let a plain Error normalize to INTERNAL / no mutation.
+    const pendingReason = new BridgeRequestError({
+      code: "RACK_DISCONNECTED",
+      message: reason.message,
+      retrySafe: false,
+      mutationMayHaveOccurred: true,
+    });
     for (const [, entry] of this.pending) {
       clearTimeout(entry.timer);
-      entry.reject(reason);
+      entry.reject(pendingReason);
     }
     this.pending.clear();
+    // Handshake waiters get the real close reason now; otherwise each sits on
+    // its own timer and reports a misleading "handshake timeout" much later.
+    const waiters = this.handshakeQueue;
     this.handshakeQueue = [];
+    for (const waiter of waiters) {
+      clearTimeout(waiter.timer);
+      waiter.reject(reason);
+    }
     this.onClose?.();
   }
 }

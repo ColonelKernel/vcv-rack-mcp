@@ -119,7 +119,9 @@ export const previewAttachProbe: ToolHandler = async (args, ctx) => {
     color: "#2a7fc8",
   });
 
-  const { preview, confirmation } = await ctx.txns.preview("Attach probe", operations, instance);
+  const { preview, confirmation } = await ctx.txns.preview("Attach probe", operations, instance, {
+    patchEpoch: args.expectedPatchEpoch as number | undefined,
+  });
   ATTACH_META.set(preview.planHash, slot);
   return {
     preview,
@@ -180,11 +182,18 @@ export const detachProbe: ToolHandler = async (args, ctx) => {
       policy: "all",
     },
   ];
-  const { preview } = await ctx.txns.preview("Detach probe", operations, instance);
+  const { preview, confirmation } = await ctx.txns.preview("Detach probe", operations, instance, {
+    patchEpoch: args.expectedPatchEpoch as number | undefined,
+  });
+  // Removing the probe cable is a destructive plan, so the commit needs the
+  // token this preview just minted. The user's confirmation gate for it is the
+  // tool's own destructive annotation, not a second round trip: detach_probe
+  // removes exactly the cable the caller named and nothing else.
   const commit = (await ctx.txns.commit({
     operationId: args.operationId as string,
     planHash: preview.planHash,
     expectedFingerprint: preview.baseFingerprint,
+    confirmationToken: confirmation.confirmationToken,
     instance,
   })) as { newFingerprint: string; replayed: boolean };
 

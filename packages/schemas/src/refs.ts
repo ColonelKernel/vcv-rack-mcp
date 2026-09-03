@@ -31,8 +31,10 @@ export type Scope = z.infer<typeof Scope>;
 
 /**
  * A module reference: either a live module id, or a transaction-local alias
- * naming a module created by an earlier `add_module`/`duplicate_module`
- * operation in the same transaction.
+ * naming a module created by an earlier `add_module` operation in the same
+ * transaction. (`duplicate_module` would also declare an alias, but the plugin
+ * rejects that operation at preview — see the divergences section of the
+ * definition-of-done audit.)
  */
 export const ModuleRef = z.union([
   z.object({ moduleId: DecimalId }).strict(),

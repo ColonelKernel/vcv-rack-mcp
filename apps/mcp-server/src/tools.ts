@@ -230,7 +230,13 @@ import {
 
 const previewPatchTransaction: ToolHandler = async (args, ctx) => {
   const instance = await ctx.conn.ensureConnected();
-  return ctx.txns.preview(args.label as string, args.operations as unknown[], instance);
+  // The declared expectedFingerprint/expectedPatchEpoch guards are enforced by
+  // the transaction manager (spec section 6 step 3); dropping them here would
+  // make a caller's stale-state check a silent no-op.
+  return ctx.txns.preview(args.label as string, args.operations as unknown[], instance, {
+    fingerprint: args.expectedFingerprint as string | undefined,
+    patchEpoch: args.expectedPatchEpoch as number | undefined,
+  });
 };
 
 const commitPatchTransaction: ToolHandler = async (args, ctx) => {
@@ -250,6 +256,7 @@ const buildPatch: ToolHandler = async (args, ctx) => {
     args.label as string,
     args.operations as unknown[],
     instance,
+    { patchEpoch: args.expectedPatchEpoch as number | undefined },
   );
   const autoCommit = (args.autoCommit as boolean | undefined) ?? true;
   // Never bypass confirmation: risky plans stop at the preview with a token.

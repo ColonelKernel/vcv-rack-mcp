@@ -1,4 +1,4 @@
-import { getAdapter, hasAdapter } from "@rackmcp/adapters";
+import { getAdapter, hasAdapter, paramSemantics } from "@rackmcp/adapters";
 import type { SignalRole } from "@rackmcp/adapters";
 import type { ToolContext, ToolHandler } from "./tools.js";
 
@@ -81,6 +81,52 @@ function inputRoleOf(m: ModuleS, portId: number): SignalRole | undefined {
 }
 function inputPolyphonyOf(m: ModuleS, portId: number): string | undefined {
   return getAdapter(m.pluginSlug, m.modelSlug)?.inputs.find((p) => p.portId === portId)?.polyphony;
+}
+
+/** Control sub-family, used to surface pitch/gate confusion (spec section 10). */
+type ControlKind = "pitch" | "event";
+function controlKindOf(role: SignalRole | undefined): ControlKind | undefined {
+  if (role === "pitch_voct") return "pitch";
+  if (role === "gate" || role === "trigger" || role === "clock") return "event";
+  return undefined;
+}
+
+/**
+ * The longest real cable path ending at `dest`, as module IDs from source to
+ * destination. Every consecutive pair is an actual cable, so a description
+ * built from this never implies a connection that does not exist. Edges that
+ * would close a cycle are skipped, so a feedback patch still yields a real (if
+ * not maximal) path. Iterative to keep deep patches off the JS stack.
+ */
+function longestCablePathTo(dest: string, incoming: Map<string, CableS[]>): string[] {
+  const memo = new Map<string, string[]>();
+  const onStack = new Set<string>([dest]);
+  const work: Array<{ id: string; i: number; best: string[] }> = [{ id: dest, i: 0, best: [] }];
+  while (work.length) {
+    const frame = work[work.length - 1]!;
+    const cables = incoming.get(frame.id) ?? [];
+    if (frame.i < cables.length) {
+      const src = cables[frame.i++]!.outputModuleId;
+      if (onStack.has(src)) continue; // would close a cycle
+      const cached = memo.get(src);
+      if (cached) {
+        // A memoized path from another branch may already contain this node;
+        // reusing it would repeat a module, so only take acyclic candidates.
+        if (cached.length > frame.best.length && !cached.includes(frame.id)) frame.best = cached;
+        continue;
+      }
+      onStack.add(src);
+      work.push({ id: src, i: 0, best: [] });
+    } else {
+      const path = frame.best.concat([frame.id]);
+      memo.set(frame.id, path);
+      onStack.delete(frame.id);
+      work.pop();
+      const parent = work[work.length - 1];
+      if (parent && path.length > parent.best.length && !path.includes(parent.id)) parent.best = path;
+    }
+  }
+  return memo.get(dest) ?? [dest];
 }
 
 /** Modules from which signal can reach an audio destination (reverse reachability). */
@@ -173,24 +219,61 @@ export const describePatch: ToolHandler = async (args, ctx) => {
     (incoming.get(c.inputModuleId) ?? incoming.set(c.inputModuleId, []).get(c.inputModuleId)!).push(c);
   }
 
-  // Trace back from each audio destination to its sources.
+  // Trace back from each audio destination to its sources. The headline chain
+  // is a real cable path (every arrow is an actual cable); everything else that
+  // feeds the destination is reported as explicit edges rather than being
+  // flattened into the same arrow string, which would imply connections that do
+  // not exist.
   const chains: Array<{ description: string; moduleIds: string[]; confidence: string }> = [];
   const destinations = snap.modules.filter(isAudioDestination);
+  const nameOf = (id: string) => byId.get(id)?.modelName ?? id;
   for (const dest of destinations) {
-    const visited = new Set<string>();
-    const order: string[] = [];
+    // Every module that can reach this destination.
+    const ancestors = new Set<string>();
     const stack = [dest.moduleId];
     while (stack.length) {
       const id = stack.pop()!;
-      if (visited.has(id)) continue;
-      visited.add(id);
-      order.push(id);
+      if (ancestors.has(id)) continue;
+      ancestors.add(id);
       for (const c of incoming.get(id) ?? []) stack.push(c.outputModuleId);
     }
-    const names = order.map((id) => byId.get(id)?.modelName ?? id).reverse();
+
+    const path = longestCablePathTo(dest.moduleId, incoming);
+    const onPath = new Set<string>();
+    for (let i = 1; i < path.length; i++) onPath.add(`${path[i - 1]}->${path[i]}`);
+
+    // Remaining real edges within the feeding subgraph, de-duplicated by
+    // module pair (two cables between the same modules are one relationship).
+    const extras: Array<[string, string]> = [];
+    const seenPair = new Set<string>(onPath);
+    for (const c of snap.cables) {
+      if (!ancestors.has(c.outputModuleId) || !ancestors.has(c.inputModuleId)) continue;
+      const key = `${c.outputModuleId}->${c.inputModuleId}`;
+      if (seenPair.has(key)) continue;
+      seenPair.add(key);
+      extras.push([c.outputModuleId, c.inputModuleId]);
+    }
+
+    const moduleIds = path.slice();
+    let description = `Signal path into ${dest.modelName}: ${path.map(nameOf).join(" → ")}`;
+    if (extras.length > 0) {
+      const shown: string[] = [];
+      for (const [from, to] of extras) {
+        // Keep the description within the schema's 1024-character cap.
+        const clause = `${nameOf(from)} → ${nameOf(to)}`;
+        if (description.length + shown.join(", ").length + clause.length + 24 > 1000) {
+          shown.push(`and ${extras.length - shown.length} more`);
+          break;
+        }
+        shown.push(clause);
+        for (const id of [from, to]) if (!moduleIds.includes(id)) moduleIds.push(id);
+      }
+      description += `; also feeding it: ${shown.join(", ")}`;
+    }
     chains.push({
-      description: `Signal path into ${dest.modelName}: ${names.join(" → ")}`,
-      moduleIds: order,
+      // Every claim above is a cable that exists in the snapshot.
+      description,
+      moduleIds: moduleIds.slice(0, 256),
       confidence: "certain",
     });
   }
@@ -332,6 +415,17 @@ export const validatePatch: ToolHandler = async (args, ctx) => {
         add("param.outOfRange", "warning", "certain",
           `${m.modelName} param "${p.name}" value ${p.value} is outside [${p.minValue}, ${p.maxValue}].`,
           [{ type: "parameter", moduleId: m.moduleId, paramId: p.paramId }]);
+      } else {
+        // Adapter-declared safe range: within the module's hard bounds but
+        // outside what the verified adapter vouches for (spec section 10,
+        // "excessive output level where … an adapter provides evidence").
+        const safe = paramSemantics(m.pluginSlug, m.modelSlug, p.paramId)?.safeRange;
+        if (safe && (p.value < safe[0] - 1e-4 || p.value > safe[1] + 1e-4)) {
+          add("param.outsideSafeRange", "info", "adapter",
+            `${m.modelName} param "${p.name}" value ${p.value} is outside the adapter's safe range [${safe[0]}, ${safe[1]}]. This is legal for the module but may produce excessive levels.`,
+            [{ type: "parameter", moduleId: m.moduleId, paramId: p.paramId }],
+            `Bring the parameter back within [${safe[0]}, ${safe[1]}] unless the extreme value is deliberate.`);
+        }
       }
     }
   }
@@ -382,6 +476,21 @@ export const validatePatch: ToolHandler = async (args, ctx) => {
       add("adapter.signalRoleCross", "info", "adapter",
         `${out.modelName} ${oRole} output feeds ${inp.modelName} ${iRole} input (audio↔control). This may be intentional (e.g. audio-rate modulation), but check it is deliberate.`,
         [{ type: "cable", cableId: c.cableId }]);
+    }
+
+    // Pitch/gate confusion: both roles are "control", so the audio↔control
+    // check above cannot see it. A gate driving a 1V/oct input (or pitch
+    // driving a gate/trigger/clock input) is usually a mistake — but it is a
+    // legitimate technique too, so this stays advisory, never an error.
+    const oKind = controlKindOf(oRole);
+    const iKind = controlKindOf(iRole);
+    if (oKind && iKind && oKind !== iKind) {
+      add("adapter.pitchGateConfusion", "info", "adapter",
+        `${out.modelName}'s ${oRole} output feeds ${inp.modelName}'s ${iRole} input. Pitch (1V/oct) and gate/trigger/clock signals are rarely interchangeable; check this is deliberate.`,
+        [{ type: "cable", cableId: c.cableId }],
+        oKind === "event"
+          ? "Route a 1V/oct pitch source into the pitch input, or use the gate to drive an envelope instead."
+          : "Route a gate/trigger source into this input, or use a comparator to derive a gate from the pitch signal.");
     }
 
     // Polyphonic signal into an adapter-declared monophonic input.

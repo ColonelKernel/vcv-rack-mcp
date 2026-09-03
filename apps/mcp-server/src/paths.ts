@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, realpathSync, statSync } from "node:fs";
+import { existsSync, lstatSync, mkdirSync, readlinkSync, realpathSync, statSync } from "node:fs";
 import { basename, resolve, sep } from "node:path";
 import { platform } from "node:os";
 import type { ServerConfig } from "./config.js";
@@ -40,6 +40,45 @@ function realCanonical(p: string): string {
   return realpathSync.native(p);
 }
 
+/** Symlink hops tolerated while canonicalizing a path that does not exist yet. */
+const MAX_LINK_HOPS = 32;
+
+/**
+ * Canonical form of a path that need not exist: the deepest EXISTING ancestor is
+ * resolved with realpath and the missing remainder re-attached. A dangling
+ * symlink is still followed via `readlink` — `realpathSync` fails on it, and
+ * judging it by its own (contained) name would let a link pointing out of the
+ * roots smuggle a write out. Anything that cannot be resolved at all (symlink
+ * loop, non-directory component, unreadable ancestor) is refused: containment
+ * cannot be decided for it.
+ */
+function canonicalAllowingMissing(p: string, hops: number): string {
+  try {
+    return realCanonical(p);
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
+      throw new ToolError("PATH_NOT_ALLOWED", "path could not be resolved");
+    }
+  }
+  const parent = resolve(p, "..");
+  if (parent === p) {
+    throw new ToolError("PATH_NOT_ALLOWED", "path could not be resolved");
+  }
+  const canonicalParent = canonicalAllowingMissing(parent, hops);
+  const child = resolve(canonicalParent, basename(p));
+  let target: string | null = null;
+  try {
+    if (lstatSync(child).isSymbolicLink()) target = readlinkSync(child);
+  } catch {
+    // Nothing at `child`: a genuinely missing name, canonical as computed.
+  }
+  if (target === null) return child;
+  if (hops >= MAX_LINK_HOPS) {
+    throw new ToolError("PATH_NOT_ALLOWED", "path could not be resolved");
+  }
+  return canonicalAllowingMissing(resolve(canonicalParent, target), hops + 1);
+}
+
 /** Real, canonical path of an existing directory (created if missing). */
 function canonicalDir(dir: string): string {
   mkdirSync(dir, { recursive: true, mode: 0o700 });
@@ -55,7 +94,7 @@ export function within(root: string, target: string, caseInsensitive: boolean = 
 }
 
 export interface ResolvedPath {
-  /** Canonical absolute path (parent resolved via realpath). */
+  /** Canonical absolute path (symlinks resolved, missing remainder re-attached). */
   absolute: string;
   root: PatchRoot;
   exists: boolean;
@@ -91,21 +130,12 @@ export function resolvePatchPath(
   const checkpointsRoot = canonicalDir(config.checkpointsDir);
 
   const absolute = resolve(requested);
-  // Resolve symlinks on the existing portion (the parent must exist).
-  let canonical: string;
-  const exists = existsSync(absolute);
-  if (exists) {
-    canonical = realCanonical(absolute);
-    if (!statSync(canonical).isFile()) {
-      throw new ToolError("PATH_NOT_ALLOWED", "path is not a regular file");
-    }
-  } else {
-    // Canonicalize the parent, then re-attach the basename.
-    const parent = resolve(absolute, "..");
-    if (!existsSync(parent)) {
-      throw new ToolError("PATH_NOT_ALLOWED", "parent directory does not exist");
-    }
-    canonical = resolve(realCanonical(parent), basename(absolute));
+  // Resolve symlinks over the whole path, including a link whose target does
+  // not exist yet, so containment is always judged on the real write target.
+  const canonical = canonicalAllowingMissing(absolute, 0);
+  const exists = existsSync(canonical);
+  if (exists && !statSync(canonical).isFile()) {
+    throw new ToolError("PATH_NOT_ALLOWED", "path is not a regular file");
   }
 
   let root: PatchRoot | null = null;
@@ -116,6 +146,9 @@ export function resolvePatchPath(
       "PATH_NOT_ALLOWED",
       "path is outside the configured patch and checkpoint roots",
     );
+  }
+  if (!exists && !existsSync(resolve(canonical, ".."))) {
+    throw new ToolError("PATH_NOT_ALLOWED", "parent directory does not exist");
   }
   if (opts.mustExist && !exists) {
     throw new ToolError("PATH_NOT_ALLOWED", "patch file does not exist");

@@ -36,10 +36,16 @@ interface TokenBinding {
 interface LoadBinding {
   instanceId: string;
   sessionId: string;
-  kind: "load" | "clear";
+  kind: "load" | "clear" | "restore";
   path: string | null;
+  /** Live patch state at preview time; re-verified before the destructive step. */
+  patchEpoch: number;
+  fingerprint: string;
   expiresAt: number;
 }
+
+/** A load/clear/restore binding as handed to the commit path (single use). */
+export type LoadTokenBinding = Omit<LoadBinding, "expiresAt">;
 
 export class TransactionManager {
   private readonly key = randomBytes(32);
@@ -77,7 +83,12 @@ export class TransactionManager {
     for (const [k, v] of this.plans) if (v.expiresAt < now) this.plans.delete(k);
   }
 
-  async preview(label: string, operations: unknown[], instance: SelectedInstance) {
+  async preview(
+    label: string,
+    operations: unknown[],
+    instance: SelectedInstance,
+    expected: { fingerprint?: string | undefined; patchEpoch?: number | undefined } = {},
+  ) {
     this.pruneExpired();
     const scope = {
       instanceId: instance.instanceId,
@@ -94,6 +105,23 @@ export class TransactionManager {
       undoable: boolean;
       warnings: string[];
     }>("txn.preview", { scope, label, operations });
+
+    // Spec section 6 step 3: reject a preview built on state the caller did not
+    // expect. The plugin reads neither guard on the preview path, so compare
+    // here against the live epoch and fingerprint it just reported — before a
+    // plan is cached or a token minted, so nothing stale can be committed.
+    if (expected.patchEpoch !== undefined && result.patchEpoch !== expected.patchEpoch) {
+      throw new ToolError(
+        "STALE_PATCH_EPOCH",
+        `patch epoch is ${result.patchEpoch}, not the expected ${expected.patchEpoch}; re-read the snapshot`,
+      );
+    }
+    if (expected.fingerprint !== undefined && result.baseFingerprint !== expected.fingerprint) {
+      throw new ToolError(
+        "PATCH_CONFLICT",
+        "the patch changed since the fingerprint you supplied; re-read the snapshot",
+      );
+    }
 
     const expiresAt = Date.now() + LIMITS.confirmationLifetimeMs;
     this.plans.set(result.planHash, {
@@ -190,14 +218,11 @@ export class TransactionManager {
   /**
    * Mints a confirmation token for a load/clear/restore operation. The binding
    * (including the possibly-long path) is held server-side and keyed by a short
-   * random id, so the token stays opaque and well under the size cap.
+   * random id, so the token stays opaque and well under the size cap. Like a
+   * transaction token it binds instance, session, kind, target path and the
+   * patch state the preview described; it is single-use (see consumeLoadToken).
    */
-  mintLoadToken(binding: {
-    instanceId: string;
-    sessionId: string;
-    kind: "load" | "clear";
-    path: string | null;
-  }): string {
+  mintLoadToken(binding: LoadTokenBinding): string {
     const now = Date.now();
     for (const [k, v] of this.loadBindings) if (v.expiresAt < now) this.loadBindings.delete(k);
     const id = randomBytes(18).toString("base64url");
@@ -206,12 +231,39 @@ export class TransactionManager {
     return `${id}.${mac}`;
   }
 
-  verifyLoadToken(token: string): {
-    instanceId: string;
-    sessionId: string;
-    kind: "load" | "clear";
-    path: string | null;
-  } {
+  /** Validates a load/clear/restore token and returns its binding, unchanged. */
+  verifyLoadToken(token: string): LoadTokenBinding {
+    const { binding } = this.lookupLoadToken(token);
+    return {
+      instanceId: binding.instanceId,
+      sessionId: binding.sessionId,
+      kind: binding.kind,
+      path: binding.path,
+      patchEpoch: binding.patchEpoch,
+      fingerprint: binding.fingerprint,
+    };
+  }
+
+  /**
+   * Validates a load/clear/restore token and burns it, so one previewed
+   * confirmation authorises exactly one destructive commit (the transaction
+   * path gets this from deleting the cached plan on commit). Call immediately
+   * before the destructive request.
+   */
+  consumeLoadToken(token: string): LoadTokenBinding {
+    const { id, binding } = this.lookupLoadToken(token);
+    this.loadBindings.delete(id);
+    return {
+      instanceId: binding.instanceId,
+      sessionId: binding.sessionId,
+      kind: binding.kind,
+      path: binding.path,
+      patchEpoch: binding.patchEpoch,
+      fingerprint: binding.fingerprint,
+    };
+  }
+
+  private lookupLoadToken(token: string): { id: string; binding: LoadBinding } {
     const dot = token.indexOf(".");
     if (dot < 0) throw new ToolError("CONFIRMATION_REQUIRED", "malformed confirmation token");
     const id = token.slice(0, dot);
@@ -224,12 +276,15 @@ export class TransactionManager {
     }
     const binding = this.loadBindings.get(id);
     if (!binding) {
-      throw new ToolError("CONFIRMATION_EXPIRED", "confirmation token is unknown or expired");
+      throw new ToolError(
+        "CONFIRMATION_EXPIRED",
+        "confirmation token is unknown, already used, or expired; re-run the preview",
+      );
     }
     if (Date.now() > binding.expiresAt) {
       this.loadBindings.delete(id);
       throw new ToolError("CONFIRMATION_EXPIRED", "confirmation token has expired");
     }
-    return { instanceId: binding.instanceId, sessionId: binding.sessionId, kind: binding.kind, path: binding.path };
+    return { id, binding };
   }
 }
