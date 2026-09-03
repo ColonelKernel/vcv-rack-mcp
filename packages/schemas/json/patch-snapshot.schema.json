@@ -141,7 +141,14 @@
                   "maxLength": 256
                 },
                 "value": {
-                  "type": "number"
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "minValue": {
                   "anyOf": [

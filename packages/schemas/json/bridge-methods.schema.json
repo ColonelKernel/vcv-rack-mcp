@@ -411,13 +411,34 @@
                   "maxLength": 64
                 },
                 "minValue": {
-                  "type": "number"
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "maxValue": {
-                  "type": "number"
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "defaultValue": {
-                  "type": "number"
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "labels": {
                   "maxItems": 64,
@@ -662,7 +683,14 @@
                         "maxLength": 256
                       },
                       "value": {
-                        "type": "number"
+                        "anyOf": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
                       },
                       "minValue": {
                         "anyOf": [
@@ -1139,7 +1167,14 @@
                   "maxLength": 256
                 },
                 "value": {
-                  "type": "number"
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "minValue": {
                   "anyOf": [
@@ -3113,7 +3148,9 @@
                     "adapter_uncertainty",
                     "missing_modules",
                     "not_undoable",
-                    "large_transaction"
+                    "large_transaction",
+                    "clears_patch",
+                    "replaces_patch"
                   ]
                 }
               },

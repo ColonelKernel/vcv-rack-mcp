@@ -70,4 +70,15 @@ bool checkJsonLimits(const json_t* value, int maxDepth, long maxNodes, size_t ma
     return checkRec(value, 1, maxDepth, nodes, maxNodes, maxStringBytes);
 }
 
+void truncateUtf8(std::string& s, size_t maxBytes) {
+    if (s.size() <= maxBytes)
+        return;
+    size_t end = maxBytes;
+    // Walk back over continuation bytes (10xxxxxx) to the lead byte of the
+    // character straddling the cut, then drop that character entirely.
+    while (end > 0 && ((unsigned char) s[end] & 0xC0) == 0x80)
+        end--;
+    s.resize(end);
+}
+
 } // namespace rackmcp

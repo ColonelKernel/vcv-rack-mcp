@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { validatePatch, describePatch } from "../src/analysis.js";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { ValidatePatchOutput } from "@rackmcp/schemas";
+import { validatePatch, describePatch, VALIDATION_RULES } from "../src/analysis.js";
 import type { ToolContext } from "../src/tools.js";
 
 /**
@@ -69,7 +72,23 @@ async function runValidate(modules: Mod[], cables: Cable[], bridgeModuleCount = 
   }
   const snap = { modules, cables, bridgeModuleCount, patchEpoch: 1 };
   const ctx = { conn: { request: async () => snap } } as unknown as ToolContext;
-  return (await validatePatch({}, ctx)) as unknown as ValidateResult;
+  const report = await validatePatch({}, ctx);
+  // Every case below goes through here, so strict-parsing the report once makes
+  // all of them contract tests as well: each exercises a different rule, and a
+  // finding that does not match the published ValidationFinding shape (entity
+  // refs keyed on `kind`, a required `evidence` record, `suggestedRepair`
+  // omitted rather than null, a snake_case ruleId) fails the test that produced
+  // it. The server only logs this mismatch at runtime, so nothing else catches it.
+  const parsed = ValidatePatchOutput.safeParse(report);
+  if (!parsed.success) {
+    throw new Error(
+      "validate_patch output violates ValidatePatchOutput: " +
+        parsed.error.issues
+          .map((i) => `${i.path.join(".") || "<root>"}: ${i.message}`)
+          .join("; "),
+    );
+  }
+  return report as unknown as ValidateResult;
 }
 
 function ruleIds(r: ValidateResult): string[] {
@@ -88,9 +107,8 @@ describe("validatePatch structural rules", () => {
       [cable("10", "1", 2, "999", 0), cable("11", "1", 99, "1", 0)],
     );
     expect(ruleIds(r)).toContain("cable.dangling");
-    expect(ruleIds(r)).toContain("port.outOfBounds");
+    expect(ruleIds(r)).toContain("port.out_of_bounds");
     expect(r.errorCount).toBeGreaterThan(0);
-    expect(r.valid).toBe(false);
   });
 
   it("flags duplicate cables and stacked inputs", async () => {
@@ -111,8 +129,8 @@ describe("validatePatch structural rules", () => {
       params: [{ paramId: 0, value: 5, minValue: 0, maxValue: 1, name: "hi" }] });
     const r = await runValidate([a, b], []);
     expect(ruleIds(r)).toContain("module.collision");
-    expect(ruleIds(r)).toContain("param.nonFinite");
-    expect(ruleIds(r)).toContain("param.outOfRange");
+    expect(ruleIds(r)).toContain("param.non_finite");
+    expect(ruleIds(r)).toContain("param.out_of_range");
   });
 
   it("warns when the patch has no Bridge module", async () => {
@@ -162,7 +180,7 @@ describe("validatePatch feedback + bypass", () => {
       [vco, vcf, audio],
       [cable("10", "1", 2, "2", 3), cable("11", "2", 0, "3", 0)],
     );
-    expect(ruleIds(r)).toContain("bypass.interruptsPath");
+    expect(ruleIds(r)).toContain("bypass.interrupts_path");
   });
 });
 
@@ -172,7 +190,7 @@ describe("validatePatch adapter-backed rules", () => {
     const vco = mod({ moduleId: "1", pluginSlug: "Fundamental", modelSlug: "VCO" });
     const vcf = mod({ moduleId: "2", pluginSlug: "Fundamental", modelSlug: "VCF" });
     const r = await runValidate([vco, vcf], [cable("10", "1", 2, "2", 0)]);
-    const cross = r.findings.find((f) => f.ruleId === "adapter.signalRoleCross");
+    const cross = r.findings.find((f) => f.ruleId === "adapter.signal_role_cross");
     expect(cross).toBeDefined();
     expect(cross!.confidence).toBe("adapter");
     expect(cross!.severity).toBe("info");
@@ -183,7 +201,7 @@ describe("validatePatch adapter-backed rules", () => {
     const vco = mod({ moduleId: "1", pluginSlug: "Fundamental", modelSlug: "VCO" });
     const vcf = mod({ moduleId: "2", pluginSlug: "Fundamental", modelSlug: "VCF" });
     const r = await runValidate([vco, vcf], [cable("10", "1", 2, "2", 3)]);
-    expect(ruleIds(r)).not.toContain("adapter.signalRoleCross");
+    expect(ruleIds(r)).not.toContain("adapter.signal_role_cross");
   });
 
   it("warns about a polyphonic signal entering a monophonic input", async () => {
@@ -192,13 +210,13 @@ describe("validatePatch adapter-backed rules", () => {
     vco.outputs[2]!.channels = 4;
     const audio = mod({ moduleId: "2", pluginSlug: "Core", modelSlug: "AudioInterface2", inputs: ports(2), outputs: ports(2) });
     const r = await runValidate([vco, audio], [cable("10", "1", 2, "2", 0)]);
-    expect(ruleIds(r)).toContain("adapter.polyIntoMono");
+    expect(ruleIds(r)).toContain("adapter.poly_into_mono");
   });
 
   it("reports third-party modules without a verified adapter", async () => {
     const unknown = mod({ moduleId: "1", pluginSlug: "SomeVendor", modelSlug: "MysteryModule" });
     const r = await runValidate([unknown], []);
-    const f = r.findings.find((x) => x.ruleId === "adapter.unverifiedModules");
+    const f = r.findings.find((x) => x.ruleId === "adapter.unverified_modules");
     expect(f).toBeDefined();
     expect(f!.confidence).toBe("heuristic");
   });
@@ -210,12 +228,13 @@ describe("validatePatch adapter advisories", () => {
     const midi = mod({ moduleId: "1", pluginSlug: "Core", modelSlug: "MIDIToCVInterface", inputs: ports(0), outputs: ports(12) });
     const vco = mod({ moduleId: "2", pluginSlug: "Fundamental", modelSlug: "VCO", inputs: ports(4), outputs: ports(4) });
     const r = await runValidate([midi, vco], [cable("10", "1", 1, "2", 0)]);
-    const f = r.findings.find((x) => x.ruleId === "adapter.pitchGateConfusion");
+    const f = r.findings.find((x) => x.ruleId === "adapter.pitch_gate_confusion");
     expect(f).toBeDefined();
     // Advisory only: the spec forbids calling a role mismatch an incompatibility.
     expect(f!.severity).toBe("info");
     expect(f!.confidence).toBe("adapter");
-    expect(r.valid).toBe(true);
+    // Advisory findings must not make the patch invalid.
+    expect(r.errorCount).toBe(0);
   });
 
   it("does not flag the correct pitch and gate wiring", async () => {
@@ -226,7 +245,7 @@ describe("validatePatch adapter advisories", () => {
       [midi, vco, adsr],
       [cable("10", "1", 0, "2", 0), cable("11", "1", 1, "3", 4)], // pitch→pitch, gate→gate
     );
-    expect(ruleIds(r)).not.toContain("adapter.pitchGateConfusion");
+    expect(ruleIds(r)).not.toContain("adapter.pitch_gate_confusion");
   });
 
   it("flags a parameter outside the adapter's safe range but inside its hard bounds", async () => {
@@ -236,12 +255,12 @@ describe("validatePatch adapter advisories", () => {
       params: [{ paramId: 2, value: 0.98, minValue: 0, maxValue: 1, name: "Resonance" }],
     });
     const r = await runValidate([vcf], []);
-    const f = r.findings.find((x) => x.ruleId === "param.outsideSafeRange");
+    const f = r.findings.find((x) => x.ruleId === "param.outside_safe_range");
     expect(f).toBeDefined();
     expect(f!.confidence).toBe("adapter");
     expect(f!.severity).toBe("info");
     // The stronger hard-bounds rule must not also fire for a legal value.
-    expect(ruleIds(r)).not.toContain("param.outOfRange");
+    expect(ruleIds(r)).not.toContain("param.out_of_range");
   });
 
   it("stays quiet for a parameter inside the safe range", async () => {
@@ -249,7 +268,7 @@ describe("validatePatch adapter advisories", () => {
       moduleId: "1", pluginSlug: "Fundamental", modelSlug: "VCF",
       params: [{ paramId: 2, value: 0.5, minValue: 0, maxValue: 1, name: "Resonance" }],
     });
-    expect(ruleIds(await runValidate([vcf], []))).not.toContain("param.outsideSafeRange");
+    expect(ruleIds(await runValidate([vcf], []))).not.toContain("param.outside_safe_range");
   });
 });
 
@@ -333,5 +352,32 @@ describe("describePatch", () => {
     expect(r.chains.length).toBeGreaterThan(0);
     expect(r.unknownModuleCount).toBe(1);
     expect(r.summary).toContain("modules");
+  });
+});
+
+describe("validation rule inventory", () => {
+  /**
+   * `rulesRun` is what lets a caller tell "checked, nothing found" from "never
+   * checked", so it has to name every rule the validator can emit. Reading the
+   * source keeps the constant honest: a rule added with a fresh id but no entry
+   * in VALIDATION_RULES fails here rather than shipping a report that quietly
+   * under-claims what was checked.
+   */
+  it("VALIDATION_RULES names exactly the rules validatePatch can emit", () => {
+    const src = readFileSync(
+      fileURLToPath(new URL("../src/analysis.ts", import.meta.url)),
+      "utf8",
+    );
+    const emitted = new Set<string>();
+    for (const m of src.matchAll(/\badd\(\s*"([a-zA-Z][\w.]*)"/g)) emitted.add(m[1]!);
+    expect(emitted.size).toBeGreaterThan(0);
+    const declared = new Set<string>(VALIDATION_RULES);
+    expect([...emitted].filter((r) => !declared.has(r))).toEqual([]);
+    expect([...declared].filter((r) => !emitted.has(r))).toEqual([]);
+  });
+
+  it("reports every rule as run", async () => {
+    const r = await runValidate([mod({ moduleId: "1", pluginSlug: "Fundamental", modelSlug: "VCO" })], []);
+    expect(r.rulesRun).toEqual([...VALIDATION_RULES]);
   });
 });

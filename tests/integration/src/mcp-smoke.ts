@@ -80,7 +80,7 @@ try {
   const catalog = structured(
     await client.callTool({ name: "list_installed_models", arguments: { limit: 10 } }),
   );
-  ok("catalog via MCP", (catalog.total as number) > 10, `total ${catalog.total}`);
+  ok("catalog via MCP", (catalog.totalModels as number) > 10, `total ${catalog.totalModels}`);
 
   // Snapshot.
   const snap = structured(await client.callTool({ name: "get_patch_snapshot", arguments: {} }));

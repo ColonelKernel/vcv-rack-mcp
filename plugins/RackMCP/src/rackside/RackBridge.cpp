@@ -193,6 +193,17 @@ void RackBridge::resetPairing() {
         return;
     }
     INFO("RackMCP: pairing secret rotated; restarting bridge server");
+
+    // Quiesce the heartbeat for the whole restart. It reads the listening port
+    // and writes the manifest from another thread, so leaving it running would
+    // (a) race the port_ store inside server_.start() and (b) let two threads
+    // write the same manifest temp file at once. Stopping it also means no
+    // manifest advertising the old, now-closed port can be published while the
+    // listener is down.
+    stopHeartbeat_.store(true);
+    if (heartbeatThread_.joinable())
+        heartbeatThread_.join();
+
     server_.broadcastEvent(buildEvent("shutting_down"));
     server_.stop();
     secret_ = fresh;
@@ -203,8 +214,24 @@ void RackBridge::resetPairing() {
     config.bridgeVersion = RACKMCP_BRIDGE_VERSION;
     config.rackVersion = rackVersion_;
     config.rackEdition = rackEdition_;
-    server_.start(config, this);
+    if (!server_.start(config, this)) {
+        // The listener is gone. Publishing a manifest now would hand every
+        // client a port that refuses connections, and resuming the heartbeat
+        // would republish that dead endpoint every two seconds. Withdraw the
+        // instance instead. stop() still performs the full teardown later:
+        // started_ is untouched, the non-joinable thread makes its join a
+        // no-op, server_.stop() is idempotent, and removing an already-removed
+        // manifest does nothing.
+        WARN("RackMCP: bridge server did not restart after pairing reset; instance withdrawn");
+        removeManifest(instancesDir_, instanceId_);
+        return;
+    }
+
+    // Publish the new port before the heartbeat resumes, so the very next
+    // manifest a client reads is already correct.
     writeManifestNow();
+    stopHeartbeat_.store(false);
+    heartbeatThread_ = std::thread([this] { heartbeatLoop(); });
 }
 
 RackBridge::OpLookup RackBridge::lookupOperation(const std::string& operationId,

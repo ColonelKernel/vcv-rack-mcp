@@ -21,4 +21,12 @@ std::string canonicalFingerprint(const json_t* value);
  */
 bool checkJsonLimits(const json_t* value, int maxDepth, long maxNodes, size_t maxStringBytes);
 
+/**
+ * Truncates `s` to at most `maxBytes` without splitting a UTF-8 sequence.
+ * A trailing fragment would make jansson reject the string outright
+ * (json_string validates UTF-8 and returns NULL), so every clamp applied to
+ * untrusted plugin metadata (spec section 14) must go through this.
+ */
+void truncateUtf8(std::string& s, size_t maxBytes);
+
 } // namespace rackmcp

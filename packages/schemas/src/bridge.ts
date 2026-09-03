@@ -244,9 +244,10 @@ export const InspectModelResult = z
             paramId: SmallIndex,
             name: z.string().max(256),
             unit: z.string().max(64),
-            minValue: z.number(),
-            maxValue: z.number(),
-            defaultValue: z.number(),
+            /** Null for an unbounded param (Rack allows +/-INFINITY bounds). */
+            minValue: z.number().nullable(),
+            maxValue: z.number().nullable(),
+            defaultValue: z.number().nullable(),
             labels: z.array(z.string().max(128)).max(64).optional(),
           })
           .strict(),

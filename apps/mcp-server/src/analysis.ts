@@ -33,7 +33,7 @@ interface ModuleS {
   bypassed: boolean;
   isBridge: boolean;
   isProbe: boolean;
-  params: Array<{ paramId: number; value: number; minValue: number | null; maxValue: number | null; name: string }>;
+  params: Array<{ paramId: number; value: number | null; minValue: number | null; maxValue: number | null; name: string }>;
   inputs: PortS[];
   outputs: PortS[];
   gridPosition: { x: number; y: number } | null;
@@ -306,20 +306,74 @@ export const describePatch: ToolHandler = async (args, ctx) => {
   };
 };
 
+/** Mirrors the EntityRef discriminated union in packages/schemas. */
+type EntityRef =
+  | { kind: "module"; moduleId: string }
+  | { kind: "cable"; cableId: string }
+  | { kind: "port"; moduleId: string; portType: "input" | "output"; portId: number }
+  | { kind: "param"; moduleId: string; paramId: number }
+  | { kind: "patch" };
+
+/**
+ * Every rule `validatePatch` evaluates, in report order. Returned verbatim as
+ * the report's `rulesRun` so a caller can distinguish "checked, nothing found"
+ * from "never checked" — the adapter-backed rules in particular stay silent on
+ * modules with no adapter, and silence alone does not mean clean.
+ *
+ * Kept in lockstep with the `add(...)` calls below by a test that reads this
+ * source file, so a new rule cannot ship without appearing here.
+ */
+export const VALIDATION_RULES = [
+  "cable.dangling",
+  "port.out_of_bounds",
+  "cable.duplicate",
+  "inputs.stacked",
+  "module.collision",
+  "expander.adjacency",
+  "param.non_finite",
+  "param.out_of_range",
+  "param.outside_safe_range",
+  "bridge.missing",
+  "bypass.interrupts_path",
+  "cycle.feedback",
+  "adapter.signal_role_cross",
+  "adapter.pitch_gate_confusion",
+  "adapter.poly_into_mono",
+  "adapter.unverified_modules",
+  "audio.no_input",
+  "audio.no_destination",
+] as const;
+
 export const validatePatch: ToolHandler = async (args, ctx) => {
   const snap = await snapshot(ctx, args.expectedPatchEpoch as number | undefined);
   const byId = new Map(snap.modules.map((m) => [m.moduleId, m]));
   const findings: Array<Record<string, unknown>> = [];
 
+  /**
+   * Append one finding in the exact ValidationFinding shape
+   * (packages/schemas/src/validation.ts): entity refs discriminated on `kind`,
+   * a required `evidence` record carrying the machine-checkable facts behind
+   * the claim, and `suggestedRepair` omitted rather than nulled when there is
+   * no repair to suggest.
+   */
   const add = (
     ruleId: string,
     severity: "error" | "warning" | "info",
     confidence: "certain" | "adapter" | "heuristic",
     explanation: string,
-    entities: Array<Record<string, unknown>>,
-    suggestion?: string,
+    entities: EntityRef[],
+    evidence: Record<string, unknown>,
+    suggestedRepair?: string,
   ) => {
-    findings.push({ ruleId, severity, confidence, explanation, entities, suggestion: suggestion ?? null });
+    findings.push({
+      ruleId,
+      severity,
+      confidence,
+      entities,
+      evidence,
+      explanation,
+      ...(suggestedRepair !== undefined ? { suggestedRepair } : {}),
+    });
   };
 
   // --- Structural checks (confidence: certain) ---
@@ -331,26 +385,35 @@ export const validatePatch: ToolHandler = async (args, ctx) => {
     const out = byId.get(c.outputModuleId);
     const inp = byId.get(c.inputModuleId);
     if (!out || !inp) {
-      add("cable.dangling", "error", "certain", `Cable ${c.cableId} references a missing module.`, [
-        { type: "cable", cableId: c.cableId },
-      ]);
+      add("cable.dangling", "error", "certain", `Cable ${c.cableId} references a missing module.`,
+        [{ kind: "cable", cableId: c.cableId }],
+        {
+          cableId: c.cableId,
+          outputModuleId: c.outputModuleId,
+          inputModuleId: c.inputModuleId,
+          missingEndpoint: !out ? "output" : "input",
+        });
       continue;
     }
     if (c.outputId < 0 || c.outputId >= out.outputs.length) {
-      add("port.outOfBounds", "error", "certain",
+      add("port.out_of_bounds", "error", "certain",
         `Cable ${c.cableId} output port ${c.outputId} is out of bounds for ${out.modelName}.`,
-        [{ type: "cable", cableId: c.cableId }]);
+        [{ kind: "port", moduleId: c.outputModuleId, portType: "output", portId: c.outputId }],
+        { cableId: c.cableId, portType: "output", portId: c.outputId, portCount: out.outputs.length });
     }
     if (c.inputId < 0 || c.inputId >= inp.inputs.length) {
-      add("port.outOfBounds", "error", "certain",
+      add("port.out_of_bounds", "error", "certain",
         `Cable ${c.cableId} input port ${c.inputId} is out of bounds for ${inp.modelName}.`,
-        [{ type: "cable", cableId: c.cableId }]);
+        [{ kind: "port", moduleId: c.inputModuleId, portType: "input", portId: c.inputId }],
+        { cableId: c.cableId, portType: "input", portId: c.inputId, portCount: inp.inputs.length });
     }
     const key = `${c.outputModuleId}:${c.outputId}->${c.inputModuleId}:${c.inputId}`;
     if (seenCablePairs.has(key)) {
       add("cable.duplicate", "warning", "certain",
         `Duplicate identical cable between the same ports (${key}).`,
-        [{ type: "cable", cableId: c.cableId }], "Remove the redundant cable.");
+        [{ kind: "cable", cableId: c.cableId }],
+        { cableId: c.cableId, endpoints: key },
+        "Remove the redundant cable.");
     }
     seenCablePairs.add(key);
 
@@ -368,7 +431,14 @@ export const validatePatch: ToolHandler = async (args, ctx) => {
       const m = byId.get(modId!);
       add("inputs.stacked", "info", "certain",
         `Input port ${portId} of ${m?.modelName ?? modId} has ${list.length} cables; unless a summing/merge is in place, only one connection is effective.`,
-        list.map((c) => ({ type: "cable", cableId: c.cableId })),
+        list.map((c): EntityRef => ({ kind: "cable", cableId: c.cableId })),
+        {
+          moduleId: modId,
+          portType: "input",
+          portId: Number(portId),
+          cableCount: list.length,
+          cableIds: list.map((c) => c.cableId),
+        },
         "Use a mixer or Merge module to combine multiple sources into one input.");
     }
   }
@@ -381,7 +451,8 @@ export const validatePatch: ToolHandler = async (args, ctx) => {
     if (posSeen.has(key)) {
       add("module.collision", "warning", "certain",
         `Modules ${posSeen.get(key)} and ${m.moduleId} share grid position ${key}.`,
-        [{ type: "module", moduleId: m.moduleId }]);
+        [{ kind: "module", moduleId: m.moduleId }],
+        { gridPosition: m.gridPosition, otherModuleId: posSeen.get(key) });
     }
     posSeen.set(key, m.moduleId);
   }
@@ -398,7 +469,14 @@ export const validatePatch: ToolHandler = async (args, ctx) => {
       if (!ok) {
         add("expander.adjacency", "info", "certain",
           `${m.modelName} reports a left expander (${leftId}) that is not immediately adjacent on the same row.`,
-          [{ type: "module", moduleId: m.moduleId }],
+          [{ kind: "module", moduleId: m.moduleId }],
+          {
+            expanderSide: "left",
+            declaredNeighborId: leftId,
+            neighborPresent: !!l,
+            hostPosition: m.gridPosition,
+            neighborPosition: l?.gridPosition ?? null,
+          },
           "Place expander modules directly next to their host, on the same row, with no gap.");
       }
     }
@@ -407,23 +485,29 @@ export const validatePatch: ToolHandler = async (args, ctx) => {
   // Parameter range + finiteness.
   for (const m of snap.modules) {
     for (const p of m.params) {
-      if (!Number.isFinite(p.value)) {
-        add("param.nonFinite", "error", "certain",
+      // null arrives when the live value is non-finite: JSON cannot carry
+      // NaN/infinity, so the plugin sends null rather than dropping the key.
+      const value = p.value;
+      if (value === null || !Number.isFinite(value)) {
+        add("param.non_finite", "error", "certain",
           `${m.modelName} param "${p.name}" has a non-finite value.`,
-          [{ type: "parameter", moduleId: m.moduleId, paramId: p.paramId }]);
-      } else if (p.minValue !== null && p.maxValue !== null && (p.value < p.minValue - 1e-4 || p.value > p.maxValue + 1e-4)) {
-        add("param.outOfRange", "warning", "certain",
-          `${m.modelName} param "${p.name}" value ${p.value} is outside [${p.minValue}, ${p.maxValue}].`,
-          [{ type: "parameter", moduleId: m.moduleId, paramId: p.paramId }]);
+          [{ kind: "param", moduleId: m.moduleId, paramId: p.paramId }],
+          { paramId: p.paramId, value: String(value) });
+      } else if (p.minValue !== null && p.maxValue !== null && (value < p.minValue - 1e-4 || value > p.maxValue + 1e-4)) {
+        add("param.out_of_range", "warning", "certain",
+          `${m.modelName} param "${p.name}" value ${value} is outside [${p.minValue}, ${p.maxValue}].`,
+          [{ kind: "param", moduleId: m.moduleId, paramId: p.paramId }],
+          { paramId: p.paramId, value, minValue: p.minValue, maxValue: p.maxValue });
       } else {
         // Adapter-declared safe range: within the module's hard bounds but
         // outside what the verified adapter vouches for (spec section 10,
         // "excessive output level where … an adapter provides evidence").
         const safe = paramSemantics(m.pluginSlug, m.modelSlug, p.paramId)?.safeRange;
-        if (safe && (p.value < safe[0] - 1e-4 || p.value > safe[1] + 1e-4)) {
-          add("param.outsideSafeRange", "info", "adapter",
-            `${m.modelName} param "${p.name}" value ${p.value} is outside the adapter's safe range [${safe[0]}, ${safe[1]}]. This is legal for the module but may produce excessive levels.`,
-            [{ type: "parameter", moduleId: m.moduleId, paramId: p.paramId }],
+        if (safe && (value < safe[0] - 1e-4 || value > safe[1] + 1e-4)) {
+          add("param.outside_safe_range", "info", "adapter",
+            `${m.modelName} param "${p.name}" value ${value} is outside the adapter's safe range [${safe[0]}, ${safe[1]}]. This is legal for the module but may produce excessive levels.`,
+            [{ kind: "param", moduleId: m.moduleId, paramId: p.paramId }],
+            { paramId: p.paramId, value, safeRange: safe, hardRange: [p.minValue, p.maxValue] },
             `Bring the parameter back within [${safe[0]}, ${safe[1]}] unless the extreme value is deliberate.`);
         }
       }
@@ -434,7 +518,9 @@ export const validatePatch: ToolHandler = async (args, ctx) => {
   if (snap.bridgeModuleCount === 0) {
     add("bridge.missing", "warning", "certain",
       "The patch has no RackMCP-Bridge module and will not reconnect after a Rack restart.",
-      [], "Add a RackMCP-Bridge module before saving a patch you intend to reconnect to.");
+      [{ kind: "patch" }],
+      { bridgeModuleCount: snap.bridgeModuleCount },
+      "Add a RackMCP-Bridge module before saving a patch you intend to reconnect to.");
   }
 
   // Bypassed modules mid-path (confidence heuristic: bypass pass-through is
@@ -445,9 +531,10 @@ export const validatePatch: ToolHandler = async (args, ctx) => {
     const hasIncoming = m.inputs.some((p) => p.connected);
     const hasOutgoing = m.outputs.some((p) => p.connected);
     if (feeds.has(m.moduleId) && hasIncoming && hasOutgoing) {
-      add("bypass.interruptsPath", "warning", "heuristic",
+      add("bypass.interrupts_path", "warning", "heuristic",
         `${m.modelName} is bypassed while on a signal path to an audio output; unless it defines a bypass pass-through, downstream signal is interrupted.`,
-        [{ type: "module", moduleId: m.moduleId }],
+        [{ kind: "module", moduleId: m.moduleId }],
+        { bypassed: true, hasIncoming, hasOutgoing, feedsAudioDestination: true },
         "Un-bypass the module, or route around it, to restore the signal path.");
     }
   }
@@ -457,7 +544,8 @@ export const validatePatch: ToolHandler = async (args, ctx) => {
   if (cycles.size > 0) {
     add("cycle.feedback", "info", "certain",
       `The patch contains a feedback loop involving ${cycles.size} module(s). This is often intentional; verify levels to avoid runaway feedback.`,
-      [...cycles].slice(0, 64).map((id) => ({ type: "module", moduleId: id })));
+      [...cycles].slice(0, 64).map((id): EntityRef => ({ kind: "module", moduleId: id })),
+      { moduleCount: cycles.size, moduleIds: [...cycles].slice(0, 64) });
   }
 
   // --- Adapter-backed advisory checks (confidence: adapter) ---
@@ -473,9 +561,10 @@ export const validatePatch: ToolHandler = async (args, ctx) => {
     const iFam = familyOf(iRole);
     // Only flag a clear audio<->control cross where both roles are known.
     if (oFam && iFam && oFam !== iFam) {
-      add("adapter.signalRoleCross", "info", "adapter",
+      add("adapter.signal_role_cross", "info", "adapter",
         `${out.modelName} ${oRole} output feeds ${inp.modelName} ${iRole} input (audio↔control). This may be intentional (e.g. audio-rate modulation), but check it is deliberate.`,
-        [{ type: "cable", cableId: c.cableId }]);
+        [{ kind: "cable", cableId: c.cableId }],
+        { cableId: c.cableId, outputRole: oRole, inputRole: iRole, outputFamily: oFam, inputFamily: iFam });
     }
 
     // Pitch/gate confusion: both roles are "control", so the audio↔control
@@ -485,9 +574,10 @@ export const validatePatch: ToolHandler = async (args, ctx) => {
     const oKind = controlKindOf(oRole);
     const iKind = controlKindOf(iRole);
     if (oKind && iKind && oKind !== iKind) {
-      add("adapter.pitchGateConfusion", "info", "adapter",
+      add("adapter.pitch_gate_confusion", "info", "adapter",
         `${out.modelName}'s ${oRole} output feeds ${inp.modelName}'s ${iRole} input. Pitch (1V/oct) and gate/trigger/clock signals are rarely interchangeable; check this is deliberate.`,
-        [{ type: "cable", cableId: c.cableId }],
+        [{ kind: "cable", cableId: c.cableId }],
+        { cableId: c.cableId, outputRole: oRole, inputRole: iRole, outputKind: oKind, inputKind: iKind },
         oKind === "event"
           ? "Route a 1V/oct pitch source into the pitch input, or use the gate to drive an envelope instead."
           : "Route a gate/trigger source into this input, or use a comparator to derive a gate from the pitch signal.");
@@ -496,9 +586,10 @@ export const validatePatch: ToolHandler = async (args, ctx) => {
     // Polyphonic signal into an adapter-declared monophonic input.
     const outChannels = out.outputs[c.outputId]?.channels ?? 0;
     if (outChannels > 1 && inputPolyphonyOf(inp, c.inputId) === "monophonic") {
-      add("adapter.polyIntoMono", "info", "adapter",
+      add("adapter.poly_into_mono", "info", "adapter",
         `A ${outChannels}-channel polyphonic signal from ${out.modelName} enters ${inp.modelName}'s monophonic input; channels beyond the first are summed or dropped.`,
-        [{ type: "cable", cableId: c.cableId }],
+        [{ kind: "cable", cableId: c.cableId }],
+        { cableId: c.cableId, outputChannels: outChannels, declaredInputPolyphony: "monophonic" },
         "Insert a Merge/Sum or mix the voices before this monophonic input if summing is intended.");
     }
   }
@@ -506,9 +597,13 @@ export const validatePatch: ToolHandler = async (args, ctx) => {
   // Third-party modules without a verified adapter are interpreted heuristically.
   const unadaptered = snap.modules.filter((m) => !hasAdapter(m.pluginSlug, m.modelSlug));
   if (unadaptered.length > 0) {
-    add("adapter.unverifiedModules", "info", "heuristic",
+    add("adapter.unverified_modules", "info", "heuristic",
       `${unadaptered.length} module(s) have no verified adapter; their semantics are inferred and any role-based findings about them are heuristic.`,
-      unadaptered.slice(0, 64).map((m) => ({ type: "module", moduleId: m.moduleId })));
+      unadaptered.slice(0, 64).map((m): EntityRef => ({ kind: "module", moduleId: m.moduleId })),
+      {
+        unadapteredCount: unadaptered.length,
+        models: unadaptered.slice(0, 64).map((m) => `${m.pluginSlug}/${m.modelSlug}`),
+      });
   }
 
   // --- Silence heuristics ---
@@ -516,24 +611,27 @@ export const validatePatch: ToolHandler = async (args, ctx) => {
   if (audioDest.length > 0) {
     const anyConnected = audioDest.some((m) => m.inputs.some((p) => p.connected));
     if (!anyConnected) {
-      add("audio.noInput", "warning", "heuristic",
+      add("audio.no_input", "warning", "heuristic",
         "An audio destination exists but has no connected inputs; the patch is likely silent.",
-        audioDest.map((m) => ({ type: "module", moduleId: m.moduleId })),
+        audioDest.map((m): EntityRef => ({ kind: "module", moduleId: m.moduleId })),
+        { audioDestinationCount: audioDest.length, connectedInputCount: 0 },
         "Connect a signal source to the audio module's inputs.");
     }
   } else {
-    add("audio.noDestination", "info", "heuristic",
-      "No Core Audio destination module found; the patch produces no audible output.", []);
+    add("audio.no_destination", "info", "heuristic",
+      "No Core Audio destination module found; the patch produces no audible output.",
+      [{ kind: "patch" }],
+      { audioDestinationCount: 0, moduleCount: snap.modules.length });
   }
 
   const errorCount = findings.filter((f) => f.severity === "error").length;
   const warningCount = findings.filter((f) => f.severity === "warning").length;
   return {
     findings,
+    // Which rules ran, so a caller can tell "no finding" from "not checked".
+    rulesRun: [...VALIDATION_RULES],
     errorCount,
     warningCount,
     infoCount: findings.length - errorCount - warningCount,
-    valid: errorCount === 0,
-    patchEpoch: snap.patchEpoch,
   };
 };

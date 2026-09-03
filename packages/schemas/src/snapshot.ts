@@ -19,10 +19,12 @@ export const ParamSnapshot = z
   .object({
     paramId: SmallIndex,
     name: z.string().max(256),
-    value: z.number(),
+    /** Null for a non-finite live value, which JSON cannot represent. */
+    value: z.number().nullable(),
     /**
      * Range/display are null when the module exposes the param without a
-     * ParamQuantity (Snapshot.cpp emits null for all of these in that case).
+     * ParamQuantity, or when the bound is non-finite (Rack allows unbounded
+     * params); Snapshot.cpp emits null rather than dropping the key.
      */
     minValue: z.number().nullable(),
     maxValue: z.number().nullable(),

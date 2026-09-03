@@ -65,7 +65,7 @@ try {
   // 3. Catalog
   out("→ list_installed_models");
   const models = sc(await call(client, "list_installed_models", { limit: 300 }));
-  const total = models.total as number;
+  const total = models.totalModels as number;
   out(`  ← ${total} models installed  (Core, Fundamental, RackMCP)`);
   out("");
 

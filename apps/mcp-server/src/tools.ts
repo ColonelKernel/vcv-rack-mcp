@@ -70,6 +70,7 @@ function mapStatus(s: Record<string, unknown>): Record<string, unknown> {
     rackVersion: s.rackVersion,
     rackEdition: s.rackEdition,
     bridgeVersion: s.bridgeVersion,
+    bridgeProtocolVersion: s.bridgeProtocolVersion,
     mode: s.mode,
     sampleRate: s.sampleRate,
     patchName: s.patchName ?? null,
@@ -128,16 +129,13 @@ const releaseWriterLease: ToolHandler = async (_args, ctx) => {
 // ---------------------------------------------------------------------------
 
 const listInstalledModels: ToolHandler = async (args, ctx) => {
-  const res = await ctx.conn.request<{
-    items: unknown[];
-    total: number;
-    nextCursor: string | null;
-  }>("catalog.listModels", {
+  // The bridge already speaks CatalogListResult; renaming its keys here is
+  // what let the published output schema drift away from the wire shape.
+  return ctx.conn.request<Record<string, unknown>>("catalog.listModels", {
     cursor: args.cursor,
     limit: args.limit ?? 100,
     query: args.query,
   });
-  return { models: res.items, total: res.total, nextCursor: res.nextCursor };
 };
 
 const inspectModel: ToolHandler = async (args, ctx) => {

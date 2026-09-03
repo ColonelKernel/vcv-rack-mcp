@@ -34,7 +34,7 @@ function json(uri: string, payload: unknown, limitBytes: number) {
 
 /** Collect installed models across catalog pages, bounded, as role targets. */
 interface ModelsPage {
-  items: Array<{ pluginSlug: string; modelSlug: string }>;
+  models: Array<{ pluginSlug: string; modelSlug: string }>;
   nextCursor: string | null;
 }
 
@@ -46,7 +46,7 @@ async function installedModels(conn: ConnectionManager, maxPages = 4): Promise<I
       limit: MODELS_PAGE,
       cursor: cursor ?? undefined,
     });
-    for (const m of res.items) out.push({ pluginSlug: m.pluginSlug, modelSlug: m.modelSlug });
+    for (const m of res.models) out.push({ pluginSlug: m.pluginSlug, modelSlug: m.modelSlug });
     cursor = res.nextCursor;
     if (!cursor) break;
   }
@@ -114,11 +114,10 @@ export function registerResources(server: McpServer, deps: ResourceDeps): void {
         return json(uri.href, { connected: false, hint: "select a Rack instance first" }, limit);
       }
       try {
-        const res = await conn.request<{ items: unknown[]; total: number; nextCursor: string | null }>(
-          "catalog.listModels",
-          { limit: MODELS_PAGE },
-        );
-        return json(uri.href, { models: res.items, total: res.total, nextCursor: res.nextCursor }, limit);
+        const res = await conn.request<Record<string, unknown>>("catalog.listModels", {
+          limit: MODELS_PAGE,
+        });
+        return json(uri.href, res, limit);
       } catch (e) {
         return json(uri.href, { connected: true, error: String(e) }, limit);
       }

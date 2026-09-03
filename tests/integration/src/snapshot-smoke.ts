@@ -50,25 +50,29 @@ try {
 
   // Catalog: Core + Fundamental must be present and paginated.
   const page1 = (await client.request("catalog.listModels", { limit: 5 })) as {
-    items: Array<Record<string, string>>;
-    total: number;
+    models: Array<Record<string, string>>;
+    totalModels: number;
     nextCursor: string | null;
   };
-  ok("catalog paginates", page1.items.length === 5 && page1.total > 5, `total ${page1.total}`);
+  ok("catalog paginates", page1.models.length === 5 && page1.totalModels > 5, `total ${page1.totalModels}`);
   ok("catalog has cursor", typeof page1.nextCursor === "string");
+  ok(
+    "catalog items carry description and tags",
+    typeof page1.models[0]!.description === "string" && Array.isArray(page1.models[0]!.tags as unknown),
+  );
 
-  const all: Array<Record<string, string>> = [...page1.items];
+  const all: Array<Record<string, string>> = [...page1.models];
   let cursor = page1.nextCursor;
   let guard = 0;
   while (cursor && guard++ < 100) {
     const page = (await client.request("catalog.listModels", { limit: 50, cursor })) as {
-      items: Array<Record<string, string>>;
+      models: Array<Record<string, string>>;
       nextCursor: string | null;
     };
-    all.push(...page.items);
+    all.push(...page.models);
     cursor = page.nextCursor;
   }
-  ok("catalog full walk matches total", all.length === page1.total, `${all.length}`);
+  ok("catalog full walk matches total", all.length === page1.totalModels, `${all.length}`);
   const hasVCO = all.some((m) => m.pluginSlug === "Fundamental" && m.modelSlug === "VCO");
   const hasAudio = all.some((m) => m.pluginSlug === "Core" && (m.modelSlug ?? "").startsWith("Audio"));
   ok("catalog contains Fundamental VCO", hasVCO);
@@ -76,17 +80,17 @@ try {
 
   // Filtered catalog.
   const filtered = (await client.request("catalog.listModels", { query: "vco", limit: 100 })) as {
-    items: Array<Record<string, string>>;
+    models: Array<Record<string, string>>;
   };
   ok(
     "catalog filter works",
-    filtered.items.length > 0 &&
-      filtered.items.every((m) =>
+    filtered.models.length > 0 &&
+      filtered.models.every((m) =>
         `${m.pluginSlug ?? ""} ${m.pluginName ?? ""} ${m.modelSlug ?? ""} ${m.modelName ?? ""}`
           .toLowerCase()
           .includes("vco"),
       ),
-    `${filtered.items.length} matches`,
+    `${filtered.models.length} matches`,
   );
 
   // Model inspection via temporary instantiation.
@@ -94,9 +98,36 @@ try {
     pluginSlug: "Fundamental",
     modelSlug: "VCO",
   })) as Record<string, unknown>;
-  ok("inspectModel VCO params", (vcoMeta.numParams as number) > 0, `${vcoMeta.numParams} params`);
-  ok("inspectModel VCO outputs", (vcoMeta.numOutputs as number) > 0);
+  const vcoParams = vcoMeta.params as Array<Record<string, unknown>>;
+  const vcoOutputs = vcoMeta.outputs as Array<Record<string, unknown>>;
+  ok("inspectModel VCO params", vcoParams.length > 0, `${vcoParams.length} params`);
+  ok("inspectModel VCO outputs", vcoOutputs.length > 0);
   ok("inspectModel discloses temp instantiation", vcoMeta.requiredTemporaryInstantiation === true);
+  const vcoModel = vcoMeta.model as Record<string, unknown>;
+  ok("inspectModel carries model metadata", vcoModel?.modelSlug === "VCO" && typeof vcoModel.description === "string");
+  // Static model metadata only: no live-state fields leak in from the
+  // temporary instance (its values are always defaults, its ports unconnected).
+  ok("inspectModel params are model-shaped", vcoParams.every((prm) => !("value" in prm) && !("displayValue" in prm)));
+  ok("inspectModel ports are model-shaped", vcoOutputs.every((prt) => !("connected" in prt) && !("channels" in prt)));
+  ok("inspectModel first call is not cached", vcoMeta.cached === false);
+
+  // Second call for the same model is served from the metadata cache, so it
+  // does not instantiate the module on the UI thread again.
+  const vcoMeta2 = (await client.request("catalog.inspectModel", {
+    pluginSlug: "Fundamental",
+    modelSlug: "VCO",
+  })) as Record<string, unknown>;
+  ok("inspectModel second call is cached", vcoMeta2.cached === true);
+  // Same content, only `cached` differs. Compared field-wise rather than by
+  // serialization, which would also be asserting jansson's key ordering.
+  ok(
+    "inspectModel cached payload matches",
+    Object.keys(vcoMeta2).sort().join(",") === Object.keys(vcoMeta).sort().join(",") &&
+      JSON.stringify(vcoMeta2.model) === JSON.stringify(vcoMeta.model) &&
+      JSON.stringify(vcoMeta2.params) === JSON.stringify(vcoMeta.params) &&
+      JSON.stringify(vcoMeta2.inputs) === JSON.stringify(vcoMeta.inputs) &&
+      JSON.stringify(vcoMeta2.outputs) === JSON.stringify(vcoMeta.outputs),
+  );
 
   // model not installed
   {

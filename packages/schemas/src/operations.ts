@@ -197,5 +197,8 @@ export const RiskFlag = z.enum([
   "missing_modules",
   "not_undoable",
   "large_transaction",
+  /** Whole-patch operations: everything currently loaded goes away. */
+  "clears_patch",
+  "replaces_patch",
 ]);
 export type RiskFlag = z.infer<typeof RiskFlag>;

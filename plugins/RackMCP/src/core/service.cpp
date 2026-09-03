@@ -230,22 +230,6 @@ static bool isHex(const std::string& s, size_t len) {
     return true;
 }
 
-/**
- * Truncates to at most maxBytes without splitting a UTF-8 sequence. A trailing
- * fragment would make jansson reject every later frame carrying the string
- * (json_pack validates UTF-8), which would cost the client its session.
- */
-static void truncateUtf8(std::string& s, size_t maxBytes) {
-    if (s.size() <= maxBytes)
-        return;
-    size_t end = maxBytes;
-    // Walk back over continuation bytes (10xxxxxx) to the lead byte of the
-    // character straddling the cut, then drop that character entirely.
-    while (end > 0 && ((unsigned char) s[end] & 0xC0) == 0x80)
-        end--;
-    s.resize(end);
-}
-
 static const gen::MethodSpec* findMethod(const char* name) {
     for (size_t i = 0; i < gen::METHOD_SPEC_COUNT; i++) {
         if (std::strcmp(gen::METHOD_SPECS[i].method, name) == 0)

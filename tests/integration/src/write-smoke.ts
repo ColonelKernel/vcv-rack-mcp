@@ -105,7 +105,7 @@ try {
   const validation = sc(await call(client, "validate_patch", {}));
   const findings = validation.findings as Array<Record<string, unknown>>;
   ok("validate: no error findings", (validation.errorCount as number) === 0, JSON.stringify(findings.filter((f) => f.severity === "error")));
-  ok("validate: audio has input (no silence warning)", !findings.some((f) => f.ruleId === "audio.noInput"));
+  ok("validate: audio has input (no silence warning)", !findings.some((f) => f.ruleId === "audio.no_input"));
 
   // Set the VCO frequency parameter (paramId 2 = Frequency), via a new txn.
   const setFreqOps = [{ op: "set_parameter", module: { moduleId: vcoId }, paramId: 2, value: 1.0 }];
