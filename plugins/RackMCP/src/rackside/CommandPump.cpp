@@ -7,6 +7,7 @@
 #include "core/frames.hpp"
 #include "gen/rackmcp_protocol_gen.hpp"
 #include "rackside/Handlers.hpp"
+#include "rackside/PatchFiles.hpp"
 #include "rackside/RackBridge.hpp"
 
 namespace rackmcp {
@@ -53,6 +54,15 @@ void CommandPumpWidget::step() {
             frame = buildResError(cmd.requestId, "TIMEOUT",
                                   "deadline expired before execution began", false, false);
         }
+        else if (!bridge.server().commandLeaseStillValid(cmd)) {
+            // The lease was checked at enqueue time, but the command has been
+            // sitting in the queue since: the holder may have released it, let
+            // it expire, or lost it to another connection. Mutating work must
+            // never run on a lease the caller no longer holds.
+            bridge.server().counters().requestsInline++;
+            frame = buildResError(cmd.requestId, "WRITER_LEASE_REQUIRED",
+                                  "writer lease no longer held by this connection", true, false);
+        }
         else {
             frame = executeCommand(cmd);
             bridge.setLastOp(cmd.method);
@@ -71,6 +81,11 @@ void CommandPumpWidget::step() {
         while (drainMs > prevMax && !bridge.pumpMaxDrainMs.compare_exchange_weak(prevMax, drainMs)) {
         }
     }
+
+    // Notice a patch the user replaced through Rack's own UI (File > New/Open/
+    // Revert, drag-drop) so client references into the old patch stop
+    // validating. Self-throttling, so calling it every frame is correct.
+    pollPatchReplacement();
 
     // Refresh the UI-state cache about twice a second.
     if (--uiStateRefreshCountdown_ <= 0) {

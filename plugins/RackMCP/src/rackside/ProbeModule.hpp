@@ -31,6 +31,10 @@ private:
     void beginWindow();
 
     ChannelAccumulator acc_[NUM_PROBE_INPUTS][PROBE_MAX_CHANNELS];
+    /** Bit c set once channel c contributed a finite sample to this window, so
+        min/max are seeded from that sample and not from a 0 V that never was. */
+    uint16_t channelSeen_[NUM_PROBE_INPUTS] = {};
+    static_assert(PROBE_MAX_CHANNELS <= 16, "channelSeen_ bitmask holds 16 channels");
     uint8_t windowChannels_[NUM_PROBE_INPUTS] = {};
     uint32_t windowFrame_ = 0;
     uint32_t windowTarget_ = 2205;

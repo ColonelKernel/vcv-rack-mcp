@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <jansson.h>
 
+#include "core/canonical.hpp"
 #include "core/frames.hpp"
 #include "gen/rackmcp_protocol_gen.hpp"
 #include "rackmcp_plugin.hpp"
@@ -203,14 +204,52 @@ static std::string handleModelInspect(const BridgeCommand& cmd) {
 }
 
 
+/**
+ * Grafts the error-object extras a failure payload carries ("rollback", the
+ * spec section 6 report; "details") onto an already-built error frame.
+ * buildResError has no slot for them and the wire error schema is strict, so
+ * only those two keys are copied. Returns `frame` untouched on any failure —
+ * a malformed extra must never cost the client the error itself.
+ */
+static std::string attachErrorExtras(const std::string& frame, json_t* extras) {
+    static const char* const kExtraKeys[] = {"rollback", "details"};
+    if (!json_is_object(extras))
+        return frame;
+    json_error_t err;
+    json_t* root = json_loads(frame.c_str(), 0, &err);
+    if (!root)
+        return frame;
+    json_t* errorObj = json_object_get(root, "error");
+    bool changed = false;
+    if (json_is_object(errorObj)) {
+        for (size_t i = 0; i < sizeof(kExtraKeys) / sizeof(kExtraKeys[0]); i++) {
+            json_t* v = json_object_get(extras, kExtraKeys[i]);
+            if (v && json_object_set(errorObj, kExtraKeys[i], v) == 0)
+                changed = true;
+        }
+    }
+    std::string out = frame;
+    if (changed) {
+        char* s = json_dumps(root, JSON_COMPACT);
+        if (s) {
+            out.assign(s);
+            free(s);
+        }
+    }
+    json_decref(root);
+    return out;
+}
+
 /** Bridges a TxnOutcome to a response frame; caller supplies cacheability. */
 static std::string txnOutcomeToFrame(const BridgeCommand& cmd, TxnOutcome& outcome) {
     if (!outcome.errorCode.empty()) {
         std::string frame = buildResError(cmd.requestId, outcome.errorCode.c_str(),
                                           outcome.errorMessage, outcome.retrySafe,
                                           outcome.mutationMayHaveOccurred);
-        if (outcome.payload)
+        if (outcome.payload) {
+            frame = attachErrorExtras(frame, outcome.payload);
             json_decref(outcome.payload);
+        }
         return frame;
     }
     return buildResOk(cmd.requestId, outcome.payload);
@@ -288,12 +327,59 @@ static std::string handleProbeRead(const BridgeCommand& cmd) {
     return buildResOk(cmd.requestId, reading);
 }
 
+/**
+ * Concurrency guards are re-evaluated on every attempt, so they are not part of
+ * what a request asks for: a legitimate retry that lands after an unrelated
+ * patch change carries a different epoch/fingerprint but is still the same
+ * operation. Everything else in the payload is request identity.
+ */
+static const char* const kNonIdentityKeys[] = {"scope", "expectedFingerprint",
+                                               "expectedPatchEpoch"};
+
+/**
+ * Fingerprints a command so the idempotency cache can tell a genuine retry from
+ * an operation id reused for a different request: method plus the identity
+ * subset of the payload, hashed canonically.
+ */
+static std::string requestFingerprint(const BridgeCommand& cmd) {
+    json_t* identity = json_object();
+    json_object_set_new(identity, "method", json_string(cmd.method.c_str()));
+    json_t* payload;
+    if (json_is_object(cmd.payload)) {
+        // Shallow copy: the guards only ever sit at the top level, and the copy
+        // keeps cmd.payload (owned by the caller) untouched.
+        payload = json_copy(cmd.payload);
+        for (size_t i = 0; i < sizeof(kNonIdentityKeys) / sizeof(kNonIdentityKeys[0]); i++)
+            json_object_del(payload, kNonIdentityKeys[i]);
+    }
+    else {
+        payload = json_null();
+    }
+    json_object_set_new(identity, "payload", payload);
+    std::string fingerprint = canonicalFingerprint(identity);
+    json_decref(identity);
+    return fingerprint;
+}
+
 std::string executeCommand(const BridgeCommand& cmd) {
-    // Idempotency: replay cached mutation results by operation id.
+    // Idempotency: replay cached mutation results by operation id, but only for
+    // the request the id was first used for.
     RackBridge& bridge = RackBridge::instance();
+    std::string opFingerprint;
     if (!cmd.operationId.empty()) {
+        opFingerprint = requestFingerprint(cmd);
         std::string cached;
-        if (bridge.lookupOperation(cmd.operationId, cached)) {
+        RackBridge::OpLookup hit = bridge.lookupOperation(cmd.operationId, opFingerprint, cached);
+        if (hit == RackBridge::OP_MISMATCH) {
+            // The id is the client's promise that this is the same operation.
+            // Replaying would report the earlier request's success for work
+            // that was never done; executing would break the id's guarantee.
+            return buildResError(cmd.requestId, "BAD_REQUEST",
+                                 "operationId was already used for a different request; "
+                                 "retry the original request or use a fresh operationId",
+                                 false, false);
+        }
+        if (hit == RackBridge::OP_REPLAY) {
             // Rewrite the request id and flag the payload as a replay; the
             // frame schema is strict, so the flag lives inside the payload.
             json_error_t err;
@@ -353,7 +439,7 @@ std::string executeCommand(const BridgeCommand& cmd) {
                                      false, false);
 
     if (!cmd.operationId.empty() && result.cacheable)
-        bridge.recordOperation(cmd.operationId, result.frame);
+        bridge.recordOperation(cmd.operationId, opFingerprint, result.frame);
     return result.frame;
 }
 

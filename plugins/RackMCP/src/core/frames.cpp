@@ -5,9 +5,43 @@
 
 namespace rackmcp {
 
-static std::string dumpAndFree(json_t* o) {
-    char* s = json_dumps(o, JSON_COMPACT);
-    std::string out = s ? s : "";
+// A failed json_pack (jansson rejects e.g. a string that is not valid UTF-8) or
+// a failed json_dumps must never turn into a 0-length frame: the client parses
+// every frame as JSON and tears the whole session down on a parse error. Every
+// builder therefore names a fixed, always-valid fallback frame. An empty result
+// means "no frame at all"; callers must drop it rather than put it on the wire.
+static const char* const kAuthResultInternal =
+    "{\"kind\":\"authResult\",\"ok\":false,\"error\":{\"code\":\"INTERNAL\","
+    "\"message\":\"frame encoding failed\",\"retrySafe\":false,"
+    "\"mutationMayHaveOccurred\":false}}";
+
+/** Request ids are 16 hex chars on the wire; only inline ids known to be safe. */
+static bool isSafeId(const std::string& id) {
+    if (id.empty() || id.size() > 64)
+        return false;
+    for (size_t i = 0; i < id.size(); i++) {
+        char c = id[i];
+        bool ok = (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+                  c == '-' || c == '_';
+        if (!ok)
+            return false;
+    }
+    return true;
+}
+
+/** Hand-built so it cannot itself fail to encode. Empty when the id is unusable. */
+static std::string resInternalError(const std::string& id, bool mutationMayHaveOccurred) {
+    if (!isSafeId(id))
+        return std::string();
+    return "{\"kind\":\"res\",\"id\":\"" + id +
+           "\",\"ok\":false,\"error\":{\"code\":\"INTERNAL\",\"message\":\"response encoding "
+           "failed\",\"retrySafe\":false,\"mutationMayHaveOccurred\":" +
+           (mutationMayHaveOccurred ? "true" : "false") + "}}";
+}
+
+static std::string dumpAndFree(json_t* o, const std::string& fallback) {
+    char* s = json_dumps(o, JSON_COMPACT); // json_dumps(NULL) returns NULL
+    std::string out = s ? s : fallback;
     if (s)
         free(s);
     json_decref(o);
@@ -26,7 +60,9 @@ std::string buildWelcome(const WelcomeInfo& info) {
                           "patchEpoch", info.patchEpoch,
                           "nonce", info.nonce.c_str(),
                           "authRequired", 1);
-    return dumpAndFree(o);
+    // A welcome that cannot be encoded aborts the handshake with an error the
+    // client can actually parse.
+    return dumpAndFree(o, kAuthResultInternal);
 }
 
 std::string buildAuthResult(bool ok, const char* errorCode, const char* message) {
@@ -43,25 +79,37 @@ std::string buildAuthResult(bool ok, const char* errorCode, const char* message)
                       "retrySafe", 0,
                       "mutationMayHaveOccurred", 0);
     }
-    return dumpAndFree(o);
+    return dumpAndFree(o, kAuthResultInternal);
 }
 
 std::string buildPong(const std::string& id) {
     json_t* o = json_pack("{s:s, s:s}", "kind", "pong", "id", id.c_str());
-    return dumpAndFree(o);
+    // Nothing useful to say instead of a pong; an unsent one just lapses.
+    return dumpAndFree(o, std::string());
 }
 
 std::string buildEvent(const char* event) {
     json_t* o = json_pack("{s:s, s:s}", "kind", "evt", "event", event);
-    return dumpAndFree(o);
+    return dumpAndFree(o, std::string());
 }
 
 std::string buildResOk(const std::string& id, json_t* payload) {
     if (!payload)
         payload = json_object();
-    json_t* o = json_pack("{s:s, s:s, s:b, s:o}",
-                          "kind", "res", "id", id.c_str(), "ok", 1, "payload", payload);
-    return dumpAndFree(o);
+    // Build the envelope first, then attach the payload: json_object_set_new
+    // consumes the reference on every path, so the payload has exactly one
+    // owner even when packing fails. The fallback says the mutation may have
+    // occurred because the command did run; only its result was lost.
+    json_t* o = json_pack("{s:s, s:s, s:b}", "kind", "res", "id", id.c_str(), "ok", 1);
+    if (!o) {
+        json_decref(payload);
+        return resInternalError(id, true);
+    }
+    if (json_object_set_new(o, "payload", payload) != 0) {
+        json_decref(o);
+        return resInternalError(id, true);
+    }
+    return dumpAndFree(o, resInternalError(id, true));
 }
 
 std::string buildResError(const std::string& id, const char* code, const std::string& message,
@@ -73,7 +121,7 @@ std::string buildResError(const std::string& id, const char* code, const std::st
                           "message", message.c_str(),
                           "retrySafe", retrySafe ? 1 : 0,
                           "mutationMayHaveOccurred", mutationMayHaveOccurred ? 1 : 0);
-    return dumpAndFree(o);
+    return dumpAndFree(o, resInternalError(id, mutationMayHaveOccurred));
 }
 
 std::string authMessage(const std::string& nonce, const std::string& instanceId,

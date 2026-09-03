@@ -207,19 +207,26 @@ void RackBridge::resetPairing() {
     writeManifestNow();
 }
 
-bool RackBridge::lookupOperation(const std::string& operationId, std::string& frameOut) {
+RackBridge::OpLookup RackBridge::lookupOperation(const std::string& operationId,
+                                                 const std::string& requestFingerprint,
+                                                 std::string& frameOut) {
     std::lock_guard<std::mutex> lock(opCacheMutex_);
     int64_t now = steadyNowMs();
     for (const OpEntry& e : opCache_) {
-        if (e.operationId == operationId && now - e.storedAtMs < gen::LIMIT_IDEMPOTENCY_CACHE_MS) {
-            frameOut = e.frame;
-            return true;
-        }
+        if (e.operationId != operationId || now - e.storedAtMs >= gen::LIMIT_IDEMPOTENCY_CACHE_MS)
+            continue;
+        // Same id, different request: the caller must not be handed this frame.
+        if (e.requestFingerprint != requestFingerprint)
+            return OP_MISMATCH;
+        frameOut = e.frame;
+        return OP_REPLAY;
     }
-    return false;
+    return OP_MISS;
 }
 
-void RackBridge::recordOperation(const std::string& operationId, const std::string& frame) {
+void RackBridge::recordOperation(const std::string& operationId,
+                                 const std::string& requestFingerprint,
+                                 const std::string& frame) {
     std::lock_guard<std::mutex> lock(opCacheMutex_);
     int64_t now = steadyNowMs();
     // Evict expired entries; bound total size.
@@ -234,6 +241,7 @@ void RackBridge::recordOperation(const std::string& operationId, const std::stri
         opCache_.erase(opCache_.begin());
     OpEntry entry;
     entry.operationId = operationId;
+    entry.requestFingerprint = requestFingerprint;
     entry.frame = frame;
     entry.storedAtMs = now;
     opCache_.push_back(std::move(entry));

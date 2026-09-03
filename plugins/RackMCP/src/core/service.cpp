@@ -46,10 +46,22 @@ void BridgeServer::stop() {
         std::lock_guard<std::mutex> lock(sessionsMutex_);
         sessions.swap(sessions_);
     }
+    // Closing the outbound queue is what makes a writer drain and exit, so do
+    // that first and give the writers one shared, bounded window to flush what
+    // is already queued (the shutting_down event, in-flight responses). Closing
+    // the stream first would drop those frames. The deadline is shared so
+    // shutdown stays deterministic (ADR-0002).
+    for (auto& kv : sessions)
+        kv.second->outbound.close();
+    int64_t flushDeadline = steadyNowMs() + 1000;
+    for (auto& kv : sessions) {
+        Session& s = *kv.second;
+        while (!s.writerDone.load() && steadyNowMs() < flushDeadline)
+            std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    }
     for (auto& kv : sessions) {
         Session& s = *kv.second;
         s.stream->close();
-        s.outbound.close();
         if (s.reader.joinable())
             s.reader.join();
         if (s.writer.joinable())
@@ -65,11 +77,18 @@ void BridgeServer::acceptLoop() {
         if (client == INVALID_SOCKET_HANDLE)
             continue;
         size_t active;
+        size_t unauthenticated = 0;
         {
             std::lock_guard<std::mutex> lock(sessionsMutex_);
             active = sessions_.size();
+            for (auto& kv : sessions_)
+                if (!kv.second->authed.load())
+                    unauthenticated++;
         }
-        if ((int) active >= config_.maxConnections) {
+        // Peers that have not proved they hold the pairing secret get only a
+        // slice of the slots, so they cannot starve out a paired client.
+        if ((int) active >= config_.maxConnections ||
+            (int) unauthenticated >= config_.maxUnauthConnections) {
             counters_.connectionsRefused++;
             TcpStream refuse(client);
             refuse.close();
@@ -77,6 +96,7 @@ void BridgeServer::acceptLoop() {
         }
         auto session = std::make_shared<Session>();
         session->id = nextConnectionId_++;
+        session->connectedAtMs = steadyNowMs();
         session->stream.reset(new TcpStream(client));
         counters_.connectionsAccepted++;
         {
@@ -115,6 +135,14 @@ void BridgeServer::readerLoop(std::shared_ptr<Session> session) {
     uint8_t buf[16384];
     bool alive = true;
     while (alive && !stopping_.load()) {
+        // An unauthenticated peer must not hold a connection slot indefinitely:
+        // idling (or dribbling bytes) without completing hello/auth is the
+        // cheapest way for a local process without the secret to occupy them.
+        if (config_.handshakeTimeoutMs > 0 && !session->authed.load() &&
+            steadyNowMs() - session->connectedAtMs >= (int64_t) config_.handshakeTimeoutMs) {
+            counters_.handshakeTimeouts++;
+            break;
+        }
         int n = session->stream->read(buf, sizeof(buf), config_.readPollMs);
         if (n == 0) {
             if (session->stream->timedOut())
@@ -176,6 +204,13 @@ void BridgeServer::writerLoop(std::shared_ptr<Session> session) {
 }
 
 void BridgeServer::enqueueOutbound(Session& session, const std::string& frame) {
+    if (frame.empty()) {
+        // A builder could not encode the frame and had no usable fallback. A
+        // 0-length frame parses as invalid JSON on the client and tears the
+        // whole session down, so drop it and count it instead.
+        counters_.responseDrops++;
+        return;
+    }
     if (!session.outbound.tryPush(frame))
         counters_.responseDrops++;
 }
@@ -193,6 +228,22 @@ static bool isHex(const std::string& s, size_t len) {
             return false;
     }
     return true;
+}
+
+/**
+ * Truncates to at most maxBytes without splitting a UTF-8 sequence. A trailing
+ * fragment would make jansson reject every later frame carrying the string
+ * (json_pack validates UTF-8), which would cost the client its session.
+ */
+static void truncateUtf8(std::string& s, size_t maxBytes) {
+    if (s.size() <= maxBytes)
+        return;
+    size_t end = maxBytes;
+    // Walk back over continuation bytes (10xxxxxx) to the lead byte of the
+    // character straddling the cut, then drop that character entirely.
+    while (end > 0 && ((unsigned char) s[end] & 0xC0) == 0x80)
+        end--;
+    s.resize(end);
 }
 
 static const gen::MethodSpec* findMethod(const char* name) {
@@ -348,6 +399,7 @@ bool BridgeServer::handleRequest(Session& session, json_t* root) {
         return true;
     }
 
+    std::string leaseIdAtEnqueue;
     if (spec->mutating) {
         if (operationId.size() != 36) {
             enqueueOutbound(session,
@@ -355,12 +407,16 @@ bool BridgeServer::handleRequest(Session& session, json_t* root) {
                                           "mutating requests require a UUID operationId", false, false));
             return true;
         }
-        if (!leases_.isWriter(session.id, steadyNowMs())) {
+        // Record which lease authorized this command; the executor revalidates
+        // it, because the lease may lapse or move while the command is queued.
+        LeaseHolder h = leases_.holder(steadyNowMs());
+        if (!h.held || h.connectionId != session.id) {
             enqueueOutbound(session, buildResError(id, "WRITER_LEASE_REQUIRED",
                                                    "acquire the writer lease before mutating", true,
                                                    false));
             return true;
         }
+        leaseIdAtEnqueue = h.leaseId;
     }
 
     BridgeCommand cmd;
@@ -369,6 +425,8 @@ bool BridgeServer::handleRequest(Session& session, json_t* root) {
     cmd.method = method;
     cmd.operationId = operationId;
     cmd.deadlineAtMs = deadlineAtMs;
+    cmd.mutating = spec->mutating;
+    cmd.leaseId = leaseIdAtEnqueue;
     cmd.payload = payload ? json_incref(payload) : json_object();
     if (!callbacks_->enqueueCommand(cmd)) {
         json_decref(cmd.payload);
@@ -387,8 +445,7 @@ void BridgeServer::handleLeaseRequest(Session& session, const std::string& id,
     if (method == "lease.acquire") {
         json_t* nameJ = payload ? json_object_get(payload, "clientName") : nullptr;
         std::string name = json_is_string(nameJ) ? json_string_value(nameJ) : "unknown";
-        if (name.size() > 128)
-            name.resize(128);
+        truncateUtf8(name, 128);
         std::string leaseId;
         LeaseManager::AcquireResult r =
             leases_.acquire(session.id, name, now, config_.leaseTtlMs, leaseId);
@@ -458,6 +515,13 @@ void BridgeServer::broadcastEvent(const std::string& frameJson) {
 
 bool BridgeServer::connectionIsWriter(uint64_t connectionId) {
     return leases_.isWriter(connectionId, steadyNowMs());
+}
+
+bool BridgeServer::commandLeaseStillValid(const BridgeCommand& cmd) {
+    if (!cmd.mutating)
+        return true;
+    LeaseHolder h = leases_.holder(steadyNowMs());
+    return h.held && h.connectionId == cmd.connectionId && h.leaseId == cmd.leaseId;
 }
 
 } // namespace rackmcp

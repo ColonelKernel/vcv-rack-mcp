@@ -2,7 +2,9 @@
 // Patch file operations (spec section 8). UI thread only. Load and clear are
 // owned here (the command pump), never a Bridge widget, so the executing
 // object is never destroyed mid-call. Uses Rack's patch manager for .vcv;
-// never rewrites archives directly. Increments the patch epoch on load/clear.
+// never rewrites archives directly, and saves via a sibling temp file so an
+// interrupted write cannot destroy the previous file. Increments the patch
+// epoch on load/clear, and on replacements the user made in Rack's own UI.
 #include <string>
 
 typedef struct json_t json_t;
@@ -26,5 +28,14 @@ PatchFileOutcome patchClear(json_t* request);
 
 /** True when the live patch contains at least one RackMCP-Bridge module. */
 bool patchHasBridge();
+
+/**
+ * Notices a patch replacement performed outside MCP -- Rack's own File > New,
+ * Open or Revert, and patch drag-drop -- and increments the epoch so client
+ * references into the replaced patch stop validating (spec section 5).
+ * patch::Manager has no observer API, so this polls; it throttles itself and
+ * is meant to be called once per UI frame from the command pump.
+ */
+void pollPatchReplacement();
 
 } // namespace rackmcp

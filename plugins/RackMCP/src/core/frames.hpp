@@ -1,6 +1,12 @@
 #pragma once
 // Builders/parsers for bridge protocol frames (JSON payload level).
 // No Rack dependencies (jansson only); C++11; unit tested out of tree.
+//
+// Every builder is fail-safe: when jansson cannot encode the frame it returns a
+// minimal, valid fallback frame, or an empty string meaning "send nothing".
+// A builder never returns a non-empty string that is not valid JSON, and
+// callers must never put an empty string on the wire (a 0-length frame makes
+// the client tear the session down).
 #include <cstdint>
 #include <string>
 

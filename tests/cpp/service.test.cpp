@@ -1,6 +1,7 @@
 #include <doctest.h>
 #include <jansson.h>
 #include <chrono>
+#include <cstdint>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -96,7 +97,8 @@ struct Harness {
     TestSink sink;
     BridgeServer server;
 
-    Harness() {
+    /** 0 keeps the shipped default for that knob. */
+    explicit Harness(int handshakeTimeoutMs = 0, int maxUnauthConnections = 0) {
         uint8_t raw[32];
         REQUIRE(randomBytes(raw, 32));
         secret.assign((const char*) raw, 32);
@@ -106,6 +108,10 @@ struct Harness {
         config.bridgeVersion = "0.1.0-test";
         config.rackVersion = "2.6.6";
         config.rackEdition = "Pro";
+        if (handshakeTimeoutMs > 0)
+            config.handshakeTimeoutMs = handshakeTimeoutMs;
+        if (maxUnauthConnections > 0)
+            config.maxUnauthConnections = maxUnauthConnections;
         REQUIRE(server.start(config, &sink));
     }
     ~Harness() { server.stop(); }
@@ -418,4 +424,251 @@ TEST_CASE("writer survives long idle periods (regression: timeout must not kill 
     CHECK(json_is_true(json_object_get(res, "ok")));
     json_decref(res);
     CHECK(h.server.counters().responseDrops.load() == 0);
+}
+
+// ---------------------------------------------------------------------------
+// Unauthenticated connections must not live (or hold a slot) forever.
+// ---------------------------------------------------------------------------
+
+TEST_CASE("a connection that never authenticates is dropped at the handshake deadline") {
+    Harness h(/*handshakeTimeoutMs=*/300);
+    TestClient c;
+    REQUIRE(c.connect(h.server.port()));
+    // Sends nothing at all: the server must close it instead of holding the slot.
+    CHECK(c.readFrame(3000).empty());
+    bool timedOut = false;
+    for (int i = 0; i < 200 && !timedOut; i++) {
+        if (h.server.counters().handshakeTimeouts.load() >= 1)
+            timedOut = true;
+        else
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    CHECK(timedOut);
+}
+
+TEST_CASE("an authenticated session outlives the handshake deadline") {
+    Harness h(/*handshakeTimeoutMs=*/300);
+    TestClient c;
+    h.handshake(c);
+    json_decref(c.readJson()); // authResult
+    std::this_thread::sleep_for(std::chrono::milliseconds(700));
+    REQUIRE(c.send("{\"kind\":\"ping\",\"id\":\"00000000000000ab\"}"));
+    json_t* pong = c.readJson();
+    REQUIRE(pong);
+    CHECK(std::string(json_string_value(json_object_get(pong, "kind"))) == "pong");
+    json_decref(pong);
+    CHECK(h.server.counters().handshakeTimeouts.load() == 0);
+}
+
+TEST_CASE("unauthenticated peers cannot occupy every connection slot") {
+    Harness h(/*handshakeTimeoutMs=*/60000, /*maxUnauthConnections=*/2);
+    {
+        TestClient a, b;
+        REQUIRE(a.connect(h.server.port()));
+        REQUIRE(b.connect(h.server.port()));
+        for (int i = 0; i < 200 && h.server.counters().connectionsAccepted.load() < 2; i++)
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        REQUIRE(h.server.counters().connectionsAccepted.load() == 2);
+        TestClient squatter;
+        REQUIRE(squatter.connect(h.server.port()));
+        bool refused = false;
+        for (int i = 0; i < 200 && !refused; i++) {
+            if (h.server.counters().connectionsRefused.load() >= 1)
+                refused = true;
+            else
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+        CHECK(refused);
+        CHECK(h.server.counters().connectionsAccepted.load() == 2);
+    } // the squatters disconnect here
+    // The slots come back, so a real client can still pair.
+    bool welcomed = false;
+    for (int attempt = 0; attempt < 60 && !welcomed; attempt++) {
+        TestClient good;
+        if (good.connect(h.server.port()) &&
+            good.send("{\"kind\":\"hello\",\"versions\":[1],\"client\":{\"name\":\"t\",\"version\":\"0\"}}")) {
+            json_t* w = good.readJson(300);
+            if (w) {
+                json_t* kind = json_object_get(w, "kind");
+                welcomed = json_is_string(kind) && std::string(json_string_value(kind)) == "welcome";
+                json_decref(w);
+            }
+        }
+        if (!welcomed)
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+    CHECK(welcomed);
+}
+
+// ---------------------------------------------------------------------------
+// The writer lease must survive the trip through the command queue.
+// ---------------------------------------------------------------------------
+
+TEST_CASE("a queued mutating command carries its lease and stops validating when it moves") {
+    Harness h;
+    TestClient a, b;
+    h.handshake(a);
+    json_decref(a.readJson());
+    h.handshake(b);
+    json_decref(b.readJson());
+
+    REQUIRE(a.send(reqFrame("00000000000000a1", "lease.acquire", "{\"clientName\":\"alpha\"}")));
+    json_t* res = a.readJson();
+    REQUIRE(res);
+    REQUIRE(json_is_true(json_object_get(res, "ok")));
+    std::string leaseId =
+        json_string_value(json_object_get(json_object_get(res, "payload"), "leaseId"));
+    json_decref(res);
+
+    REQUIRE(a.send(reqFrame("00000000000000a2", "txn.commit", "{}", uuid4())));
+    BridgeCommand queued;
+    for (int i = 0; i < 200 && queued.requestId.empty(); i++) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        std::lock_guard<std::mutex> lock(h.sink.mutex);
+        if (!h.sink.commands.empty()) {
+            // Copy the identity fields only; the sink keeps ownership of payload.
+            queued.connectionId = h.sink.commands[0].connectionId;
+            queued.requestId = h.sink.commands[0].requestId;
+            queued.method = h.sink.commands[0].method;
+            queued.mutating = h.sink.commands[0].mutating;
+            queued.leaseId = h.sink.commands[0].leaseId;
+        }
+    }
+    REQUIRE(queued.requestId == "00000000000000a2");
+    CHECK(queued.mutating);
+    CHECK(queued.leaseId == leaseId);
+    CHECK(h.server.commandLeaseStillValid(queued));
+
+    // a releases; the command that is still queued must no longer be executable.
+    REQUIRE(a.send(reqFrame("00000000000000a3", "lease.release",
+                            "{\"leaseId\":\"" + leaseId + "\"}")));
+    res = a.readJson();
+    REQUIRE(res);
+    REQUIRE(json_is_true(json_object_get(res, "ok")));
+    json_decref(res);
+    CHECK_FALSE(h.server.commandLeaseStillValid(queued));
+
+    // Nor after the lease moves to another connection.
+    REQUIRE(b.send(reqFrame("00000000000000b1", "lease.acquire", "{\"clientName\":\"beta\"}")));
+    res = b.readJson();
+    REQUIRE(res);
+    REQUIRE(json_is_true(json_object_get(res, "ok")));
+    json_decref(res);
+    CHECK_FALSE(h.server.commandLeaseStillValid(queued));
+}
+
+TEST_CASE("read-only commands never need a lease at execution time") {
+    Harness h;
+    BridgeCommand readOnly;
+    readOnly.connectionId = 12345;
+    readOnly.method = "status.get";
+    CHECK(h.server.commandLeaseStillValid(readOnly));
+}
+
+// ---------------------------------------------------------------------------
+// Frame building must fail safe: an empty frame kills the client's session.
+// ---------------------------------------------------------------------------
+
+TEST_CASE("a frame that cannot be packed falls back to a valid error frame") {
+    // A message that is not valid UTF-8 makes json_pack fail.
+    std::string message = "writer lease held by ";
+    message += (char) 0xE2;
+    message += (char) 0x82; // truncated 3-byte sequence
+    std::string frame = buildResError("00000000000000c1", "LEASE_HELD", message, true, false);
+    REQUIRE_FALSE(frame.empty());
+    json_error_t err;
+    json_t* o = json_loads(frame.c_str(), 0, &err);
+    REQUIRE(o);
+    CHECK(std::string(json_string_value(json_object_get(o, "kind"))) == "res");
+    CHECK(std::string(json_string_value(json_object_get(o, "id"))) == "00000000000000c1");
+    CHECK_FALSE(json_is_true(json_object_get(o, "ok")));
+    CHECK(std::string(json_string_value(
+              json_object_get(json_object_get(o, "error"), "code"))) == "INTERNAL");
+    json_decref(o);
+
+    // The successful-response builder is fail-safe too.
+    std::string authFrame = buildAuthResult(false, "AUTHENTICATION_FAILED", message.c_str());
+    REQUIRE_FALSE(authFrame.empty());
+    o = json_loads(authFrame.c_str(), 0, &err);
+    REQUIRE(o);
+    CHECK(std::string(json_string_value(json_object_get(o, "kind"))) == "authResult");
+    CHECK_FALSE(json_is_true(json_object_get(o, "ok")));
+    json_decref(o);
+}
+
+TEST_CASE("an empty frame is dropped instead of tearing the session down") {
+    Harness h;
+    TestClient c;
+    h.handshake(c);
+    json_decref(c.readJson());
+    REQUIRE(c.send(reqFrame("00000000000000d1", "status.get", "{}")));
+    uint64_t connId = 0;
+    for (int i = 0; i < 200 && connId == 0; i++) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        std::lock_guard<std::mutex> lock(h.sink.mutex);
+        if (!h.sink.commands.empty())
+            connId = h.sink.commands[0].connectionId;
+    }
+    REQUIRE(connId != 0);
+    h.server.sendFrame(connId, std::string()); // what a failed builder returns
+    CHECK(h.server.counters().responseDrops.load() == 1);
+    // The session is still usable: a 0-length frame never reached the client.
+    REQUIRE(c.send("{\"kind\":\"ping\",\"id\":\"00000000000000d2\"}"));
+    json_t* pong = c.readJson();
+    REQUIRE(pong);
+    CHECK(std::string(json_string_value(json_object_get(pong, "kind"))) == "pong");
+    json_decref(pong);
+}
+
+TEST_CASE("a clientName cut mid-UTF-8 does not poison later frames") {
+    Harness h;
+    TestClient a, b;
+    h.handshake(a);
+    json_decref(a.readJson());
+    h.handshake(b);
+    json_decref(b.readJson());
+    // 126 ASCII bytes plus a 3-byte character occupying bytes 127-129, so a
+    // byte-boundary truncation at 128 would leave an invalid fragment.
+    std::string name(126, 'n');
+    name += "\xE2\x82\xAC"; // U+20AC EURO SIGN
+    REQUIRE(a.send(reqFrame("00000000000000e1", "lease.acquire",
+                            "{\"clientName\":\"" + name + "\"}")));
+    json_t* res = a.readJson();
+    REQUIRE(res);
+    REQUIRE(json_is_true(json_object_get(res, "ok")));
+    json_decref(res);
+
+    // b's refusal quotes the stored name; it must still be a well-formed frame.
+    REQUIRE(b.send(reqFrame("00000000000000e2", "lease.acquire", "{\"clientName\":\"beta\"}")));
+    res = b.readJson();
+    REQUIRE(res);
+    CHECK_FALSE(json_is_true(json_object_get(res, "ok")));
+    CHECK(std::string(json_string_value(
+              json_object_get(json_object_get(res, "error"), "code"))) == "LEASE_HELD");
+    json_decref(res);
+}
+
+// ---------------------------------------------------------------------------
+// Shutdown flushes what is already queued, without hanging.
+// ---------------------------------------------------------------------------
+
+TEST_CASE("stop() flushes queued frames before closing the socket") {
+    auto* h = new Harness();
+    TestClient c;
+    h->handshake(c);
+    json_decref(c.readJson()); // authResult
+    // Exactly what RackBridge::stop() does immediately before stopping.
+    h->server.broadcastEvent(buildEvent("shutting_down"));
+    auto start = std::chrono::steady_clock::now();
+    h->server.stop();
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                  std::chrono::steady_clock::now() - start)
+                  .count();
+    CHECK(ms < 3000);
+    json_t* evt = c.readJson(1000);
+    REQUIRE(evt);
+    CHECK(std::string(json_string_value(json_object_get(evt, "kind"))) == "evt");
+    CHECK(std::string(json_string_value(json_object_get(evt, "event"))) == "shutting_down");
+    json_decref(evt);
+    delete h;
 }

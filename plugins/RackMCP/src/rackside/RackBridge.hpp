@@ -82,9 +82,23 @@ public:
     std::atomic<int64_t> pumpLastDrainMs{0};
     std::atomic<int64_t> pumpMaxDrainMs{0};
 
-    /** Pump-side idempotency cache (operationId -> response frame). */
-    bool lookupOperation(const std::string& operationId, std::string& frameOut);
-    void recordOperation(const std::string& operationId, const std::string& frame);
+    /** Outcome of an idempotency-cache lookup. */
+    enum OpLookup {
+        OP_MISS = 0,  // no live entry for this operation id
+        OP_REPLAY,    // same request under the same id: replay the cached frame
+        OP_MISMATCH   // the id was already used for a different request
+    };
+
+    /**
+     * Pump-side idempotency cache ((operationId, request fingerprint) ->
+     * response frame). The fingerprint binds the entry to the request the id
+     * was first used for, so a reused id cannot inherit another request's
+     * result. `frameOut` is written only for OP_REPLAY.
+     */
+    OpLookup lookupOperation(const std::string& operationId, const std::string& requestFingerprint,
+                             std::string& frameOut);
+    void recordOperation(const std::string& operationId, const std::string& requestFingerprint,
+                         const std::string& frame);
 
 private:
     RackBridge() = default;
@@ -131,6 +145,7 @@ private:
     // Idempotency cache: bounded FIFO with TTL (spec: >= 10 minutes).
     struct OpEntry {
         std::string operationId;
+        std::string requestFingerprint;
         std::string frame;
         int64_t storedAtMs;
     };

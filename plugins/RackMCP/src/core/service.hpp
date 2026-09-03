@@ -31,6 +31,13 @@ struct BridgeCommand {
     std::string operationId; // empty when not a mutating request
     json_t* payload = nullptr; // ownership passes to the sink on successful enqueue
     int64_t deadlineAtMs = 0;  // steadyNowMs() deadline
+    bool mutating = false;     // the method's spec->mutating flag
+    // Writer lease held by connectionId when the command was enqueued (mutating
+    // methods only). The lease can lapse, be released, or move to another
+    // connection before the pump drains the queue, so the executor must
+    // revalidate with commandLeaseStillValid() instead of trusting the gate the
+    // reader thread applied at enqueue time.
+    std::string leaseId;
 };
 
 struct ServiceCallbacks {
@@ -53,6 +60,15 @@ struct ServiceConfig {
     std::string rackEdition = "unknown";
     size_t maxFrameBytes = 1024 * 1024;
     int maxConnections = 8;
+    // Slots an unauthenticated peer may hold at once; the remainder stay
+    // available to peers that completed the pairing handshake, so a local
+    // process without the secret cannot lock every slot (threat model,
+    // adversary 1).
+    int maxUnauthConnections = 4;
+    // A connection that has not authenticated within this window is dropped.
+    // The first-party client's own handshake timeout is 5 s, so this never
+    // fires for a healthy peer.
+    int handshakeTimeoutMs = 10 * 1000;
     int64_t leaseTtlMs = 30 * 1000;
     int readPollMs = 250;
 };
@@ -61,6 +77,7 @@ struct ServiceCounters {
     std::atomic<uint64_t> connectionsAccepted{0};
     std::atomic<uint64_t> connectionsRefused{0};
     std::atomic<uint64_t> authFailures{0};
+    std::atomic<uint64_t> handshakeTimeouts{0};
     std::atomic<uint64_t> protocolErrors{0};
     std::atomic<uint64_t> requestsInline{0};
     std::atomic<uint64_t> requestsEnqueued{0};
@@ -91,6 +108,15 @@ public:
     /** True when the connection currently holds the writer lease. */
     bool connectionIsWriter(uint64_t connectionId);
 
+    /**
+     * Re-checks a queued mutating command's writer lease at execution time.
+     * Non-mutating commands always pass. The executor (the UI command pump)
+     * must call this before applying a mutation: the enqueue-time gate in
+     * handleRequest can no longer be trusted once the command has sat in the
+     * queue (spec section 4, single-writer rule).
+     */
+    bool commandLeaseStillValid(const BridgeCommand& cmd);
+
     /** Lock-free hints for DSP-side status lights. */
     int activeSessions() const { return authedSessions_.load(); }
     bool leaseHeldHint() const { return leaseHeldHint_.load(); }
@@ -109,6 +135,7 @@ private:
         std::atomic<bool> defunct{false};
         std::atomic<bool> writerDone{false};
         std::string nonce;
+        int64_t connectedAtMs = 0; // steadyNowMs() at accept; bounds the handshake
         enum class State { ExpectHello, ExpectAuth, Ready };
         State state = State::ExpectHello;
     };

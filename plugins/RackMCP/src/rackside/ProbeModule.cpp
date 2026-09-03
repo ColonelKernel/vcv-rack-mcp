@@ -3,6 +3,8 @@
 #include "gen/rackmcp_protocol_gen.hpp"
 #include "rackmcp_plugin.hpp"
 
+#include <cmath>
+
 namespace rackmcp {
 
 using namespace rack;
@@ -22,6 +24,7 @@ void ProbeModule::beginWindow() {
     windowFrame_ = 0;
     for (int i = 0; i < NUM_PROBE_INPUTS; i++) {
         windowChannels_[i] = 0;
+        channelSeen_[i] = 0;
         for (int c = 0; c < PROBE_MAX_CHANNELS; c++)
             acc_[i][c].reset();
     }
@@ -37,7 +40,6 @@ void ProbeModule::onSampleRateChange(const SampleRateChangeEvent& e) {
 
 void ProbeModule::process(const ProcessArgs& args) {
     // Fixed-cost accumulation; no allocation, locks, IO, or JSON here.
-    bool first = windowFrame_ == 0;
     for (int i = 0; i < NUM_PROBE_INPUTS; i++) {
         engine::Input& input = inputs[PROBE1_INPUT + i];
         uint8_t channels = (uint8_t) input.getChannels();
@@ -45,8 +47,19 @@ void ProbeModule::process(const ProcessArgs& args) {
             channels = PROBE_MAX_CHANNELS;
         if (channels > windowChannels_[i])
             windowChannels_[i] = channels;
-        for (uint8_t c = 0; c < channels; c++)
-            acc_[i][c].accumulate(input.getVoltage(c), first);
+        // `first` is per channel, not per window: a cable patched mid-window, or
+        // a poly channel count that grows, must seed min/max from its own first
+        // finite sample rather than clamp against the 0 V reset seed.
+        uint16_t seen = channelSeen_[i];
+        for (uint8_t c = 0; c < channels; c++) {
+            uint16_t bit = (uint16_t) (1u << c);
+            bool first = (seen & bit) == 0;
+            float v = input.getVoltage(c);
+            acc_[i][c].accumulate(v, first);
+            if (first && std::isfinite(v))
+                seen |= bit;
+        }
+        channelSeen_[i] = seen;
     }
     windowFrame_++;
 

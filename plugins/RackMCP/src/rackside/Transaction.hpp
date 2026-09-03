@@ -27,6 +27,12 @@ TxnOutcome txnPreview(json_t* request);
 /**
  * Apply a previewed plan atomically. `payload` matches TxnCommitResult.
  * Enforces plan-hash integrity, fingerprint concurrency, and full rollback.
+ *
+ * On failure `payload` carries a `rollback` RollbackReport and `errorCode` is
+ * VALIDATION_FAILED only when the post-rollback fingerprint proves the patch
+ * is back to its pre-transaction state; otherwise the report says
+ * "indeterminate" and the outcome is ROLLBACK_FAILED with
+ * `mutationMayHaveOccurred` set (spec section 6).
  */
 TxnOutcome txnCommit(json_t* request);
 
