@@ -1017,15 +1017,11 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 9007199254740991
-          },
-          "saved": {
-            "type": "boolean"
           }
         },
         "required": [
           "fingerprint",
-          "patchEpoch",
-          "saved"
+          "patchEpoch"
         ],
         "additionalProperties": false
       }
@@ -1081,309 +1077,318 @@
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
         "properties": {
-          "moduleId": {
-            "type": "string",
-            "pattern": "^(0|[1-9][0-9]{0,18})$"
-          },
-          "pluginSlug": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 255
-          },
-          "pluginVersion": {
-            "type": "string",
-            "maxLength": 64
-          },
-          "modelSlug": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 255
-          },
-          "modelName": {
-            "type": "string",
-            "maxLength": 256
-          },
-          "bypassed": {
-            "type": "boolean"
-          },
-          "isBridge": {
-            "type": "boolean"
-          },
-          "isProbe": {
-            "type": "boolean"
-          },
-          "gridPosition": {
-            "anyOf": [
-              {
-                "type": "object",
-                "properties": {
-                  "x": {
-                    "type": "integer",
-                    "minimum": -4096,
-                    "maximum": 4096
+          "module": {
+            "type": "object",
+            "properties": {
+              "moduleId": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]{0,18})$"
+              },
+              "pluginSlug": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255
+              },
+              "pluginVersion": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "modelSlug": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255
+              },
+              "modelName": {
+                "type": "string",
+                "maxLength": 256
+              },
+              "bypassed": {
+                "type": "boolean"
+              },
+              "isBridge": {
+                "type": "boolean"
+              },
+              "isProbe": {
+                "type": "boolean"
+              },
+              "gridPosition": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "x": {
+                        "type": "integer",
+                        "minimum": -4096,
+                        "maximum": 4096
+                      },
+                      "y": {
+                        "type": "integer",
+                        "minimum": -256,
+                        "maximum": 256
+                      }
+                    },
+                    "required": [
+                      "x",
+                      "y"
+                    ],
+                    "additionalProperties": false
                   },
-                  "y": {
-                    "type": "integer",
-                    "minimum": -256,
-                    "maximum": 256
+                  {
+                    "type": "null"
                   }
-                },
-                "required": [
-                  "x",
-                  "y"
-                ],
-                "additionalProperties": false
+                ]
               },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "gridWidth": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 1024
+              "gridWidth": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1024
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "params": {
-            "maxItems": 4096,
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "paramId": {
-                  "type": "integer",
-                  "minimum": 0,
-                  "maximum": 65535
-                },
-                "name": {
-                  "type": "string",
-                  "maxLength": 256
-                },
-                "value": {
-                  "anyOf": [
-                    {
-                      "type": "number"
+              "params": {
+                "maxItems": 4096,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "paramId": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 65535
                     },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "minValue": {
-                  "anyOf": [
-                    {
-                      "type": "number"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "maxValue": {
-                  "anyOf": [
-                    {
-                      "type": "number"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "defaultValue": {
-                  "anyOf": [
-                    {
-                      "type": "number"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "normalizedValue": {
-                  "anyOf": [
-                    {
-                      "type": "number"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "displayValue": {
-                  "anyOf": [
-                    {
+                    "name": {
                       "type": "string",
                       "maxLength": 256
                     },
-                    {
-                      "type": "null"
+                    "value": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "minValue": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "maxValue": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "defaultValue": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "normalizedValue": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "displayValue": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 256
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "unit": {
+                      "type": "string",
+                      "maxLength": 64
+                    },
+                    "snapped": {
+                      "type": "boolean"
                     }
-                  ]
-                },
-                "unit": {
-                  "type": "string",
-                  "maxLength": 64
-                },
-                "snapped": {
-                  "type": "boolean"
-                }
-              },
-              "required": [
-                "paramId",
-                "name",
-                "value",
-                "minValue",
-                "maxValue",
-                "defaultValue",
-                "normalizedValue",
-                "displayValue",
-                "unit",
-                "snapped"
-              ],
-              "additionalProperties": false
-            }
-          },
-          "inputs": {
-            "maxItems": 1024,
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "portId": {
-                  "type": "integer",
-                  "minimum": 0,
-                  "maximum": 65535
-                },
-                "type": {
-                  "type": "string",
-                  "enum": [
-                    "input",
-                    "output"
-                  ]
-                },
-                "name": {
-                  "type": "string",
-                  "maxLength": 256
-                },
-                "channels": {
-                  "type": "integer",
-                  "minimum": 0,
-                  "maximum": 16
-                },
-                "connected": {
-                  "type": "boolean"
-                }
-              },
-              "required": [
-                "portId",
-                "type",
-                "name",
-                "channels",
-                "connected"
-              ],
-              "additionalProperties": false
-            }
-          },
-          "outputs": {
-            "maxItems": 1024,
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "portId": {
-                  "type": "integer",
-                  "minimum": 0,
-                  "maximum": 65535
-                },
-                "type": {
-                  "type": "string",
-                  "enum": [
-                    "input",
-                    "output"
-                  ]
-                },
-                "name": {
-                  "type": "string",
-                  "maxLength": 256
-                },
-                "channels": {
-                  "type": "integer",
-                  "minimum": 0,
-                  "maximum": 16
-                },
-                "connected": {
-                  "type": "boolean"
-                }
-              },
-              "required": [
-                "portId",
-                "type",
-                "name",
-                "channels",
-                "connected"
-              ],
-              "additionalProperties": false
-            }
-          },
-          "expanders": {
-            "type": "object",
-            "properties": {
-              "left": {
-                "anyOf": [
-                  {
-                    "type": "string",
-                    "pattern": "^(0|[1-9][0-9]{0,18})$"
                   },
-                  {
-                    "type": "null"
-                  }
-                ]
+                  "required": [
+                    "paramId",
+                    "name",
+                    "value",
+                    "minValue",
+                    "maxValue",
+                    "defaultValue",
+                    "normalizedValue",
+                    "displayValue",
+                    "unit",
+                    "snapped"
+                  ],
+                  "additionalProperties": false
+                }
               },
-              "right": {
-                "anyOf": [
-                  {
-                    "type": "string",
-                    "pattern": "^(0|[1-9][0-9]{0,18})$"
+              "inputs": {
+                "maxItems": 1024,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "portId": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 65535
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "input",
+                        "output"
+                      ]
+                    },
+                    "name": {
+                      "type": "string",
+                      "maxLength": 256
+                    },
+                    "channels": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 16
+                    },
+                    "connected": {
+                      "type": "boolean"
+                    }
                   },
-                  {
-                    "type": "null"
+                  "required": [
+                    "portId",
+                    "type",
+                    "name",
+                    "channels",
+                    "connected"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "outputs": {
+                "maxItems": 1024,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "portId": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 65535
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "input",
+                        "output"
+                      ]
+                    },
+                    "name": {
+                      "type": "string",
+                      "maxLength": 256
+                    },
+                    "channels": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 16
+                    },
+                    "connected": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "portId",
+                    "type",
+                    "name",
+                    "channels",
+                    "connected"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "expanders": {
+                "type": "object",
+                "properties": {
+                  "left": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^(0|[1-9][0-9]{0,18})$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "right": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^(0|[1-9][0-9]{0,18})$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   }
-                ]
+                },
+                "required": [
+                  "left",
+                  "right"
+                ],
+                "additionalProperties": false
+              },
+              "opaqueState": {},
+              "opaqueStateDisclosed": {
+                "type": "boolean"
               }
             },
             "required": [
-              "left",
-              "right"
+              "moduleId",
+              "pluginSlug",
+              "pluginVersion",
+              "modelSlug",
+              "modelName",
+              "bypassed",
+              "isBridge",
+              "isProbe",
+              "gridPosition",
+              "gridWidth",
+              "params",
+              "inputs",
+              "outputs",
+              "expanders"
             ],
             "additionalProperties": false
-          },
-          "opaqueState": {},
-          "opaqueStateDisclosed": {
-            "type": "boolean"
           }
         },
         "required": [
-          "moduleId",
-          "pluginSlug",
-          "pluginVersion",
-          "modelSlug",
-          "modelName",
-          "bypassed",
-          "isBridge",
-          "isProbe",
-          "gridPosition",
-          "gridWidth",
-          "params",
-          "inputs",
-          "outputs",
-          "expanders"
+          "module"
         ],
         "additionalProperties": false
       }

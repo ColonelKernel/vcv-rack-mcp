@@ -1,0 +1,19 @@
+{
+  "operationId": "827a2acd-b24c-4308-b24c-78d7e41ac31c",
+  "oldFingerprint": "d530d3db8f1c22e2c342627e98f2e36e7a4226c960cd73b9b8242da4495701a0",
+  "newFingerprint": "6e5bfe763ca017de92147b715c707bfcfb8795c21dbbd600d3381a883882d788",
+  "patchEpoch": 1,
+  "applied": [
+    {
+      "op": "add_module",
+      "summary": "Fundamental/VCO -> id 1313036992881189"
+    }
+  ],
+  "aliasToModuleId": {
+    "vco": "1313036992881189"
+  },
+  "warnings": [],
+  "undoEligible": true,
+  "durationMs": 5,
+  "replayed": false
+}

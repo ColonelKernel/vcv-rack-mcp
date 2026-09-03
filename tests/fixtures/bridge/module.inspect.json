@@ -1,0 +1,179 @@
+{
+  "module": {
+    "moduleId": "1313036992881189",
+    "pluginSlug": "Fundamental",
+    "pluginVersion": "2.6.4",
+    "modelSlug": "VCO",
+    "modelName": "VCO",
+    "bypassed": false,
+    "isBridge": false,
+    "isProbe": false,
+    "gridPosition": {
+      "x": 8,
+      "y": 0
+    },
+    "gridWidth": 9,
+    "params": [
+      {
+        "paramId": 0,
+        "name": "",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "0",
+        "unit": "",
+        "snapped": false
+      },
+      {
+        "paramId": 1,
+        "name": "Sync mode",
+        "value": 1,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 1,
+        "normalizedValue": 1,
+        "displayValue": "Hard",
+        "unit": "",
+        "snapped": true
+      },
+      {
+        "paramId": 2,
+        "name": "Frequency",
+        "value": 0,
+        "minValue": -54,
+        "maxValue": 54,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "261.63",
+        "unit": " Hz",
+        "snapped": false
+      },
+      {
+        "paramId": 3,
+        "name": "",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "0",
+        "unit": "",
+        "snapped": false
+      },
+      {
+        "paramId": 4,
+        "name": "Frequency modulation",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 5,
+        "name": "Pulse width",
+        "value": 0.5,
+        "minValue": 0.009999999776482582,
+        "maxValue": 0.9900000095367432,
+        "defaultValue": 0.5,
+        "normalizedValue": 0.5,
+        "displayValue": "50",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 6,
+        "name": "Pulse width modulation",
+        "value": 0,
+        "minValue": -1,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0.5,
+        "displayValue": "0",
+        "unit": "%",
+        "snapped": false
+      },
+      {
+        "paramId": 7,
+        "name": "FM mode",
+        "value": 0,
+        "minValue": 0,
+        "maxValue": 1,
+        "defaultValue": 0,
+        "normalizedValue": 0,
+        "displayValue": "1V/octave",
+        "unit": "",
+        "snapped": true
+      }
+    ],
+    "inputs": [
+      {
+        "portId": 0,
+        "type": "input",
+        "name": "1V/octave pitch",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "input",
+        "name": "Frequency modulation",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "input",
+        "name": "Sync",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "input",
+        "name": "Pulse width modulation",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "outputs": [
+      {
+        "portId": 0,
+        "type": "output",
+        "name": "Sine",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 1,
+        "type": "output",
+        "name": "Triangle",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 2,
+        "type": "output",
+        "name": "Sawtooth",
+        "channels": 0,
+        "connected": false
+      },
+      {
+        "portId": 3,
+        "type": "output",
+        "name": "Square",
+        "channels": 0,
+        "connected": false
+      }
+    ],
+    "expanders": {
+      "left": "1",
+      "right": null
+    }
+  }
+}

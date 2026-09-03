@@ -1,0 +1,18 @@
+{
+  "instanceId": "1a27b032-02ba-414a-bed7-90b30647e772",
+  "sessionId": "21ccef97-75ba-42e9-97e1-fd294a7bba00",
+  "patchEpoch": 1,
+  "rackVersion": "2.6.6",
+  "rackEdition": "Pro",
+  "bridgeVersion": "0.1.0",
+  "bridgeProtocolVersion": 1,
+  "mode": "standalone-gui",
+  "sampleRate": 44100,
+  "patchName": null,
+  "saved": true,
+  "bridgeModulePresent": true,
+  "commandPumpPresent": true,
+  "writerLease": {
+    "held": false
+  }
+}

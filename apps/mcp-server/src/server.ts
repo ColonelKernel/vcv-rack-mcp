@@ -1,5 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { BRIDGE_PROTOCOL_VERSION } from "@rackmcp/schemas";
+import { BRIDGE_PROTOCOL_VERSION, RackMcpError } from "@rackmcp/schemas";
 import type { ServerConfig } from "./config.js";
 import { ConnectionManager } from "./connection.js";
 import { TransactionManager } from "./transactions.js";
@@ -95,6 +95,21 @@ export function createServer(config: ServerConfig): {
           };
         } catch (err) {
           const payload = toErrorPayload(err);
+          // The error payload is a published contract too (stable codes, and
+          // the retrySafe / mutationMayHaveOccurred flags a client steers by),
+          // so hold it to its schema exactly as the success payload is held to
+          // its own. Non-fatal for the same reason: a validation complaint must
+          // never replace the error the caller actually needs to see.
+          const errorOutcome = RackMcpError.safeParse(payload);
+          if (!errorOutcome.success) {
+            log.error("tool error payload failed schema validation", {
+              tool: tool.spec.name,
+              code: payload.code,
+              issues: errorOutcome.error.issues
+                .slice(0, 8)
+                .map((i) => `${i.path.join(".") || "<root>"}: ${i.message}`),
+            });
+          }
           audit.record({
             tool: tool.spec.name,
             outcome: "error",

@@ -1,0 +1,41 @@
+{
+  "plan": {
+    "label": "Capture fixture",
+    "operations": [
+      {
+        "op": "add_module",
+        "pluginSlug": "Fundamental",
+        "modelSlug": "VCO",
+        "alias": "vco",
+        "placement": "auto"
+      }
+    ]
+  },
+  "planHash": "915c7f0936a978484afa066341bb7a24c3cbebdf44b4393f1428d969af4ecc9c",
+  "baseFingerprint": "d530d3db8f1c22e2c342627e98f2e36e7a4226c960cd73b9b8242da4495701a0",
+  "patchEpoch": 1,
+  "diff": {
+    "addedModules": [
+      {
+        "alias": "vco",
+        "pluginSlug": "Fundamental",
+        "modelSlug": "VCO"
+      }
+    ],
+    "removedModuleIds": [],
+    "movedModuleIds": [],
+    "modifiedModuleIds": [],
+    "addedCableCount": 0,
+    "removedCableIds": [],
+    "replacedInputPorts": [],
+    "stackedInputPorts": []
+  },
+  "risk": {
+    "level": "low",
+    "flags": [],
+    "reasons": [],
+    "confirmationRequired": false
+  },
+  "undoable": true,
+  "warnings": []
+}

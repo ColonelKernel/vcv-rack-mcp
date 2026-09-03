@@ -1,0 +1,15 @@
+{
+  "commandQueueDepth": 0,
+  "commandQueueMaxDepth": 1,
+  "requestsHandled": 2,
+  "requestTimeouts": 0,
+  "rollbacks": 0,
+  "authFailures": 0,
+  "droppedTelemetryFrames": 0,
+  "bridgeReconnects": 1,
+  "uiPumpLastDrainMs": 0,
+  "uiPumpMaxDrainMs": 0,
+  "requestLatencyEwmaMs": 0,
+  "engineBlock": 0,
+  "engineFrame": 0
+}

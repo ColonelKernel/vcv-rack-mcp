@@ -15,6 +15,21 @@ export class ToolError extends Error {
   }
 }
 
+/**
+ * RackMcpError caps `message` at 4096 characters. An arbitrary thrown value
+ * carries an arbitrarily long message — a Zod issue list, a bridge failure
+ * quoting a long path — which would put the error payload itself off-contract
+ * precisely when something has already gone wrong. Clamp, and say so, rather
+ * than emit a message the schema rejects.
+ */
+const MAX_MESSAGE = 4096;
+const TRUNCATION_MARK = "... [truncated]";
+
+function clampMessage(message: string): string {
+  if (message.length <= MAX_MESSAGE) return message;
+  return message.slice(0, MAX_MESSAGE - TRUNCATION_MARK.length) + TRUNCATION_MARK;
+}
+
 /** Normalizes any thrown value into a structured tool error payload. */
 export function toErrorPayload(err: unknown): {
   code: RackErrorCode;
@@ -27,7 +42,7 @@ export function toErrorPayload(err: unknown): {
   if (err instanceof ToolError) {
     return {
       code: err.code,
-      message: err.message,
+      message: clampMessage(err.message),
       retrySafe: err.retrySafe,
       mutationMayHaveOccurred: err.mutationMayHaveOccurred,
       ...(err.details !== undefined ? { details: err.details } : {}),
@@ -40,7 +55,7 @@ export function toErrorPayload(err: unknown): {
     // indeterminate one.
     return {
       code: normalizeErrorCode(err.rpcError.code),
-      message: err.rpcError.message,
+      message: clampMessage(err.rpcError.message),
       retrySafe: err.rpcError.retrySafe,
       mutationMayHaveOccurred: err.rpcError.mutationMayHaveOccurred,
       ...(err.rpcError.details !== undefined ? { details: err.rpcError.details } : {}),
@@ -49,7 +64,7 @@ export function toErrorPayload(err: unknown): {
   }
   return {
     code: "INTERNAL",
-    message: err instanceof Error ? err.message : String(err),
+    message: clampMessage(err instanceof Error ? err.message : String(err)),
     retrySafe: false,
     mutationMayHaveOccurred: false,
   };

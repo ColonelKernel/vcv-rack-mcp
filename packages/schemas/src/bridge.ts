@@ -273,9 +273,17 @@ export const SnapshotPayload = z
   })
   .strict();
 
+/**
+ * Concurrency control only. Whether the patch has unsaved changes is not part
+ * of this result: `status.get` owns that, and duplicating it here would give
+ * two sources of truth that can disagree between calls.
+ */
 export const FingerprintResult = z
-  .object({ fingerprint: HexHash, patchEpoch: PatchEpoch, saved: z.boolean() })
+  .object({ fingerprint: HexHash, patchEpoch: PatchEpoch })
   .strict();
+
+/** module.inspect wraps the snapshot: `{ module: ... }` on the wire. */
+export const ModuleInspectResult = z.object({ module: ModuleSnapshot }).strict();
 
 export const ModuleInspectPayload = z
   .object({
@@ -489,7 +497,7 @@ export const BRIDGE_METHODS: Record<BridgeMethod, BridgeMethodSpec> = {
   "catalog.inspectModel": { request: InspectModelPayload, result: InspectModelResult, mutating: false },
   "patch.snapshot": { request: SnapshotPayload, result: PatchSnapshot, mutating: false },
   "patch.fingerprint": { request: EmptyObject, result: FingerprintResult, mutating: false },
-  "module.inspect": { request: ModuleInspectPayload, result: ModuleSnapshot, mutating: false },
+  "module.inspect": { request: ModuleInspectPayload, result: ModuleInspectResult, mutating: false },
   "txn.preview": { request: TxnPreviewPayload, result: TxnPreviewResult, mutating: false },
   "txn.commit": { request: TxnCommitPayload, result: TxnCommitResult, mutating: true },
   "txn.undoLast": { request: TxnUndoPayload, result: TxnUndoResult, mutating: true },

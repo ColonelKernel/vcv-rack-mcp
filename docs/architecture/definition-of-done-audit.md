@@ -7,7 +7,7 @@ evidence — a test, a live smoke, or the code that enforces it — and any hone
 caveat.
 
 Verification tiers used below:
-- **Unit** — `pnpm -r test` (183 TypeScript tests across schemas, protocol,
+- **Unit** — `pnpm -r test` (207 TypeScript tests across schemas, protocol,
   adapters, recipes, and the server) and the C++ `ctest` suite (71 doctest
   cases: framing, queues, crypto, canonical/JSON-limits/UTF-8 clamping,
   telemetry math, protocol-gen, service, secret/manifest files).
@@ -19,6 +19,16 @@ Verification tiers used below:
   fails if a tool in the registry goes unexercised. The server's own output
   validation is deliberately non-fatal, so without this gate a producer whose
   payload no longer matches the published schema still shows a green build.
+- **Wire fixtures** — that gate needs the installed Rack on macOS, so it cannot
+  run in CI. `tests/fixtures/bridge/` holds a captured real response for each of
+  the 19 bridge methods, and `packages/schemas/test/bridge-fixtures.test.ts`
+  strict-parses each against the `result` schema `BRIDGE_METHODS` declares for
+  it — a table that existed from the start but was read only by the code
+  generator. That check runs on every CI platform and fails in both directions:
+  a producer that drifts from its schema, and a schema edited away from the real
+  wire. Refresh the fixtures against live Rack with
+  `pnpm --filter @rackmcp/integration run capture`; they are captured, never
+  hand-written, because a fixture edited to make CI pass proves nothing.
 - **CI** — `.github/workflows/ci.yml` builds and tests TypeScript and C++ on
   ubuntu/macos/windows, runs a 60 s libFuzzer smoke of the frame decoder on
   Linux, and packages the plugin for mac-arm64, mac-x64, lin-x64, and win-x64.
@@ -111,7 +121,7 @@ reported as heuristic; `validate_patch` surfaces the coverage gap
 [ADR-0004](./ADR-0004-adapter-and-recipe-knowledge-model.md).
 
 **12 — Full suite on every supported platform (CI-only).** The complete suite
-passes locally on macOS arm64: 183 TypeScript unit tests, 71 C++ cases, and the
+passes locally on macOS arm64: 207 TypeScript unit tests, 71 C++ cases, and the
 integration smokes. Windows x64, Linux x64, and macOS x64 are built and tested by
 CI (`.github/workflows/ci.yml`) but have not been verified on local hardware in
 this project; treat them as CI-green, not hand-verified, until a maintainer runs

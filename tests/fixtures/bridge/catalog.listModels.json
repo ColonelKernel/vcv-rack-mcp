@@ -1,0 +1,39 @@
+{
+  "models": [
+    {
+      "pluginSlug": "Core",
+      "pluginName": "VCV Core",
+      "pluginVersion": "2.6.6",
+      "modelSlug": "AudioInterface",
+      "modelName": "Audio 8",
+      "description": "Sends audio and CV to/from an audio device",
+      "tags": [
+        "External"
+      ]
+    },
+    {
+      "pluginSlug": "Core",
+      "pluginName": "VCV Core",
+      "pluginVersion": "2.6.6",
+      "modelSlug": "AudioInterface16",
+      "modelName": "Audio 16",
+      "description": "Sends audio and CV to/from an audio device",
+      "tags": [
+        "External"
+      ]
+    },
+    {
+      "pluginSlug": "Core",
+      "pluginName": "VCV Core",
+      "pluginVersion": "2.6.6",
+      "modelSlug": "AudioInterface2",
+      "modelName": "Audio 2",
+      "description": "Sends audio and CV to/from an audio device",
+      "tags": [
+        "External"
+      ]
+    }
+  ],
+  "totalModels": 53,
+  "nextCursor": "3"
+}

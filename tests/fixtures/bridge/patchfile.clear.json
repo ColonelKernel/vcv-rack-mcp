@@ -1,0 +1,11 @@
+{
+  "fingerprint": "6d126ed29e1dd189e8d8563bfc3595c4e22730f11c25d2d38ac382a2ad73a0c1",
+  "patchEpoch": 2,
+  "patchName": null,
+  "saved": false,
+  "bridgeModulePresent": true,
+  "warnings": [
+    "inserted a RackMCP-Bridge module so the patch can reconnect after restart"
+  ],
+  "replayed": false
+}

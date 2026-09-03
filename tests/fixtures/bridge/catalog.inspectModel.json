@@ -1,0 +1,126 @@
+{
+  "model": {
+    "pluginSlug": "Fundamental",
+    "pluginName": "VCV Free",
+    "pluginVersion": "2.6.4",
+    "modelSlug": "VCO",
+    "modelName": "VCO",
+    "description": "Voltage-controlled oscillator",
+    "tags": [
+      "Oscillator",
+      "Polyphonic"
+    ]
+  },
+  "params": [
+    {
+      "paramId": 0,
+      "name": "",
+      "unit": "",
+      "minValue": 0,
+      "maxValue": 1,
+      "defaultValue": 0
+    },
+    {
+      "paramId": 1,
+      "name": "Sync mode",
+      "unit": "",
+      "minValue": 0,
+      "maxValue": 1,
+      "defaultValue": 1,
+      "labels": [
+        "Soft",
+        "Hard"
+      ]
+    },
+    {
+      "paramId": 2,
+      "name": "Frequency",
+      "unit": " Hz",
+      "minValue": -54,
+      "maxValue": 54,
+      "defaultValue": 0
+    },
+    {
+      "paramId": 3,
+      "name": "",
+      "unit": "",
+      "minValue": 0,
+      "maxValue": 1,
+      "defaultValue": 0
+    },
+    {
+      "paramId": 4,
+      "name": "Frequency modulation",
+      "unit": "%",
+      "minValue": -1,
+      "maxValue": 1,
+      "defaultValue": 0
+    },
+    {
+      "paramId": 5,
+      "name": "Pulse width",
+      "unit": "%",
+      "minValue": 0.009999999776482582,
+      "maxValue": 0.9900000095367432,
+      "defaultValue": 0.5
+    },
+    {
+      "paramId": 6,
+      "name": "Pulse width modulation",
+      "unit": "%",
+      "minValue": -1,
+      "maxValue": 1,
+      "defaultValue": 0
+    },
+    {
+      "paramId": 7,
+      "name": "FM mode",
+      "unit": "",
+      "minValue": 0,
+      "maxValue": 1,
+      "defaultValue": 0,
+      "labels": [
+        "1V/octave",
+        "Linear"
+      ]
+    }
+  ],
+  "inputs": [
+    {
+      "portId": 0,
+      "name": "1V/octave pitch"
+    },
+    {
+      "portId": 1,
+      "name": "Frequency modulation"
+    },
+    {
+      "portId": 2,
+      "name": "Sync"
+    },
+    {
+      "portId": 3,
+      "name": "Pulse width modulation"
+    }
+  ],
+  "outputs": [
+    {
+      "portId": 0,
+      "name": "Sine"
+    },
+    {
+      "portId": 1,
+      "name": "Triangle"
+    },
+    {
+      "portId": 2,
+      "name": "Sawtooth"
+    },
+    {
+      "portId": 3,
+      "name": "Square"
+    }
+  ],
+  "requiredTemporaryInstantiation": true,
+  "cached": false
+}
