@@ -71,7 +71,7 @@ describe("resolvePatchPath containment", () => {
 
   beforeEach(() => {
     // realpath the temp dir: on macOS /var is itself a symlink to /private/var.
-    dir = realpathSync(mkdtempSync(join(tmpdir(), "rackmcp-paths-")));
+    dir = realpathSync.native(mkdtempSync(join(tmpdir(), "rackmcp-paths-")));
     cfg = configFor(join(dir, "rack"));
     mkdirSync(cfg.patchesDir, { recursive: true });
     patches = cfg.patchesDir;

@@ -117,7 +117,7 @@ function configFor(root: string): ServerConfig {
 
 beforeEach(() => {
   // realpath the temp dir: on macOS /var is itself a symlink to /private/var.
-  dir = realpathSync(mkdtempSync(join(tmpdir(), "rackmcp-patchfiles-")));
+  dir = realpathSync.native(mkdtempSync(join(tmpdir(), "rackmcp-patchfiles-")));
   cfg = configFor(join(dir, "rack"));
   mkdirSync(cfg.patchesDir, { recursive: true });
   mkdirSync(cfg.checkpointsDir, { recursive: true });
