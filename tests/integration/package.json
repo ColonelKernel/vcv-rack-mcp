@@ -12,6 +12,7 @@
     "mcp": "tsx src/mcp-smoke.ts",
     "contract": "tsx src/contract-smoke.ts",
     "capture": "tsx src/capture-bridge-fixtures.ts",
+    "verify:fixtures": "tsx src/capture-bridge-fixtures.ts --verify",
     "write": "tsx src/write-smoke.ts",
     "files": "tsx src/files-smoke.ts",
     "probe": "tsx src/probe-smoke.ts",

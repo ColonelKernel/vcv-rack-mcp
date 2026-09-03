@@ -1,19 +1,19 @@
 {
-  "operationId": "827a2acd-b24c-4308-b24c-78d7e41ac31c",
+  "operationId": "886a1b3b-0a42-4012-bd48-b21ed4fe9e12",
   "oldFingerprint": "d530d3db8f1c22e2c342627e98f2e36e7a4226c960cd73b9b8242da4495701a0",
-  "newFingerprint": "6e5bfe763ca017de92147b715c707bfcfb8795c21dbbd600d3381a883882d788",
+  "newFingerprint": "e14aa3be08b07a09904ed5ac2e7c933a030d752b696a7eb8ba89e43b0fe4fbd9",
   "patchEpoch": 1,
   "applied": [
     {
       "op": "add_module",
-      "summary": "Fundamental/VCO -> id 1313036992881189"
+      "summary": "Fundamental/VCO -> id 7777981223792552"
     }
   ],
   "aliasToModuleId": {
-    "vco": "1313036992881189"
+    "vco": "7777981223792552"
   },
   "warnings": [],
   "undoEligible": true,
-  "durationMs": 5,
+  "durationMs": 2,
   "replayed": false
 }

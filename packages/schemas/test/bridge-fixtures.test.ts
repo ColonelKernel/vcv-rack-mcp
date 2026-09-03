@@ -15,11 +15,16 @@ import { BRIDGE_METHODS, BRIDGE_METHOD_NAMES } from "../src/bridge.js";
  * (tests/integration contract-smoke) needs the installed Rack on macOS, so CI
  * could not see the drift on any platform.
  *
- * These fixtures are real captured wire payloads, so this runs everywhere and
- * fails in both directions: a producer that stops matching its schema, and a
- * schema edit that stops matching the real wire. Refresh them against live Rack
- * with `pnpm --filter @rackmcp/integration run capture` — deliberately not
- * hand-editable, because a fixture bent to make CI pass proves nothing.
+ * These fixtures are real captured wire payloads, so this check runs everywhere.
+ * Be precise about what it can catch: the fixtures are frozen files, so a
+ * producer that drifts does not change them and CI cannot see it. What CI
+ * catches is the other direction — a schema edited away from the real wire.
+ * The producer direction is covered live by
+ * `pnpm --filter @rackmcp/integration run verify:fixtures`, which re-captures
+ * against a running Rack and compares the key/type structure, ignoring the ids
+ * and fingerprints that differ every run. Refresh the fixtures with
+ * `... run capture`; they are deliberately not hand-editable, because a fixture
+ * bent to make CI pass proves nothing.
  */
 const FIXTURE_DIR = fileURLToPath(new URL("../../../tests/fixtures/bridge", import.meta.url));
 

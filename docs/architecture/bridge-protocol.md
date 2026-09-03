@@ -395,7 +395,7 @@ others run on Rack's UI thread.
 | `catalog.inspectModel` | no | Params, inputs, and outputs for one model. |
 | `module.inspect` | no | Live state of a placed module (optionally opaque state). |
 | `patch.snapshot` | no | Full patch snapshot (optionally opaque state, size-capped). |
-| `patch.fingerprint` | no | SHA-256 fingerprint of the current patch, plus epoch and saved flag. |
+| `patch.fingerprint` | no | SHA-256 fingerprint of the current patch, plus the patch epoch. Whether the patch has unsaved changes belongs to `status.get`. |
 | `txn.preview` | no | Resolve + validate operations without mutating; returns normalized plan, `planHash`, `baseFingerprint`, diff, and risk. |
 | `txn.commit` | **yes** | Apply a previewed plan as one history action; re-checks the fingerprint first. |
 | `txn.undoLast` | **yes** | Undo the last MCP transaction (guarded by `expectedOperationId`). |

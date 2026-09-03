@@ -14,7 +14,7 @@
  * Refresh with: pnpm --filter @rackmcp/integration run capture
  * (requires the installed Rack; the fixtures are committed).
  */
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -37,10 +37,82 @@ function ok(name: string, cond: boolean, detail = ""): void {
   }
 }
 
+/**
+ * `--verify` re-captures and compares against the committed fixtures instead of
+ * overwriting them. Comparison is structural: ids, fingerprints, epochs and
+ * durations differ on every run, so a raw diff would always be dirty and would
+ * therefore be ignored. Reducing each payload to its key/type skeleton makes a
+ * producer that drops, renames or retypes a field fail loudly, while the noise
+ * stays out. This is the half of the contract CI cannot see: the committed
+ * fixtures are frozen files, so CI catches a schema edited away from the wire,
+ * and this catches the wire drifting away from the fixtures.
+ */
+const VERIFY = process.argv.includes("--verify");
+
+type Shape = string | Shape[] | { [k: string]: Shape };
+
+function shapeOf(value: unknown): Shape {
+  if (value === null) return "null";
+  if (Array.isArray(value)) return value.length === 0 ? [] : [shapeOf(value[0])];
+  if (typeof value === "object") {
+    const out: { [k: string]: Shape } = {};
+    for (const k of Object.keys(value as object).sort()) {
+      out[k] = shapeOf((value as Record<string, unknown>)[k]);
+    }
+    return out;
+  }
+  return typeof value;
+}
+
+/**
+ * An array empty on one side and populated on the other is a coverage
+ * difference, not drift — the engine is idle under this harness, so telemetry
+ * arrays come back empty. Report those separately rather than failing.
+ */
+function compareShapes(a: Shape, b: Shape, path: string, diffs: string[], notes: string[]): void {
+  const aEmpty = Array.isArray(a) && a.length === 0;
+  const bEmpty = Array.isArray(b) && b.length === 0;
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (aEmpty !== bEmpty) {
+      notes.push(`${path}: one side empty, the other populated`);
+      return;
+    }
+    if (!aEmpty && !bEmpty) compareShapes(a[0]!, b[0]!, `${path}[]`, diffs, notes);
+    return;
+  }
+  if (typeof a === "object" && typeof b === "object" && !Array.isArray(a) && !Array.isArray(b)) {
+    for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) {
+      if (!(k in a)) diffs.push(`${path}.${k}: in the fixture, no longer on the wire`);
+      else if (!(k in b)) diffs.push(`${path}.${k}: new on the wire, absent from the fixture`);
+      else compareShapes(a[k]!, b[k]!, `${path}.${k}`, diffs, notes);
+    }
+    return;
+  }
+  if (JSON.stringify(a) !== JSON.stringify(b)) diffs.push(`${path}: ${JSON.stringify(b)} -> ${JSON.stringify(a)}`);
+}
+
 const captured = new Set<string>();
+const coverageNotes: string[] = [];
+
 function save(method: string, payload: unknown): void {
-  writeFileSync(join(FIXTURE_DIR, `${method}.json`), JSON.stringify(payload, null, 2) + "\n");
   captured.add(method);
+  const file = join(FIXTURE_DIR, `${method}.json`);
+  if (!VERIFY) {
+    writeFileSync(file, JSON.stringify(payload, null, 2) + "\n");
+    return;
+  }
+  let committed: unknown;
+  try {
+    committed = JSON.parse(readFileSync(file, "utf8"));
+  } catch {
+    ok(`${method} has a committed fixture`, false, "missing — run without --verify to capture it");
+    return;
+  }
+  const diffs: string[] = [];
+  const notes: string[] = [];
+  compareShapes(shapeOf(payload), shapeOf(committed), method, diffs, notes);
+  coverageNotes.push(...notes);
+  ok(`${method} still matches its committed fixture`, diffs.length === 0, diffs.join(" | "));
 }
 
 const harness = new RackHarness({ baseDir: scratch, name: "capture" });
@@ -71,8 +143,10 @@ try {
   await client.connect(instance.manifest.port);
   await client.authenticate(secret);
 
+  // Read early for the scope, but do not record it: the fixture is captured
+  // below with the writer lease held, which is the state that exercises
+  // WriterLeaseInfo's optional fields.
   const status = await waitReady(client);
-  save("status.get", status);
   const scope = () => ({
     instanceId: status.instanceId as string,
     sessionId: status.sessionId as string,
@@ -86,7 +160,6 @@ try {
     await client.request("catalog.inspectModel", { pluginSlug: "Fundamental", modelSlug: "VCO" }),
   );
   save("patch.fingerprint", await client.request("patch.fingerprint", {}));
-  save("probe.list", await client.request("probe.list", {}));
 
   // Writer lease: acquire, renew, and hold it for the mutating methods below.
   const lease = (await client.request("lease.acquire", { clientName: "capture" })) as {
@@ -94,6 +167,11 @@ try {
   };
   save("lease.acquire", lease);
   save("lease.renew", await client.request("lease.renew", { leaseId: lease.leaseId }));
+
+  // Re-capture status while the lease is held: WriterLeaseInfo's optional
+  // holder/expiry fields are absent from a lease-free status, so capturing only
+  // the idle one would leave them unexercised.
+  save("status.get", await client.request("status.get", {}));
 
   // A module to inspect, and a plan to preview and commit.
   const addOps = [
@@ -120,10 +198,11 @@ try {
   )) as { aliasToModuleId?: Record<string, string> };
   save("txn.commit", commit);
 
+  // Read to locate the VCO; the recorded snapshot is taken further down, once a
+  // cable exists, so CableSnapshot is exercised too.
   const snapshot = (await client.request("patch.snapshot", {})) as {
     modules: Array<{ moduleId: string; modelSlug: string }>;
   };
-  save("patch.snapshot", snapshot);
   const vco = snapshot.modules.find((m) => m.modelSlug === "VCO");
   ok("captured a VCO to inspect", vco !== undefined);
   if (vco) {
@@ -133,12 +212,25 @@ try {
     );
   }
 
-  // probe.read against a Probe slot: attach one through a transaction first.
+  // A Probe wired to the VCO. The cable matters: buildProbeList only emits
+  // sourceModuleId/sourcePortId inside its `if (connected)` branch, so an
+  // unconnected probe would leave those fields — and every populated
+  // ProbeSlotInfo — out of the fixture entirely.
   const probePreview = (await client.request("txn.preview", {
     scope: scope(),
     label: "Capture probe",
     operations: [
       { op: "add_module", pluginSlug: "RackMCP", modelSlug: "Probe", alias: "probe", placement: "auto" },
+      ...(vco
+        ? [
+            {
+              op: "connect",
+              output: { module: { moduleId: vco.moduleId }, portType: "output", portId: 0 },
+              input: { module: { alias: "probe" }, portType: "input", portId: 0 },
+              inputPolicy: "fail_if_connected",
+            },
+          ]
+        : []),
     ],
   })) as { plan: unknown; planHash: string; baseFingerprint: string };
   const probeOpId = randomUUID();
@@ -155,6 +247,21 @@ try {
   )) as { aliasToModuleId?: Record<string, string> };
   const probeModuleId = probeCommit.aliasToModuleId?.probe;
   ok("captured a Probe module", typeof probeModuleId === "string");
+  // Now that a Probe exists and is cabled, its slots are worth recording.
+  const probeList = (await client.request("probe.list", {})) as {
+    slots: Array<{ connected: boolean }>;
+  };
+  save("probe.list", probeList);
+  // Re-capture the snapshot now that a cable exists: taken before the probe was
+  // wired, `cables` was empty and CableSnapshot went unexercised by the gate.
+  const cabledSnapshot = (await client.request("patch.snapshot", {})) as { cables: unknown[] };
+  save("patch.snapshot", cabledSnapshot);
+  ok("snapshot fixture has a cable", cabledSnapshot.cables.length > 0, `${cabledSnapshot.cables.length}`);
+  ok(
+    "probe.list fixture has a connected slot",
+    probeList.slots.some((sl) => sl.connected),
+    `${probeList.slots.length} slots`,
+  );
   if (probeModuleId) {
     save(
       "probe.read",
