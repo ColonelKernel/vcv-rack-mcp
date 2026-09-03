@@ -45,8 +45,17 @@ loopback address:
 - `TCP_NODELAY` is set on every accepted connection; the client connects with
   `noDelay: true`.
 - The listen backlog is 8. Concurrent connections are capped by
-  `maxConnections` (default **8**). A connection accepted past the cap is closed
-  immediately and counted in `connectionsRefused`.
+  `maxConnections` (default **8**), and connections that have not yet
+  authenticated are capped separately by `maxUnauthConnections` (default **4**),
+  so a local process without the pairing secret can never hold every slot. A
+  connection accepted past *either* cap is closed immediately and counted in
+  `connectionsRefused`.
+- A connection that has not completed `hello` + `auth` within
+  `handshakeTimeoutMs` (default **10 s**) is dropped — no error frame, the
+  socket simply closes — and counted in `handshakeTimeouts`. The deadline is
+  checked on the session's read poll, so it can fire up to one `readPollMs`
+  (250 ms) late. An authenticated connection is never subject to it, however
+  long it idles.
 
 Each connection is served by a dedicated reader thread and writer thread inside
 the plugin. Network threads never call Rack APIs — they frame, parse, validate,
@@ -220,7 +229,7 @@ frame; each reply is a `res` frame carrying the same `id`.
 | `id` | 8 random bytes as **16 lowercase hex** characters. Malformed ids drop the connection. |
 | `method` | One of the [19 bridge methods](#8-rpc-method-list). Unknown methods return `UNSUPPORTED_OPERATION`. |
 | `deadlineMs` | Integer in `[1, 600000]`. Out-of-range values return `BAD_REQUEST`. The server converts it to an absolute monotonic deadline. |
-| `operationId` | A 36-character UUID. **Required** on mutating methods; absent/short values return `BAD_REQUEST`. Used for idempotency (results cached at least 10 minutes so a retry cannot double-apply). |
+| `operationId` | A 36-character UUID. **Required** on mutating methods; absent/short values return `BAD_REQUEST`. Used for idempotency — see [below](#idempotency-and-operation-ids). |
 | `payload` | Method-specific object, validated against the method's schema in `packages/schemas/src/bridge.ts`. |
 
 **Success response** (`res`):
@@ -239,8 +248,60 @@ Every error object carries a stable `code` (see the
 [error contract](../spec/rack-mcp-spec.md)), a human `message`, and two
 retry-safety booleans: `retrySafe` (retrying carries no risk of duplicate
 effects) and `mutationMayHaveOccurred` (the mutation may already have landed, so
-retry only with the same `operationId`). Failed commits may additionally embed a
-`rollback` report and arbitrary `details`.
+retry only with the same `operationId`). A failed `txn.commit` additionally
+embeds a `rollback` report — exactly the four keys `rolledBack`
+(`"complete"` | `"indeterminate"`), `failedOperationIndex`, `inversesExecuted`,
+and `detail` — grafted onto the error object by the plugin after the frame is
+built. `rolledBack` is `"complete"` only when the post-rollback patch
+fingerprint proves the pre-transaction state was restored; otherwise the code is
+`ROLLBACK_FAILED`, `rolledBack` is `"indeterminate"`, and
+`mutationMayHaveOccurred` is true. A `details` object is carried through the
+same path if a handler supplies one, though no bridge handler emits one today.
+No other key survives: the wire error schema is strict, so the plugin copies
+only `rollback` and `details`, and drops both rather than the error itself if
+they cannot be merged.
+
+Frame builders are fail-safe. If a frame cannot be encoded, `res` falls back to
+a hand-built `INTERNAL` error carrying the same `id` (with
+`mutationMayHaveOccurred: true` for a would-be success, since the command ran
+and only its result failed to encode) and `welcome`/`authResult` fall back to a
+fixed `authResult` `INTERNAL`; `pong` and `evt` fall back to "send nothing" and
+are dropped, counted in `responseDrops`. A builder never emits a non-empty
+string that is not valid JSON, and the server never puts a 0-length frame on the
+wire — the old behaviour, which tore the session down on the client.
+
+### Idempotency and operation ids
+
+The `operationId` on a mutating request keys a pump-side cache of response
+frames (`LIMITS.idempotencyCacheMs` = **10 minutes**, 512 entries, oldest
+evicted first), so a retry after a lost response replays the original result
+instead of re-applying the mutation. A replayed frame carries the *new* request
+`id` and an added `"replayed": true` inside its payload. Only results that must
+not be re-executed are cached: successful mutations, and failures where the
+mutation may already have landed (an indeterminate rollback). A clean
+pre-mutation failure is not cached, so a corrected retry can still run.
+
+The entry is bound to the request, not to the id alone. On first use the plugin
+hashes the command canonically — the method plus the payload's *identity*
+subset — and stores that fingerprint with the frame:
+
+- same id, same fingerprint → **replay** the cached frame;
+- same id, different fingerprint → `BAD_REQUEST` (`"operationId was already
+  used for a different request; retry the original request or use a fresh
+  operationId"`) with `retrySafe: false` and
+  `mutationMayHaveOccurred: false`. Nothing is executed and nothing is replayed.
+
+The identity subset deliberately excludes the concurrency guards `scope`,
+`expectedFingerprint`, and `expectedPatchEpoch`, because those are re-evaluated
+on every attempt: a legitimate retry landing after an unrelated patch change
+carries a different epoch or base fingerprint but is still the same operation.
+Everything else in the payload — `plan` and `planHash` included — is request
+identity.
+
+**This is stricter than it used to be.** A client that recycled one
+`operationId` across different requests previously received the *first*
+request's cached success; it now gets `BAD_REQUEST`. A retry must resend the
+original request (concurrency guards aside) or mint a fresh `operationId`.
 
 ### Dispatch and mutation gating
 
@@ -253,8 +314,14 @@ For each `req`, the server:
    `patchfile.saveCopy`, `patchfile.load`, `patchfile.clear`), requires both a
    36-char `operationId` (`BAD_REQUEST` otherwise) and current ownership of the
    writer lease (`WRITER_LEASE_REQUIRED` otherwise).
-4. Enqueues the command onto the bounded UI command pump. If that queue is full
-   or unavailable, it returns `BRIDGE_NOT_READY`.
+4. Enqueues the command onto the bounded UI command pump, recording the
+   `leaseId` that authorized it. If that queue is full or unavailable, it
+   returns `BRIDGE_NOT_READY`.
+5. When the pump reaches the command it **re-checks** that lease against the
+   same `leaseId` before executing. A lease that lapsed, was released, or moved
+   to another connection while the command waited yields `WRITER_LEASE_REQUIRED`
+   (`retrySafe: true`) and no mutation — so that error can now come back for a
+   request that passed the gate at submit time.
 
 Requests are answered asynchronously as the UI thread drains the queue, so
 responses for a connection may arrive in an order different from the request
@@ -287,6 +354,32 @@ Defined events are `shutting_down`, `patch_epoch_changed`, and `lease_revoked`.
 Events let the client invalidate cached refs (a bumped patch epoch invalidates
 outstanding fingerprints and confirmation tokens) and shut down cleanly.
 
+The plugin emits `shutting_down` from `RackBridge::stop()` and `resetPairing()`,
+and `patch_epoch_changed` on every patch-epoch bump:
+
+- a successful `patchfile.load` or `patchfile.clear`;
+- a **failed** `patchfile.load` — Rack's `patch::Manager::load()` clears the
+  patch before it reads the archive, so a throw leaves an empty rack behind. The
+  plugin bumps the epoch, re-inserts a Bridge module, and returns `INTERNAL`
+  with a message naming the new epoch and pointing at the recovery checkpoint;
+- a patch replaced through Rack's own UI (File > New / Open / Revert,
+  drag-drop), noticed by a poll in the command pump that runs every 30 UI frames
+  (~2 Hz) and compares the patch path, the undo-history depth, and the module-id
+  set against a watermark re-armed after each MCP-driven load, clear, or save.
+
+The external-replacement poll is deliberately conservative — it over-bumps in
+ambiguous cases — and two blind spots are by design: File > Revert with no edits
+since the load (nothing observable changed), and a GUI replacement immediately
+followed by a user edit inside the same poll window, which reads as ordinary
+editing. `patchClear`'s own failure path still returns without bumping.
+
+`patchEpoch` still starts at `1`, but if the poll arms its first watermark
+before Rack settles on its autosave patch it may bump once shortly after
+startup, so a client must not assume the epoch is `1` on a fresh session — read
+it from `welcome` or `status.get`.
+
+`lease_revoked` is defined in the schema but no plugin code emits it today.
+
 ## 8. RPC method list
 
 The 19 internal bridge methods, from `BRIDGE_METHOD_NAMES` in
@@ -306,9 +399,9 @@ others run on Rack's UI thread.
 | `txn.preview` | no | Resolve + validate operations without mutating; returns normalized plan, `planHash`, `baseFingerprint`, diff, and risk. |
 | `txn.commit` | **yes** | Apply a previewed plan as one history action; re-checks the fingerprint first. |
 | `txn.undoLast` | **yes** | Undo the last MCP transaction (guarded by `expectedOperationId`). |
-| `patchfile.save` | **yes** | Save the current patch to a policy-checked path. |
-| `patchfile.saveCopy` | **yes** | Save a copy without changing the current patch path. |
-| `patchfile.load` | **yes** | Load a patch file (bumps the patch epoch). |
+| `patchfile.save` | **yes** | Save the current patch to a policy-checked path, via a sibling temp file. |
+| `patchfile.saveCopy` | **yes** | Save a copy without changing the current patch path (same temp-file write). |
+| `patchfile.load` | **yes** | Load a patch file (bumps the patch epoch, on success *and* on failure). |
 | `patchfile.clear` | **yes** | Clear to an empty patch (bumps the patch epoch). |
 | `probe.list` | no | List active probe slots. |
 | `probe.read` | no | Read one probe channel's telemetry window. |
@@ -319,6 +412,15 @@ others run on Rack's UI thread.
 \* `lease.*` methods do not mutate the patch and so are not gated by the writer
 lease, but `lease.acquire` is how a client *becomes* the writer. The lease TTL
 defaults to 30 s (`leaseTtlMs`) and must be renewed to stay held.
+
+Both `patchfile.save` and `patchfile.saveCopy` write through a sibling temp file
+(`<path>.tmp-<pid>`), flush it to stable storage, and then move it over the
+target, so an interrupted save leaves the previous `.vcv` intact. Two
+consequences: a failed `fsync` now fails the save rather than replacing a good
+file with a possibly-unflushed one, and a hard kill mid-save can leave an orphan
+`<name>.vcv.tmp-<pid>` beside the patch. The orphan is never listed by
+`list_patch_files` (that filter requires a `.vcv` suffix) and is removed on any
+handled failure, but nothing sweeps one left by a kill.
 
 ## 9. Worked example: two frames
 
@@ -352,8 +454,12 @@ A mutating commit carries an `operationId` and requires the writer lease:
 | Heartbeat interval | 2000 ms | `LIMITS.bridgeHeartbeatIntervalMs` |
 | JSON max depth / nodes / string | 64 / 250000 / 256 KiB | `LIMITS` |
 | Max connections | 8 | `ServiceConfig.maxConnections` |
+| Max unauthenticated connections | 4 | `ServiceConfig.maxUnauthConnections` |
+| Handshake deadline | 10000 ms | `ServiceConfig.handshakeTimeoutMs` |
+| Read poll interval | 250 ms | `ServiceConfig.readPollMs` |
 | Lease TTL | 30000 ms | `ServiceConfig.leaseTtlMs` |
 | Idempotency retention | ≥ 10 min | `LIMITS.idempotencyCacheMs` |
+| Idempotency cache size | 512 entries | `RackBridge::recordOperation` |
 
 ## Related documents
 

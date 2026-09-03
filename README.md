@@ -36,7 +36,7 @@ MCP against a running Rack instance. This is **real tool output**, captured by
 $ claude  # with the rack-mcp server connected
 
 → list_rack_instances
-  ← 1 instance   id 4b1c944e…  (patch: Untitled)
+  ← 1 instance   id 4089a9eb…  (patch: Untitled)
 → get_rack_status
   ← connected   Rack 2.6.6 Pro   bridge protocol v1
 → list_installed_models
@@ -45,12 +45,15 @@ $ claude  # with the rack-mcp server connected
 → resolve recipe "basic_mono_subtractive"
   ← resolved   6 roles → installed models, 0 unresolved
 → build_patch  (19 operations)
-  ← committed   19 ops applied   fingerprint d197ec233a98…
+  ← committed   19 ops applied   fingerprint 7f6179b15430…
 
 → describe_patch
-  ← Signal path into Audio 2: VCO → VCF → MIDI to CV → ADSR EG → VCA → Audio 2
+  ← Signal path into Audio 2: MIDI to CV → VCO → VCF → VCA → Audio 2
+      also feeding it: ADSR EG → VCA, MIDI to CV → ADSR EG
 → validate_patch
   ← valid ✓   0 errors · 0 warnings · 0 info
+
+# a subtractive voice, built and validated through MCP — safely, reversibly.
 ```
 
 </details>

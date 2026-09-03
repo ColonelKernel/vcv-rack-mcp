@@ -143,19 +143,17 @@ Return the full structured state of the current patch: modules, parameters, port
 
 - `rackVersion`: string _(max length 64)_
 - `rackEdition`: "Free" | "Pro" | "unknown"
-- `bridgeVersion`: string _(max length 64)_
 - `instanceId`: string (uuid)
 - `sessionId`: string (uuid)
 - `patchEpoch`: integer _(≥ 1, ≤ 9007199254740991)_
-- `patchPath`: string | null
-- `pathDisclosed`: boolean
+- `patchName`: string | null
 - `saved`: boolean
-- `fingerprint`: string
+- `sampleRate`: number _(≥ 0)_
 - `modules`: object[]
 - `cables`: object[]
-- `bridgePresent`: boolean
-- `probeModuleIds`: string[]
-- `includesOpaqueState`: boolean
+- `bridgeModuleCount`: integer _(≥ 0, ≤ 9007199254740991)_
+- `probeModuleCount`: integer _(≥ 0, ≤ 9007199254740991)_
+- `fingerprint`: string
 - `warnings`: string[]
 
 ### `inspect_module`

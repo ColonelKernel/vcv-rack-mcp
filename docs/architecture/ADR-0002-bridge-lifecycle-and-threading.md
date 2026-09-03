@@ -74,9 +74,23 @@ so it runs once per Rack launch:
 
 The accept loop (`BridgeServer::acceptLoop`) polls `accept` with a 250 ms
 timeout so it can observe the `stopping_` flag, reaps any defunct sessions,
-enforces `maxConnections` (over-limit clients are counted in
-`connectionsRefused` and closed immediately), and otherwise creates a `Session`
-with its own reader and writer thread.
+enforces `maxConnections` **and** `maxUnauthConnections` (over-limit clients are
+counted in `connectionsRefused` and closed immediately), and otherwise creates a
+`Session` with its own reader and writer thread, stamping `connectedAtMs` at
+accept.
+
+Two limits bound what a peer that does not hold the pairing secret can consume.
+`maxUnauthConnections` (default 4 of `maxConnections`'s 8) counts sessions that
+have not yet flipped `authed`, so half the slots stay reserved for peers that
+completed the handshake. `handshakeTimeoutMs` (default 10 s; the first-party
+client allows 5 s each for `connect` and `authenticate`, so it never fires for a
+healthy peer) bounds how long one of those slots can be held: the reader loop
+checks the deadline at the top of every
+iteration, so a peer that idles *or* dribbles bytes without finishing
+`hello`/`auth` is dropped and counted in `handshakeTimeouts`. The check is
+evaluated at `readPollMs` (250 ms) granularity, so the effective deadline can be
+one poll late, and it only ever applies before `Ready` — a long-lived idle
+authenticated session is untouched.
 
 ### Per-connection session state machine
 
@@ -125,14 +139,23 @@ command reaches the UI:
   `leaseHeldHint_`/holder for display.
 - A request whose `MethodSpec.mutating` flag is set must carry a 36-char UUID
   `operationId` (else `BAD_REQUEST`) and must come from the current writer
-  (`leases_.isWriter`, else `WRITER_LEASE_REQUIRED`). Read-only requests skip
-  both checks.
+  (`leases_.holder(now)` must be held by this connection, else
+  `WRITER_LEASE_REQUIRED`). Read-only requests skip both checks.
 - A validated command becomes a `BridgeCommand` (connection id, request id,
-  method, operationId, deadline, and an incref'd `payload`) and is pushed to the
+  method, operationId, deadline, the method's `mutating` flag, the `leaseId`
+  that authorized it, and an incref'd `payload`) and is pushed to the
   command queue via `callbacks_->enqueueCommand`. `RackBridge::enqueueCommand`
   fails fast with `BRIDGE_NOT_READY` when no command pump is attached, so a
   client sees an immediate error rather than a timeout when there is no Bridge
   module in the patch to drain the queue.
+- The enqueue-time gate is **not** the last word. A command can sit in the queue
+  while the lease lapses, is released, or is acquired by another connection, so
+  `CommandPumpWidget::step` calls `BridgeServer::commandLeaseStillValid(cmd)`
+  immediately before executing and replies `WRITER_LEASE_REQUIRED`
+  (`retrySafe: true`) instead of mutating when the lease no longer matches the
+  recorded `leaseId` *and* connection. Non-mutating commands always pass. This
+  sits next to the pump's existing deadline check, which answers `TIMEOUT`
+  without executing a command whose `deadlineAtMs` has already passed.
 
 Responses and events flow the other way through UI-thread entry points:
 `sendFrame` targets one connection's outbound queue; `broadcastEvent` fans out
@@ -170,10 +193,18 @@ thread can touch a freed resource:
 2. Broadcast a `shutting_down` event to connected clients.
 3. Signal and join the heartbeat thread.
 4. `commandQueue_.close()`, then `BridgeServer::stop()`: set `stopping_`, close
-   the listener, join the accept thread, then for every session close the
-   stream, close the outbound queue, and join the reader and writer threads.
-   The reader gives the writer up to ~1 s to flush a final frame (e.g. an auth
-   error) before the socket is torn down.
+   the listener, join the accept thread, and take the session map. Then, for
+   **all** sessions in this order: close every outbound queue, wait for the
+   writers against one *shared* ~1 s deadline, and only afterwards close each
+   stream and join its reader and writer threads.
+
+   The ordering matters. Closing the queue is what makes a writer drain and
+   exit, so it has to come first; closing the stream first would discard the
+   `shutting_down` event and any in-flight responses still queued. The deadline
+   is shared across sessions rather than per session, so total shutdown stays
+   bounded no matter how many connections are open. A session's own reader has
+   the same ~1 s flush window for its last frame (e.g. an auth error) when it
+   exits on its own.
 5. Remove the discovery manifest.
 6. Drain any commands the pump never got to and `json_decref` their payloads.
 7. Scrub the in-memory secret (`std::fill(secret_.begin(), secret_.end(),
@@ -202,6 +233,10 @@ are forced to re-pair.
   the ~1 s writer flush window). This is intentional: a deterministic teardown
   that removes the manifest and scrubs the secret is worth a short, bounded
   pause at unload.
-- `responseDrops` and `connectionsRefused` are surfaced as metrics rather than
-  hidden failures, so an overloaded or over-connected bridge is observable via
-  `get_rack_status` (see the [tool reference](../tools/tool-reference.md)).
+- Refusals and drops are *counted* rather than silently swallowed:
+  `connectionsRefused`, `handshakeTimeouts`, `responseDrops`, `protocolErrors`.
+  Of the `ServiceCounters`, however, only `authFailures` and
+  `connectionsAccepted` (reported as `bridgeReconnects`) currently reach a
+  client through `metrics.get`; the rest are plugin-internal, so an overloaded
+  or over-connected bridge is not yet observable through `get_rack_status` (see
+  the [tool reference](../tools/tool-reference.md)).

@@ -188,6 +188,12 @@ Selection rules (`apps/mcp-server/src/connection.ts`):
 - If **more than one** live instance exists and none is selected, the server
   raises `INSTANCE_NOT_SELECTED` (its data lists the candidate `instanceIds`), so
   you must call `select_rack_instance` first.
+- A selection that fails *after* those checks — the handshake is refused, or
+  authentication fails — leaves **no instance selected** rather than silently
+  keeping the previous one. The next tool call therefore auto-selects a lone live
+  instance, or raises `INSTANCE_NOT_SELECTED` when several are running. This is
+  deliberate: a failed `select_rack_instance` must never leave later calls
+  talking to an instance you did not choose.
 
 After selecting, the server briefly waits for the command pump to attach,
 swallowing the transient `BRIDGE_NOT_READY` a freshly launched instance returns

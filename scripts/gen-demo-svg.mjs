@@ -2,6 +2,14 @@
 // SVG (stdout) for the README. The transcript is real output from
 // `pnpm --filter @rackmcp/integration run demo`; this only styles it.
 //   pnpm --filter @rackmcp/integration run demo 2>/dev/null | node scripts/gen-demo-svg.mjs > docs/assets/demo.svg
+//
+// The README shows the PNG (retina 2x, wider compatibility). To re-render it on
+// macOS, scale the outer width/height and pin a font macOS can resolve by name
+// (its SVG rasterizer ignores a font-family fallback list), then convert:
+//   H=$(sed -n '1s/.*height="\([0-9]*\)".*/\1/p' docs/assets/demo.svg)
+//   sed -e "1s/width=\"820\" height=\"$H\"/width=\"1640\" height=\"$((H*2))\"/" \
+//       -e 's/font-family="[^"]*"/font-family="Menlo"/' docs/assets/demo.svg > /tmp/demo-2x.svg
+//   sips -s format png /tmp/demo-2x.svg --out docs/assets/demo.png
 import { readFileSync } from "node:fs";
 
 const raw = readFileSync(0, "utf8").replace(/\s+$/, "");
@@ -28,11 +36,17 @@ function color(line) {
 }
 const italic = (line) => (line.startsWith("#") ? ' font-style="italic"' : "");
 
+// Indentation is encoded as an x offset rather than leading spaces: some SVG
+// rasterizers (macOS CoreGraphics among them) collapse leading whitespace even
+// under xml:space="preserve", which silently flattens the transcript.
+const CHAR_W = FS * 0.6; // monospace advance
 const rows = lines
   .map((line, i) => {
     if (line.trim() === "") return "";
+    const indent = line.length - line.trimStart().length;
+    const x = PAD + indent * CHAR_W;
     const y = HEADER + PAD + i * LH + FS;
-    return `<text x="${PAD}" y="${y.toFixed(1)}" fill="${color(line)}"${italic(line)}>${esc(line)}</text>`;
+    return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" fill="${color(line)}"${italic(line)}>${esc(line.trimStart())}</text>`;
   })
   .filter(Boolean)
   .join("\n    ");

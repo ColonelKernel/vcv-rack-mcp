@@ -20,7 +20,7 @@ module widget. It is the operational companion to
 | Thread | Count | Owns | Touches Rack APIs? |
 | --- | --- | --- | --- |
 | Accept thread | 1 | The loopback listener; spawns per-session reader/writer threads; reaps defunct sessions | No |
-| Session reader | 1 per connection (max 8) | Byte reads, frame decode, `hello`/`auth`, JSON-limit and lease checks, command enqueue | No |
+| Session reader | 1 per connection (max 8, of which at most 4 unauthenticated) | Byte reads, frame decode, `hello`/`auth`, JSON-limit and lease checks, handshake deadline, command enqueue | No |
 | Session writer | 1 per connection | Draining the per-session response queue, length-prefix framing, socket writes | No |
 | Heartbeat thread | 1 | Writing the discovery manifest (~2 s) from the cached UI state | No |
 | **CommandPump (Rack UI thread)** | 1 | **All Rack API work**: engine, history, patch, module/cable widgets, telemetry reads | **Yes — exclusively** |
@@ -86,9 +86,10 @@ Follow one request end to end:
    onto a full queue fails fast and the client gets a retryable
    `BRIDGE_NOT_READY`.
 4. The **CommandPump**, stepping on Rack's UI thread, pops commands within its
-   per-frame budget, executes them against the Rack API, and pushes the response
-   frame onto that connection's **response queue** (`BoundedQueue<std::string>`,
-   capacity 256). An overflow here is counted as a dropped response.
+   per-frame budget, re-validates each mutating command's writer lease, executes
+   them against the Rack API, and pushes the response frame onto that
+   connection's **response queue** (`BoundedQueue<std::string>`, capacity 256).
+   An overflow here is counted as a dropped response.
 5. The **session writer thread** pops the frame (`popWait`), length-prefix
    encodes it, and writes it back to the socket.
 
@@ -125,16 +126,31 @@ under a burst. Work that does not fit in one frame simply waits for the next
 `get_rack_status`), and the queue's own depth is reported as `commandQueueDepth`
 / `commandQueueMaxDepth`.
 
-Two more pump responsibilities:
+Three more pump responsibilities:
 
 - **Deadline enforcement.** Each command carries a `deadlineAtMs`. If the
   deadline has already passed when the pump reaches it, the pump returns
   `TIMEOUT` without executing — a queued command that waited too long never
   mutates the patch.
-- **UI-state cache.** About twice a second the pump refreshes a small
-  `UiStateCache` (patch name, saved/unsaved, Bridge presence). This is how the
-  heartbeat and `welcome` frames report Rack facts *without* the network threads
-  ever calling a Rack API.
+- **Writer-lease re-validation.** The reader thread checked the lease at enqueue
+  time, but the command has been sitting in a queue since; the holder may have
+  released it, let it expire, or lost it to another connection. The pump calls
+  `BridgeServer::commandLeaseStillValid(cmd)`, which compares the live holder's
+  connection **and** `leaseId` against the ones recorded on the command, and
+  answers `WRITER_LEASE_REQUIRED` (`retrySafe: true`) rather than mutating on a
+  lease the caller no longer holds. Non-mutating commands always pass. A client
+  can therefore see `WRITER_LEASE_REQUIRED` for a request that passed the gate
+  when it was submitted.
+- **UI-state cache and external-replacement poll.** About twice a second the
+  pump refreshes a small `UiStateCache` (patch name, saved/unsaved, Bridge
+  presence). This is how the heartbeat and `welcome` frames report Rack facts
+  *without* the network threads ever calling a Rack API. On the same cadence
+  `pollPatchReplacement()` compares the patch path, undo-history depth, and
+  module-id set against a watermark to notice a patch replaced through Rack's
+  own UI (File > New / Open / Revert, drag-drop), bumping `patchEpoch` and
+  broadcasting `patch_epoch_changed` when it does. That state is file-static and
+  unlocked, so it is correct *only* because the pump is its sole caller —
+  calling it from any other thread would be a data race.
 
 ### Why the pump lives on the scene
 
@@ -204,6 +220,20 @@ inline void accumulate(float v, bool first) {
 }
 ```
 
+`first` means **this channel's first finite sample**, not the window's first
+frame. `ProbeModule::process()` tracks it in a 16-bit-per-input `channelSeen_`
+mask (one shift, one mask test, one predictable branch per sample — still
+allocation-free and fixed-cost), and sets the bit only once a finite sample has
+landed, because `accumulate` returns early on non-finite input before touching
+min/max. A channel whose cable is patched part-way into a window, or a poly
+channel that appears mid-window, therefore seeds min/max from its own first real
+sample instead of the 0 V reset seed. **Client-visible consequence:** such a
+window now reports a min/max range covering only the samples that actually
+arrived, so a caller that relied on 0 V always sitting inside the reported range
+will see narrower ranges. Mean and RMS still divide by the whole-window frame
+count, so they remain diluted for a channel that was present for only part of
+the window.
+
 When the window fills, the module finalizes a trivially-copyable
 `ProbeWindowSnapshot` POD per input and **publishes** it. Reporting is capped at
 ≤ 20 Hz, so the accumulate-then-publish cycle never overruns the read side.
@@ -236,14 +266,20 @@ reading rather than blocking. Telemetry that cannot be delivered is counted as
   Rack.
 - **The network threads are Rack-blind.** They validate and frame bytes and
   nothing else; the single-writer lease is checked *before* a command is
-  enqueued, so unauthorized mutations never reach the pump.
+  enqueued, so unauthorized mutations never reach the pump, and it is checked
+  *again* on the pump immediately before execution, so a lease that lapsed or
+  moved while the command was queued cannot be spent.
 - **Backpressure is explicit.** Both crossings are bounded queues (64 commands,
   256 responses per session); overflow becomes a retryable error or a counted
   drop, never unbounded memory growth.
 - **Shutdown is deterministic.** On plugin destruction the service stops
-  accepting, closes each session's outbound queue, and joins every reader and
-  writer thread before sockets are torn down, matching the lifecycle in
-  [ADR-0001](./ADR-0001-execution-model.md).
+  accepting, closes each session's outbound queue *first* — that is what makes a
+  writer drain and exit — waits for the writers against one shared ~1 s
+  deadline, and only then closes the sockets and joins every reader and writer
+  thread. Closing the stream first would have discarded the `shutting_down`
+  event and any queued responses; the shared deadline keeps the pause bounded
+  regardless of how many sessions are open. See the lifecycle in
+  [ADR-0002](./ADR-0002-bridge-lifecycle-and-threading.md).
 
 For the exact API surface the pump is allowed to call, see the Rack API
 boundaries table in [ADR-0001](./ADR-0001-execution-model.md); for the tools

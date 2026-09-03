@@ -78,6 +78,19 @@ tries to drive the patch or scrape state.
   readable only by the local user.
 - Connecting is not enough to do anything: the peer must complete the
   HMAC-SHA256 handshake below before any request or lease call is accepted.
+- **A peer cannot squat on a slot while unauthenticated.** A connection that has
+  not authenticated within `handshakeTimeoutMs` (**10 s** by default; the
+  first-party client allows 5 s each for its `connect` and `authenticate` steps,
+  so a healthy peer never approaches it) is dropped and counted in the
+  `handshakeTimeouts` metric. The check runs at the top of the reader loop, so a
+  peer that dribbles bytes without completing `hello`/`auth` is caught too; a
+  session that did authenticate is never subject to the deadline.
+- **Unauthenticated peers cannot take every slot.** Of the **8** connection
+  slots (`maxConnections`), at most **4** (`maxUnauthConnections`) may be held by
+  peers that have not authenticated. A peer arriving over either cap is closed at
+  `accept()` and counted in `connectionsRefused`, so a local process without the
+  secret cannot starve out a paired client
+  (`plugins/RackMCP/src/core/service.cpp`).
 
 A local process running **as the same user** is outside the model — see
 [Residual risk](#residual-risk-and-out-of-scope).
@@ -165,15 +178,39 @@ outside it, aiming to read or overwrite an arbitrary file.
   (`<RackUserDir>/RackMCP/checkpoints`); anything else fails with
   `PATH_NOT_ALLOWED`.
 - **`.vcv` only.** Non-`.vcv` targets are refused, so the tools cannot be aimed
-  at arbitrary file types.
+  at arbitrary file types. The rule is applied to the requested name, so an
+  in-root symlink named `*.vcv` can still alias a non-`.vcv` file that is itself
+  inside a root; containment, not the extension, is what bounds that case.
 - **No URLs.** Any `scheme://` or `file:` input is rejected — the server never
   fetches or opens URLs.
-- **Symlink resolution.** The existing path (or its parent, for a new file) is
-  resolved with `realpathSync` *before* the containment check, so a symlink whose
-  real target escapes the root is caught. Null bytes are rejected, and the target
-  must be a regular file.
+- **Symlink resolution.** Containment is judged on a fully canonical path, never
+  on the requested name. `resolvePatchPath` resolves the deepest *existing*
+  ancestor with the native `realpath` and re-attaches the missing remainder; a
+  dangling final component is read with `lstat`/`readlink` and followed (up to 32
+  hops), because `realpath` fails outright on a dangling link and judging such a
+  link by its own contained name would let it smuggle a write out of the roots.
+  A link whose target leaves both roots therefore fails with `PATH_NOT_ALLOWED`
+  whether or not that target exists yet; a dangling link that stays inside a root
+  is accepted as a save target but still refused for load. A path that cannot be
+  resolved at all — symlink loop, non-directory component, unreadable ancestor —
+  is refused rather than treated as a new in-root file. Null bytes are rejected,
+  and an existing target must be a regular file.
 - **Restore is checkpoint-scoped.** `restore_checkpoint` additionally requires
-  the source to resolve to the checkpoints root, not the patches root.
+  the source to resolve to the checkpoints root, not the patches root. Its
+  confirmation token is minted with a distinct `restore` kind and bound to the
+  exact checkpoint path, and the commit refuses any token whose bound path is not
+  the file it just policy-checked — so a token issued for one file cannot
+  authorize loading another, and a `load` token cannot be spent on a restore.
+- **A save never truncates the file it is replacing.** Rack's patch manager
+  writes the archive to a sibling `<name>.vcv.tmp-<pid>` file, which is then
+  flushed to stable storage (`fsync`, `FlushFileBuffers` on Windows) and moved
+  over the target (`rename`, `MoveFileEx` on Windows); on any failure the temp is
+  removed and the previous `.vcv` is left intact
+  (`plugins/RackMCP/src/rackside/PatchFiles.cpp`). This covers `save_patch` and
+  the recovery/manual checkpoints. A hard kill mid-save can leave the temp file
+  behind — nothing sweeps it, but it is never reported by `list_patch_files`,
+  which lists only `.vcv` names — and a filesystem that refuses `fsync` turns a
+  save into an error rather than risking an unflushed archive over a good file.
 
 ### 6. A read-only connection trying to obtain a writer lease
 
@@ -194,6 +231,12 @@ holds.
 - A lease is bound to its connection and its TTL: it is dropped automatically on
   disconnect, and expires if not renewed, so a crashed or idle writer does not
   wedge the instance.
+- The lease is checked twice: once when the request is enqueued, and again on the
+  UI thread immediately before the command runs. A mutating command carries the
+  `leaseId` that authorized it, so one that sat in the queue while the holder
+  released the lease, let it expire, or lost it to another connection is refused
+  with `WRITER_LEASE_REQUIRED` instead of executing
+  (`BridgeServer::commandLeaseStillValid`, called from the command pump).
 - Lease ownership is shown on the Bridge module panel, so a human can always see
   who currently holds write access.
 
@@ -249,9 +292,9 @@ frame or a slow client can never stall or crash audio.
 |---|---|---|
 | Running patch | Malicious/buggy client; prompt injection via metadata | Auth gate + single writer lease; two-phase fingerprinted commit (`PATCH_CONFLICT`); adapters gate semantics; transaction caps + rate limits; stale-epoch rejection |
 | Pairing secret | Local port probing; secret theft/logging | `0700`/`0600` perms + atomic write; 256-bit CSPRNG; HMAC-SHA256 challenge-response with single-use nonce + constant-time compare; never on the wire, never logged, not in the manifest |
-| User filesystem | Path traversal / symlink; URL/`file:` abuse | Root containment + `realpath` resolution; `.vcv`-only; URL and null-byte rejection; restore limited to the checkpoints root; filesystem confined to configured dirs |
+| User filesystem | Path traversal / symlink; URL/`file:` abuse; a save interrupted mid-write | Root containment on the canonicalized target (dangling links followed, unresolvable paths refused); `.vcv`-only; URL and null-byte rejection; restore limited to the checkpoints root; filesystem confined to configured dirs; saves written to a flushed sibling temp then moved over the target |
 | Audio continuity | Oversized/malformed JSON; slow or flooding client | 1 MiB frame cap; depth/node/string limits + NaN/Inf rejection before processing; audio thread does atomic reads only; UI-thread command pump with per-frame budget |
-| Writer exclusivity | Read-only connection escalating; lease theft | Lease methods post-auth only; single holder (`LEASE_HELD`); renew/release bound to `connectionId` + `leaseId`; TTL + disconnect drop; ownership shown on the Bridge panel |
+| Writer exclusivity | Read-only connection escalating; lease theft; a queued mutation outliving its lease | Lease methods post-auth only; single holder (`LEASE_HELD`); renew/release bound to `connectionId` + `leaseId`; TTL + disconnect drop; lease re-checked on the UI thread before the command runs; ownership shown on the Bridge panel |
 
 ## Residual risk and out of scope
 
@@ -275,8 +318,11 @@ following are explicitly outside the model:
   implemented cross-platform but have less live coverage.
 - **Availability under local DoS.** A same-user process can exhaust connection
   slots or the command queue (surfaced as `connectionsRefused` /
-  `BRIDGE_NOT_READY`). Rack MCP degrades safely — it drops or refuses rather than
-  crashing — but does not guarantee availability against a hostile local process.
+  `BRIDGE_NOT_READY`). The handshake deadline and the unauthenticated-slot cap
+  bound only a peer that *cannot* read the secret; a same-user process that can
+  read it authenticates and then competes for the full slot budget like any other
+  client. Rack MCP degrades safely — it drops or refuses rather than crashing —
+  but does not guarantee availability against a hostile local process.
 
 ## Platform notes (Windows)
 

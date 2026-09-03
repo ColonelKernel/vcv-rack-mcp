@@ -90,7 +90,13 @@ try {
   out("→ describe_patch");
   const desc = sc(await call(client, "describe_patch", {}));
   const chains = (desc.chains as Array<{ description: string }>) ?? [];
-  for (const c of chains) out(`  ← ${c.description}`);
+  for (const c of chains) {
+    // Verbatim tool output, wrapped at the clause boundary so the transcript
+    // card stays readable; the text itself is never altered.
+    const [chain, feeders] = c.description.split("; also feeding it: ");
+    out(`  ← ${chain}`);
+    if (feeders) out(`      also feeding it: ${feeders}`);
+  }
 
   // 6. Validate
   out("→ validate_patch");

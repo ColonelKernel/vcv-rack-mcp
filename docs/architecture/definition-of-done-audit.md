@@ -7,8 +7,8 @@ evidence — a test, a live smoke, or the code that enforces it — and any hone
 caveat.
 
 Verification tiers used below:
-- **Unit** — `pnpm -r test` (128 TypeScript tests across schemas, protocol,
-  adapters, recipes, and the server) and the C++ `ctest` suite (59 doctest
+- **Unit** — `pnpm -r test` (181 TypeScript tests across schemas, protocol,
+  adapters, recipes, and the server) and the C++ `ctest` suite (68 doctest
   cases: framing, queues, crypto, canonical/JSON-limits, telemetry math,
   protocol-gen, service, secret/manifest files).
 - **Live** — integration smokes in `tests/integration/` that launch the
@@ -27,7 +27,7 @@ Verification tiers used below:
 | 3 | Audio thread does no networking/filesystem/logging/JSON | Met | `BridgeModule::process` (atomics only), `ProbeModule::process` (fixed-cost); `telemetry.test.cpp` |
 | 4 | Inspection reflects real Rack state | Met | `snapshot-smoke`, `describe_patch`/`validate_patch` live in `recipes-smoke` |
 | 5 | Subtractive synth preview→commit→validate→save→reload→undo | Met | `write-smoke` (28 checks) + `files-smoke` |
-| 6 | Destructive ops require a valid preview-bound confirmation | Met | confirmation-token store; `write-smoke` stale/refusal checks |
+| 6 | Destructive ops require a valid preview-bound confirmation | Met | confirmation-token store; `write-smoke` stale/refusal checks; token-lifecycle cases in `transactions.test.ts` / `patchfiles.test.ts` |
 | 7 | Retried mutations cannot execute twice | Met | idempotency cache; `write-smoke` idempotent-retry check |
 | 8 | Manual patch changes make stale commits fail | Met | fingerprint conflict → `PATCH_CONFLICT`; `write-smoke` |
 | 9 | Failed transactions roll back without orphans | Met | inverse actions; `write-smoke` rollback (module count preserved) |
@@ -80,6 +80,19 @@ leaving the module count unchanged (no orphans); and undoing a non-top
 transaction is refused. `files-smoke` covers save and reload of a `.vcv`
 containing module storage.
 
+The load / clear / restore confirmations are now as strong as a transaction
+token: each binds instance, session, kind, target path, patch epoch, and base
+fingerprint, is re-verified against live state immediately before the
+irreversible request, and is burned on use. Two consequences are visible to
+callers and are stricter than before. A commit whose patch changed at all since
+the preview — including UI-only changes such as dragging a module, since the
+fingerprint covers serialized UI state — is refused with `PATCH_CONFLICT` or
+`STALE_PATCH_EPOCH`, so an agent that previews and then waits on a slow human
+confirmation must re-preview. And retrying a commit with the same token after a
+lost response now returns `CONFIRMATION_EXPIRED` rather than a replayed result;
+re-previewing shows the true post-state. Separately, a failed recovery
+checkpoint now aborts the load/clear instead of proceeding without one.
+
 **10 — Signal monitoring only via the Probe.** There is no generic signal-read
 tool; arbitrary monitoring requires attaching a RackMCP-Probe over an explicit
 cable (`preview_attach_probe` / `commit_attach_probe` / `read_probe`).
@@ -93,7 +106,7 @@ reported as heuristic; `validate_patch` surfaces the coverage gap
 [ADR-0004](./ADR-0004-adapter-and-recipe-knowledge-model.md).
 
 **12 — Full suite on every supported platform (CI-only).** The complete suite
-passes locally on macOS arm64: 112 TypeScript unit tests, 54 C++ cases, and the
+passes locally on macOS arm64: 181 TypeScript unit tests, 68 C++ cases, and the
 integration smokes. Windows x64, Linux x64, and macOS x64 are built and tested by
 CI (`.github/workflows/ci.yml`) but have not been verified on local hardware in
 this project; treat them as CI-green, not hand-verified, until a maintainer runs
@@ -118,6 +131,57 @@ limitation is that a Rack instance launched non-interactively by the test harnes
 does not step its audio engine, so live telemetry reads zero until a real
 interactive session runs the engine — the Probe DSP math is therefore verified in
 C++ rather than against live voltages under the harness.
+
+## Divergences from the normative spec
+
+The completion criteria in section 19 are met as recorded above, but the
+implementation does not do everything the rest of the spec asks for. These gaps
+are deliberate and recorded here rather than papered over.
+
+- **`duplicate_module` is not implemented.** [Spec section
+  7](../spec/rack-mcp-spec.md) lists it as a required patch operation. The
+  plugin rejects it during preview with `UNSUPPORTED_OPERATION`
+  (`plugins/RackMCP/src/rackside/Transaction.cpp`), which is a deliberate
+  narrowing: previously a plan containing it previewed successfully and then
+  threw at commit, so preview and commit now agree exactly, at the cost of the
+  operation being unavailable. Implementing it undoably inside one history action
+  is not settled by the vendored Rack SDK headers — `ModuleWidget::cloneAction`
+  pushes its own action straight onto `APP->history`, which would escape the
+  transaction's rollback, and whether `Module::fromJson` overwrites the module id
+  cannot be determined from headers alone; guessing risked corrupting the engine
+  id map. Duplicating a module today means `add_module` plus explicit
+  `set_parameter` / `connect` operations, which does not carry over opaque module
+  storage. Callers that previously sent `duplicate_module` will now fail at
+  preview instead of at commit.
+- **`set_parameter`'s `smoothMs` is accepted and ignored.** Spec section 7 asks
+  for an optional transition duration for non-audio-rate smoothing, and
+  `packages/schemas/src/operations.ts` declares the field, but no plugin code
+  reads it. The applier writes through `ParamQuantity::setImmediateValue`, so the
+  committed value, the `ParamChange` history entry, and the returned fingerprint
+  all agree — a smoothed parameter steps to its new value rather than ramping.
+  Implementing `smoothMs` would have to be a UI-pump ramp that still leaves the
+  history entry and the fingerprint at the final value.
+- **Preview validates the plan, but does not fully simulate it.** Spec section 6
+  step 4 asks preview to validate every operation without mutating Rack. Preview
+  now tracks plan-local state — modules removed earlier in the plan, cables
+  removed earlier, input ports already claimed — but a module the plan has not
+  created yet has no live counterpart to inspect, so parameter IDs and port
+  bounds against a transaction alias remain apply-time failures that are caught
+  by rollback rather than at preview. The collision check for `collision: "fail"`
+  has the same shape: it sees only live module widgets, so it can reject a
+  placement a later `force`/`squeeze` operation would have made room for, and it
+  cannot see a module added earlier in the same plan. `requestModulePos` at apply
+  time remains the authority.
+- **The Rack-GUI patch-replacement detector has two blind spots.** Spec section 5
+  requires the patch epoch to be incremented after "any full patch replacement".
+  The plugin now detects replacements made in Rack's own UI (File > New / Open /
+  Revert, drag-and-drop) by polling for a cleared undo history or a swapped
+  module set, and bumps the epoch, but two cases are undetected by design: a
+  File > Revert with no edits since the load (the reverted patch is
+  content-identical), and a GUI replacement that lands inside the ~500 ms poll
+  window and is immediately followed by a user edit, which reads as ordinary
+  editing. The detector deliberately over-bumps in ambiguous cases, so
+  `patchEpoch` is no longer reliably 1 on a fresh session.
 
 ## Known follow-ups (not DoD gaps)
 
