@@ -13,8 +13,23 @@ export interface ServerConfig {
   checkpointsDir: string;
   patchesDir: string;
   auditDir: string;
+  /**
+   * Audit retention (spec section 13: "configurable by size and age").
+   * `auditMaxBytes` is the size at which the live log is rotated to
+   * `audit.log.1`; `auditMaxAgeDays` is how long a rotated generation is kept.
+   * Either set to 0 disables that half of the policy.
+   */
+  auditMaxBytes: number;
+  auditMaxAgeDays: number;
   /** Default request deadline forwarded to the bridge. */
   requestDeadlineMs: number;
+}
+
+/** Parses a non-negative numeric env var, falling back on anything unusable. */
+function numeric(raw: string | undefined, fallback: number): number {
+  if (raw === undefined) return fallback;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 0 ? n : fallback;
 }
 
 /**
@@ -46,6 +61,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     checkpointsDir: join(rackmcpDir, "checkpoints"),
     patchesDir: join(rackUserDir, "patches"),
     auditDir: join(rackmcpDir, "audit"),
-    requestDeadlineMs: Number(env.RACKMCP_REQUEST_DEADLINE_MS ?? 5000),
+    auditMaxBytes: numeric(env.RACKMCP_AUDIT_MAX_BYTES, 8 * 1024 * 1024),
+    auditMaxAgeDays: numeric(env.RACKMCP_AUDIT_MAX_AGE_DAYS, 30),
+    requestDeadlineMs: numeric(env.RACKMCP_REQUEST_DEADLINE_MS, 5000),
   };
 }

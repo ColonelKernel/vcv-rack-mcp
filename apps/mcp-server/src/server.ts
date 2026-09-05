@@ -23,7 +23,10 @@ export function createServer(config: ServerConfig): {
 } {
   const conn = new ConnectionManager(config);
   const txns = new TransactionManager(conn);
-  const audit = new AuditLog(config.auditDir);
+  const audit = new AuditLog(config.auditDir, {
+    maxBytes: config.auditMaxBytes,
+    maxAgeDays: config.auditMaxAgeDays,
+  });
   const ctx: ToolContext = {
     conn,
     txns,

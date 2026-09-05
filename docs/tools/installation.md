@@ -172,6 +172,8 @@ Set environment variables only as needed (read in `apps/mcp-server/src/config.ts
 | --- | --- | --- |
 | `RACKMCP_RACK_USER_DIR` | Platform Rack 2 user dir | Point the server at a non-default Rack user directory. Discovery, checkpoints, patches, and audit all derive from it. |
 | `RACKMCP_REQUEST_DEADLINE_MS` | `5000` | Default bridge request deadline, in ms. |
+| `RACKMCP_AUDIT_MAX_BYTES` | `8388608` | Size at which the audit log rotates to `audit.log.1`. `0` disables rotation. |
+| `RACKMCP_AUDIT_MAX_AGE_DAYS` | `30` | How long a rotated audit generation is kept. `0` keeps it indefinitely. |
 | `RACKMCP_LOG_LEVEL` | `info` | `debug` / `info` / `warn` / `error`. |
 
 There is no separate discovery-directory variable — the server derives

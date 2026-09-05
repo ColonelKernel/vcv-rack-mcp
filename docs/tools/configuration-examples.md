@@ -27,6 +27,8 @@ no network configuration is required.
 | `RACKMCP_RACK_USER_DIR` | Platform Rack 2 user dir | Override the Rack user directory (discovery, patches, checkpoints, audit all derive from it). |
 | `RACKMCP_LOG_LEVEL` | `info` | `debug`/`info`/`warn`/`error`. Logs go to stderr only. |
 | `RACKMCP_REQUEST_DEADLINE_MS` | `5000` | Default bridge request deadline. |
+| `RACKMCP_AUDIT_MAX_BYTES` | `8388608` | Size at which the audit log rotates to `audit.log.1`. `0` disables rotation. |
+| `RACKMCP_AUDIT_MAX_AGE_DAYS` | `30` | How long a rotated audit generation is kept. `0` keeps it indefinitely. |
 
 Default Rack user directory:
 

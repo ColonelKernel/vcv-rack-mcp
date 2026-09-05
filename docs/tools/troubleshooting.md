@@ -93,6 +93,20 @@ Secrets and opaque module data are never recorded. The most recent 50 entries ar
 available without touching the filesystem through the `rack://audit/recent` resource — use
 it to see, in order, which tool failed and with which `errorCode`.
 
+**Retention** is by size and age (spec section 13). The live log is rotated to
+`audit.log.1` once it passes `RACKMCP_AUDIT_MAX_BYTES` (default 8 MiB), and a rotated
+generation is deleted once it is older than `RACKMCP_AUDIT_MAX_AGE_DAYS` (default 30).
+Exactly one previous generation is kept, so at most roughly twice the size limit is ever
+on disk. Set either variable to `0` to disable that half of the policy and keep
+everything — useful when you need a complete record for an investigation, at the cost of
+unbounded growth.
+
+Reading is bounded independently of retention: `recent()` reads only the last 256 KB of
+the log rather than the whole file, so the cost of `rack://audit/recent` does not grow
+with your history. Immediately after a rotation it reads across into `audit.log.1`, so
+the recent view does not go blank at the moment a busy session produced the most
+history.
+
 ### `rack://status` and `get_rack_status` metrics
 
 Every `rack://` resource returns an envelope naming its own `state`, so a client branches

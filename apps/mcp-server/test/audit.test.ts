@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -112,5 +112,86 @@ describe("AuditLog.recent", () => {
     for (let i = 0; i < 10; i++) audit.record({ tool: `tool_${i}`, outcome: "ok" });
     const { entries } = audit.recent(3);
     expect(entries.map((e) => e.tool)).toEqual(["tool_7", "tool_8", "tool_9"]);
+  });
+});
+
+/**
+ * Spec section 13 requires audit retention "configurable by size and age".
+ * Nothing implemented it: record() appended forever and recent() read the whole
+ * file to return the last 50 lines, so both the disk cost and the cost of every
+ * `rack://audit/recent` read grew without bound for the life of the install.
+ */
+describe("AuditLog retention", () => {
+  // AuditEntry caps `tool` at 128 characters, so lines are padded up to that
+  // and volume comes from the record count rather than from longer names.
+  const pad = (i: number) => `tool_${i}_`.padEnd(110, "x");
+
+  it("rotates the live log once it passes maxBytes, keeping one generation", () => {
+    const dir = scratch();
+    const audit = new AuditLog(dir, { maxBytes: 4096, maxAgeDays: 30 });
+    for (let i = 0; i < 200; i++) audit.record({ tool: pad(i), outcome: "ok" });
+    expect(existsSync(join(dir, "audit.log.1"))).toBe(true);
+    // Rotation renames, so the live log does not exist again until the next
+    // append -- recent() reads the rotated generation in the gap.
+    audit.record({ tool: "after_rotation", outcome: "ok" });
+    // Everything retained is now bounded by roughly one generation plus the
+    // live log, not by everything ever written.
+    const live = statSync(join(dir, "audit.log")).size;
+    const rotated = statSync(join(dir, "audit.log.1")).size;
+    expect(live).toBeLessThan(4096);
+    expect(live + rotated).toBeLessThan(200 * 130);
+  });
+
+  it("keeps answering with recent history across a rotation", () => {
+    // Rotating straight to nothing would blank the view at the moment a busy
+    // session had produced the most history -- the opposite of what this log
+    // is for.
+    const dir = scratch();
+    // One generation has to be able to hold what recent() asks for; at 4 KB it
+    // holds ~25 lines, and retention genuinely means the rest is gone.
+    const audit = new AuditLog(dir, { maxBytes: 32 * 1024, maxAgeDays: 30 });
+    for (let i = 0; i < 400; i++) audit.record({ tool: pad(i), outcome: "ok" });
+    expect(existsSync(join(dir, "audit.log.1"))).toBe(true);
+    const { entries } = audit.recent(50);
+    expect(entries).toHaveLength(50);
+    expect(entries[entries.length - 1]!.tool).toContain("tool_399_");
+  });
+
+  it("deletes a rotated generation past maxAgeDays", () => {
+    const dir = scratch();
+    const audit = new AuditLog(dir, { maxBytes: 2048, maxAgeDays: 7 });
+    for (let i = 0; i < 100; i++) audit.record({ tool: pad(i), outcome: "ok" });
+    const rotated = join(dir, "audit.log.1");
+    expect(existsSync(rotated)).toBe(true);
+    // Age it past the limit and force another rotation.
+    const old = new Date(Date.now() - 30 * 86400000);
+    utimesSync(rotated, old, old);
+    const before = readFileSync(rotated, "utf8");
+    for (let i = 0; i < 100; i++) audit.record({ tool: pad(10000 + i), outcome: "ok" });
+    // The aged generation was expired, not carried forward.
+    expect(readFileSync(rotated, "utf8")).not.toBe(before);
+  });
+
+  it("keeps everything when retention is disabled", () => {
+    const dir = scratch();
+    const audit = new AuditLog(dir, { maxBytes: 0, maxAgeDays: 0 });
+    for (let i = 0; i < 200; i++) audit.record({ tool: pad(i), outcome: "ok" });
+    expect(existsSync(join(dir, "audit.log.1"))).toBe(false);
+    expect(audit.recent(10).entries).toHaveLength(10);
+  });
+
+  it("reads a bounded tail rather than the whole log", () => {
+    // A log far larger than the tail window must still answer, and must answer
+    // with the NEWEST entries -- reading from the front would return the oldest.
+    const dir = scratch();
+    const audit = new AuditLog(dir, { maxBytes: 0, maxAgeDays: 0 });
+    for (let i = 0; i < 8000; i++) audit.record({ tool: pad(i), outcome: "ok" });
+    expect(statSync(join(dir, "audit.log")).size).toBeGreaterThan(1024 * 1024);
+    const { entries, skipped } = audit.recent(20);
+    expect(entries).toHaveLength(20);
+    expect(entries[entries.length - 1]!.tool).toContain("tool_7999_");
+    // The tail read starts mid-file, so it starts mid-line; that fragment is
+    // not a record and must not be counted as a malformed one.
+    expect(skipped).toBe(0);
   });
 });

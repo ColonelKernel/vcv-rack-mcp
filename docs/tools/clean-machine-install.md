@@ -171,7 +171,9 @@ The server discovers Rack through the local manifest directory under the Rack us
 dir, so no network configuration is required. On macOS the default user dir
 (`~/Library/Application Support/Rack2`) is auto-detected; set
 `RACKMCP_RACK_USER_DIR` in `env` only if you installed the plugin into a
-non-default dir. Other env vars: `RACKMCP_REQUEST_DEADLINE_MS` (default `5000`) and
+non-default dir. Other env vars: `RACKMCP_REQUEST_DEADLINE_MS` (default `5000`),
+`RACKMCP_AUDIT_MAX_BYTES` (default `8388608`), `RACKMCP_AUDIT_MAX_AGE_DAYS`
+(default `30`) and
 `RACKMCP_LOG_LEVEL`. See [configuration examples](./configuration-examples.md) for
 the full table and the exact config-file location for your host (for example,
 Claude Desktop on macOS reads
