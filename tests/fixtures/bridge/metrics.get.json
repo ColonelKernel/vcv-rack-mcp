@@ -11,5 +11,8 @@
   "uiPumpMaxDrainMs": 0,
   "requestLatencyEwmaMs": 0,
   "engineBlock": 0,
-  "engineFrame": 0
+  "engineFrame": 0,
+  "protocolErrors": 0,
+  "responseDrops": 0,
+  "oversizedResults": 0
 }

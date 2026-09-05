@@ -1,44 +1,44 @@
 {
   "slots": [
     {
-      "probeModuleId": "7504779092922215",
+      "probeModuleId": "8797253495131838",
       "probeInputId": 0,
       "connected": true,
-      "sourceModuleId": "7777981223792552",
+      "sourceModuleId": "6558968886662395",
       "sourcePortId": 0
     },
     {
-      "probeModuleId": "7504779092922215",
+      "probeModuleId": "8797253495131838",
       "probeInputId": 1,
       "connected": false
     },
     {
-      "probeModuleId": "7504779092922215",
+      "probeModuleId": "8797253495131838",
       "probeInputId": 2,
       "connected": false
     },
     {
-      "probeModuleId": "7504779092922215",
+      "probeModuleId": "8797253495131838",
       "probeInputId": 3,
       "connected": false
     },
     {
-      "probeModuleId": "7504779092922215",
+      "probeModuleId": "8797253495131838",
       "probeInputId": 4,
       "connected": false
     },
     {
-      "probeModuleId": "7504779092922215",
+      "probeModuleId": "8797253495131838",
       "probeInputId": 5,
       "connected": false
     },
     {
-      "probeModuleId": "7504779092922215",
+      "probeModuleId": "8797253495131838",
       "probeInputId": 6,
       "connected": false
     },
     {
-      "probeModuleId": "7504779092922215",
+      "probeModuleId": "8797253495131838",
       "probeInputId": 7,
       "connected": false
     }

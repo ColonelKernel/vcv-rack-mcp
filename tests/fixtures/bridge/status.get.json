@@ -1,6 +1,6 @@
 {
-  "instanceId": "b03b006b-9749-4f12-bf88-99948dafd9ce",
-  "sessionId": "8413400e-0ce1-4972-a0ff-20a0fd91bbf7",
+  "instanceId": "1757e9b9-fead-40c2-ba94-7c343b72e2ce",
+  "sessionId": "30d0c117-c861-47c3-b16c-80982704929c",
   "patchEpoch": 1,
   "rackVersion": "2.6.6",
   "rackEdition": "Pro",
@@ -15,7 +15,7 @@
   "writerLease": {
     "held": true,
     "holderClientName": "capture",
-    "leaseId": "e912e575-082e-4484-9bfe-fdc313d84dbc",
-    "expiresInMs": 29987
+    "leaseId": "1346c2a6-d5be-4850-996c-d1197631c505",
+    "expiresInMs": 29983
   }
 }

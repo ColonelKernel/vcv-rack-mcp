@@ -85,6 +85,10 @@ struct ServiceCounters {
     std::atomic<uint64_t> responseDrops{0};
     std::atomic<uint64_t> framesIn{0};
     std::atomic<uint64_t> framesOut{0};
+    /** Commands whose deadline expired while queued for the UI thread. */
+    std::atomic<uint64_t> requestTimeouts{0};
+    /** Results too large for one frame, answered with RESULT_TOO_LARGE. */
+    std::atomic<uint64_t> oversizedResults{0};
 };
 
 class BridgeServer {
@@ -123,6 +127,9 @@ public:
 
     LeaseManager& leases() { return leases_; }
     ServiceCounters& counters() { return counters_; }
+    /** Frame cap this server was configured with; the executor needs it to
+     *  substitute RESULT_TOO_LARGE while the request id is still in hand. */
+    size_t maxFrameBytes() const { return config_.maxFrameBytes; }
 
 private:
     struct Session {

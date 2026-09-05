@@ -51,6 +51,7 @@ void CommandPumpWidget::step() {
         int64_t now = steadyNowMs();
         if (now > cmd.deadlineAtMs) {
             bridge.server().counters().requestsInline++; // counted as handled
+            bridge.server().counters().requestTimeouts++;
             frame = buildResError(cmd.requestId, "TIMEOUT",
                                   "deadline expired before execution began", false, false);
         }
@@ -70,6 +71,15 @@ void CommandPumpWidget::step() {
         if (cmd.payload) {
             json_decref(cmd.payload);
             cmd.payload = NULL;
+        }
+        // A result that will not fit one frame must be answered, not dropped:
+        // past this point the writer loop has only the encoded bytes and no
+        // request id, so it can do nothing but discard the reply and leave the
+        // caller waiting for a deadline that reports the wrong cause.
+        if (frame.size() > bridge.server().maxFrameBytes()) {
+            bridge.server().counters().oversizedResults++;
+            frame = capResponseFrame(frame, cmd.requestId, cmd.method,
+                                     bridge.server().maxFrameBytes(), cmd.mutating);
         }
         bridge.server().sendFrame(cmd.connectionId, frame);
         drained++;

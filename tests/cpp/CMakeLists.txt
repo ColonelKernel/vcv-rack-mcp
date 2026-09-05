@@ -92,6 +92,7 @@ file(GLOB RACKMCP_TEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/*.test.cpp)
 if(NOT JANSSON_FOUND)
   list(REMOVE_ITEM RACKMCP_TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/canonical.test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/frames.test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/service.test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/secret_manifest.test.cpp
   )

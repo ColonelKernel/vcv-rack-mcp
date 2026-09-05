@@ -37,6 +37,25 @@ std::string buildResOk(const std::string& id, json_t* payload);
 std::string buildResError(const std::string& id, const char* code, const std::string& message,
                           bool retrySafe, bool mutationMayHaveOccurred);
 
+/**
+ * Returns `frame` when it fits the bridge frame cap, and a RESULT_TOO_LARGE
+ * response otherwise.
+ *
+ * An oversized response cannot go on the wire: encodeFrame refuses it and the
+ * writer loop, which holds only the encoded string, has no request id left to
+ * answer with -- so the reply is dropped and the caller learns nothing until
+ * its own deadline expires and reports a timeout. A timeout is the wrong
+ * diagnosis: retrying reproduces it forever, because the result is too big
+ * rather than late. Substituting the error here, where the request id and the
+ * method are still in hand, turns that into an answer naming the real cause.
+ *
+ * `mutating` is passed through as mutationMayHaveOccurred: a mutating command
+ * has already run by the time its reply is built, so the caller must not read
+ * this error as "nothing happened".
+ */
+std::string capResponseFrame(const std::string& frame, const std::string& id,
+                             const std::string& method, size_t maxFrameBytes, bool mutating);
+
 /** The exact message an authenticating client must HMAC. */
 std::string authMessage(const std::string& nonce, const std::string& instanceId,
                         const std::string& sessionId);

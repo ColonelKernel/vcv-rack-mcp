@@ -4896,6 +4896,21 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 9007199254740991
+          },
+          "protocolErrors": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "responseDrops": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "oversizedResults": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
           }
         },
         "required": [
@@ -4909,7 +4924,10 @@
           "bridgeReconnects",
           "uiPumpLastDrainMs",
           "uiPumpMaxDrainMs",
-          "requestLatencyEwmaMs"
+          "requestLatencyEwmaMs",
+          "protocolErrors",
+          "responseDrops",
+          "oversizedResults"
         ],
         "additionalProperties": false
       }

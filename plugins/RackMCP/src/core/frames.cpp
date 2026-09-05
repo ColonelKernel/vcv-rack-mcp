@@ -1,6 +1,7 @@
 #include "core/frames.hpp"
 
 #include <chrono>
+#include <cstdio>
 #include <jansson.h>
 
 namespace rackmcp {
@@ -122,6 +123,19 @@ std::string buildResError(const std::string& id, const char* code, const std::st
                           "retrySafe", retrySafe ? 1 : 0,
                           "mutationMayHaveOccurred", mutationMayHaveOccurred ? 1 : 0);
     return dumpAndFree(o, resInternalError(id, mutationMayHaveOccurred));
+}
+
+std::string capResponseFrame(const std::string& frame, const std::string& id,
+                             const std::string& method, size_t maxFrameBytes, bool mutating) {
+    if (frame.size() <= maxFrameBytes)
+        return frame;
+    // Method names come from the generated method table, so they are short and
+    // ASCII; clamp anyway so the substitute can never itself exceed the cap.
+    std::string m = method.substr(0, 64);
+    char sizes[128];
+    std::snprintf(sizes, sizeof(sizes), " result is %llu bytes, over the %llu-byte bridge frame limit",
+                  (unsigned long long) frame.size(), (unsigned long long) maxFrameBytes);
+    return buildResError(id, "RESULT_TOO_LARGE", m + sizes, false, mutating);
 }
 
 std::string authMessage(const std::string& nonce, const std::string& instanceId,

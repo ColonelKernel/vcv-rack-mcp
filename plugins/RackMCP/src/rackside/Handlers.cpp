@@ -62,11 +62,11 @@ static std::string handleMetricsGet(const BridgeCommand& cmd) {
     int64_t engineBlock = APP->engine ? APP->engine->getBlock() : -1;
     int64_t engineFrame = APP->engine ? APP->engine->getFrame() : -1;
     json_t* payload = json_pack(
-        "{s:I, s:I, s:I, s:I, s:I, s:I, s:I, s:I, s:f, s:f, s:f, s:I, s:I}",
+        "{s:I, s:I, s:I, s:I, s:I, s:I, s:I, s:I, s:f, s:f, s:f, s:I, s:I, s:I, s:I, s:I}",
         "commandQueueDepth", (json_int_t) bridge.commandQueue().size(),
         "commandQueueMaxDepth", (json_int_t) bridge.commandQueue().maxDepth(),
         "requestsHandled", (json_int_t) (c.requestsInline.load() + c.requestsEnqueued.load()),
-        "requestTimeouts", (json_int_t) 0,
+        "requestTimeouts", (json_int_t) c.requestTimeouts.load(),
         "rollbacks", (json_int_t) 0,
         "authFailures", (json_int_t) c.authFailures.load(),
         "droppedTelemetryFrames", (json_int_t) 0,
@@ -75,7 +75,10 @@ static std::string handleMetricsGet(const BridgeCommand& cmd) {
         "uiPumpMaxDrainMs", (double) bridge.pumpMaxDrainMs.load(),
         "requestLatencyEwmaMs", 0.0,
         "engineBlock", (json_int_t) engineBlock,
-        "engineFrame", (json_int_t) engineFrame);
+        "engineFrame", (json_int_t) engineFrame,
+        "protocolErrors", (json_int_t) c.protocolErrors.load(),
+        "responseDrops", (json_int_t) c.responseDrops.load(),
+        "oversizedResults", (json_int_t) c.oversizedResults.load());
     return buildResOk(cmd.requestId, payload);
 }
 

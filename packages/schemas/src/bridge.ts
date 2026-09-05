@@ -156,10 +156,19 @@ export const BridgeMetrics = z
     commandQueueDepth: z.number().int().min(0),
     commandQueueMaxDepth: z.number().int().min(0),
     requestsHandled: z.number().int().min(0),
+    /** Commands whose deadline expired while queued for the UI thread. */
     requestTimeouts: z.number().int().min(0),
+    // NOT YET MEASURED: the plugin sends a literal 0 for `rollbacks`,
+    // `droppedTelemetryFrames` and `requestLatencyEwmaMs`. No counter is
+    // incremented at the rollback site, the probe's seqlock buffer does not
+    // track windows overwritten before a reader saw them, and no latency is
+    // sampled. Read them as "unimplemented", not as "nothing happened". They
+    // are published because spec section 13 names them; wiring each to a real
+    // source is separate work.
     rollbacks: z.number().int().min(0),
     authFailures: z.number().int().min(0),
     droppedTelemetryFrames: z.number().int().min(0),
+    /** Connections accepted over this service's lifetime, first one included. */
     bridgeReconnects: z.number().int().min(0),
     uiPumpLastDrainMs: z.number().min(0),
     uiPumpMaxDrainMs: z.number().min(0),
@@ -169,6 +178,16 @@ export const BridgeMetrics = z
     // holds them constant. Useful for troubleshoot-silence diagnostics.
     engineBlock: z.number().int().min(0).optional(),
     engineFrame: z.number().int().min(0).optional(),
+    /**
+     * Frames the bridge could not put on the wire, and results too large to
+     * try. `oversizedResults` counts replies answered with RESULT_TOO_LARGE
+     * instead of being dropped; a non-zero `responseDrops` or `protocolErrors`
+     * means a frame was discarded with no reply at all, which a caller can
+     * otherwise only observe as an unexplained timeout.
+     */
+    protocolErrors: z.number().int().min(0),
+    responseDrops: z.number().int().min(0),
+    oversizedResults: z.number().int().min(0),
   })
   .strict();
 export type BridgeMetrics = z.infer<typeof BridgeMetrics>;
