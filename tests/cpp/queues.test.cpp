@@ -135,6 +135,23 @@ TEST_CASE("telemetry snapshot buffer: concurrent stress never tears") {
             buf.publish(c);
         }
     });
+    // Wait for the first publish before counting anything.
+    //
+    // read() returns false immediately while the sequence is still 0, so a
+    // reader that starts before the writer's first publish burns its whole
+    // budget in about a millisecond without ever seeing data, and
+    // `validated > 0` then fails for reasons that have nothing to do with the
+    // buffer. Starting a thread on a loaded machine takes longer than that,
+    // which is how this passed everywhere and failed on a CI runner. The
+    // writer keeps spinning without pause: a read that overlaps a publish is
+    // the only way to observe tearing, so slowing it down would cost the test
+    // the very thing it exists to catch.
+    std::chrono::steady_clock::time_point deadline =
+        std::chrono::steady_clock::now() + std::chrono::seconds(10);
+    while (buf.sequence() == 0 && std::chrono::steady_clock::now() < deadline)
+        std::this_thread::yield();
+    REQUIRE(buf.sequence() > 0);
+
     int validated = 0;
     Consistent out;
     for (int i = 0; i < 200000; i++) {
