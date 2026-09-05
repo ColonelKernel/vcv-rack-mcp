@@ -17,7 +17,7 @@ import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { TOOLS } from "@rackmcp/schemas";
+import { getResource, RESOURCES, TOOLS } from "@rackmcp/schemas";
 import { RackHarness } from "./harness.js";
 
 const REPO_ROOT = resolve(fileURLToPath(import.meta.url), "../../../..");
@@ -40,6 +40,8 @@ function sc(r: unknown): Record<string, unknown> {
 /** Tools whose success payload was validated, and the drift found if any. */
 const validated = new Set<string>();
 const drift = new Map<string, string[]>();
+/** Resource URIs read, and the states each was observed in. */
+const resourceStates = new Map<string, Set<string>>();
 
 const harness = new RackHarness({ baseDir: scratch, name: "contract" });
 harness.prepare();
@@ -84,6 +86,33 @@ async function call(
   return structured;
 }
 
+/**
+ * Read a resource and strict-parse its body against the schema its registry
+ * entry declares. Resources carry no `outputSchema` over MCP, so nothing
+ * validates them on the wire; this is where a body that drifts from the
+ * published contract gets caught.
+ */
+async function readResource(uri: string): Promise<Record<string, unknown>> {
+  const spec = getResource(uri);
+  if (!spec) throw new Error(`unknown resource ${uri}`);
+  const res = (await client.readResource({ uri })) as {
+    contents: Array<{ text: string; uri: string; mimeType?: string }>;
+  };
+  ok(`${uri} returns one JSON document`,
+     res.contents.length === 1 && res.contents[0]!.mimeType === "application/json");
+  const body = JSON.parse(res.contents[0]!.text) as Record<string, unknown>;
+  const parsed = spec.output.safeParse(body);
+  const issues = parsed.success
+    ? []
+    : parsed.error.issues.slice(0, 12).map((i) => `${i.path.join(".") || "<root>"}: ${i.message}`);
+  ok(`${uri} body matches its schema (state=${String(body.state)})`, issues.length === 0,
+     issues.join(" | "));
+  const seen = resourceStates.get(uri) ?? new Set<string>();
+  seen.add(String(body.state));
+  resourceStates.set(uri, seen);
+  return body as Record<string, unknown> & { state?: string; code?: string };
+}
+
 try {
   await harness.waitForInstance();
   transport = new StdioClientTransport({
@@ -93,6 +122,21 @@ try {
     stderr: "pipe",
   });
   await client.connect(transport);
+
+  // --- resources before any selection ------------------------------------
+  // The degraded state only exists before something selects an instance, so it
+  // has to be read here or it never gets live coverage at all. With exactly one
+  // Rack running the server auto-selects, so these come back "ok" -- which is
+  // itself the point: the resources used to answer "select an instance first"
+  // in precisely the state where the equivalent tools returned data.
+  for (const uri of ["rack://patch/current", "rack://catalog/models"]) {
+    const body = await readResource(uri);
+    // Assert the STATE, not just that the body validates: `unavailable` is a
+    // perfectly valid body, so a check that only strict-parses would still pass
+    // with the auto-select fix reverted. This is the only live exercise of it.
+    ok(`${uri} serves data before any explicit selection`, body.state === "ok",
+       `state=${String(body.state)}${body.state === "unavailable" ? ` code=${String(body.code)}` : ""}`);
+  }
 
   // --- discovery, selection, status, leases ------------------------------
   const instances = (await call("list_rack_instances")).instances as Array<Record<string, unknown>>;
@@ -220,7 +264,26 @@ try {
 
   await call("release_writer_lease");
 
+  // --- resources, with a patch in place -----------------------------------
+  // Reading the registry means coverage is automatic, so unlike the tool census
+  // below there is nothing to assert about it -- a check that every URI in
+  // RESOURCES appears in a map populated by iterating RESOURCES can never fail.
+  // What can fail is the state: with a live instance and a built patch, every
+  // resource must actually serve.
+  for (const spec of RESOURCES) {
+    const body = await readResource(spec.uri);
+    ok(`${spec.uri} serves data with an instance connected`, body.state === "ok",
+       `state=${String(body.state)}`);
+  }
+
   // --- verdict ------------------------------------------------------------
+  // Which states each resource was actually seen in, so the census below is
+  // read against real coverage rather than an assumption about it. The
+  // degraded states are covered by unit tests; this harness runs exactly one
+  // Rack, so live it only ever reaches "ok".
+  for (const [uri, states] of resourceStates)
+    console.error(`     ${uri}: states observed = ${[...states].join(", ")}`);
+
   const unexercised = TOOLS.filter((t) => !validated.has(t.name)).map((t) => t.name);
   ok(
     `every registered tool validated (${validated.size}/${TOOLS.length})`,

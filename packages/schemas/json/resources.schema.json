@@ -1,0 +1,3446 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rackmcp.local/schemas/resources.schema.json",
+  "description": "Rack MCP resource contracts",
+  "resources": {
+    "rack://status": {
+      "name": "rack-status",
+      "title": "Rack status",
+      "description": "Discovery and connection status for the selected Rack instance.",
+      "mimeType": "application/json",
+      "output": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string",
+                "const": "ok"
+              },
+              "uri": {
+                "type": "string",
+                "const": "rack://status"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "connected": {
+                    "type": "boolean"
+                  },
+                  "selectedInstanceId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "instances": {
+                    "maxItems": 64,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "instanceId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "pid": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 9007199254740991
+                        },
+                        "rackVersion": {
+                          "type": "string",
+                          "maxLength": 64
+                        },
+                        "rackEdition": {
+                          "type": "string",
+                          "enum": [
+                            "Free",
+                            "Pro",
+                            "unknown"
+                          ]
+                        },
+                        "bridgeVersion": {
+                          "type": "string",
+                          "maxLength": 64
+                        },
+                        "port": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 65535
+                        },
+                        "startTime": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                        },
+                        "lastHeartbeat": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                        },
+                        "mode": {
+                          "type": "string",
+                          "const": "standalone-gui"
+                        },
+                        "patchName": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 512
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "commandPumpPresent": {
+                          "type": "boolean"
+                        },
+                        "bridgeModulePresent": {
+                          "type": "boolean"
+                        },
+                        "stale": {
+                          "type": "boolean"
+                        },
+                        "selected": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "instanceId",
+                        "pid",
+                        "rackVersion",
+                        "rackEdition",
+                        "bridgeVersion",
+                        "port",
+                        "startTime",
+                        "lastHeartbeat",
+                        "mode",
+                        "patchName",
+                        "commandPumpPresent",
+                        "bridgeModulePresent",
+                        "stale",
+                        "selected"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "status": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "instanceId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "sessionId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "patchEpoch": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 9007199254740991
+                          },
+                          "rackVersion": {
+                            "type": "string",
+                            "maxLength": 64
+                          },
+                          "rackEdition": {
+                            "type": "string",
+                            "enum": [
+                              "Free",
+                              "Pro",
+                              "unknown"
+                            ]
+                          },
+                          "bridgeVersion": {
+                            "type": "string",
+                            "maxLength": 64
+                          },
+                          "bridgeProtocolVersion": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 9007199254740991
+                          },
+                          "mode": {
+                            "type": "string",
+                            "const": "standalone-gui"
+                          },
+                          "sampleRate": {
+                            "type": "number",
+                            "exclusiveMinimum": 0
+                          },
+                          "patchName": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 512
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "saved": {
+                            "type": "boolean"
+                          },
+                          "bridgeModulePresent": {
+                            "type": "boolean"
+                          },
+                          "commandPumpPresent": {
+                            "type": "boolean"
+                          },
+                          "writerLease": {
+                            "type": "object",
+                            "properties": {
+                              "held": {
+                                "type": "boolean"
+                              },
+                              "holderClientName": {
+                                "type": "string",
+                                "maxLength": 128
+                              },
+                              "leaseId": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "expiresInMs": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "held"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "instanceId",
+                          "sessionId",
+                          "patchEpoch",
+                          "rackVersion",
+                          "rackEdition",
+                          "bridgeVersion",
+                          "bridgeProtocolVersion",
+                          "mode",
+                          "sampleRate",
+                          "patchName",
+                          "saved",
+                          "bridgeModulePresent",
+                          "commandPumpPresent",
+                          "writerLease"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "statusError": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string",
+                            "enum": [
+                              "RACK_NOT_FOUND",
+                              "RACK_DISCONNECTED",
+                              "BRIDGE_NOT_READY",
+                              "WRITER_LEASE_REQUIRED",
+                              "AUTHENTICATION_FAILED",
+                              "PROTOCOL_VERSION_MISMATCH",
+                              "STALE_SESSION",
+                              "STALE_PATCH_EPOCH",
+                              "PATCH_CONFLICT",
+                              "MODEL_NOT_INSTALLED",
+                              "MODULE_NOT_FOUND",
+                              "CABLE_NOT_FOUND",
+                              "PARAMETER_NOT_FOUND",
+                              "PORT_NOT_FOUND",
+                              "VALIDATION_FAILED",
+                              "CONFIRMATION_REQUIRED",
+                              "CONFIRMATION_EXPIRED",
+                              "PATH_NOT_ALLOWED",
+                              "TRANSACTION_TOO_LARGE",
+                              "ROLLBACK_FAILED",
+                              "TIMEOUT",
+                              "UNSUPPORTED_OPERATION",
+                              "OPAQUE_STATE_UNSUPPORTED",
+                              "TELEMETRY_UNAVAILABLE",
+                              "BAD_REQUEST",
+                              "RATE_LIMITED",
+                              "LEASE_HELD",
+                              "INSTANCE_NOT_SELECTED",
+                              "RESULT_TOO_LARGE",
+                              "INTERNAL"
+                            ]
+                          },
+                          "message": {
+                            "type": "string",
+                            "maxLength": 4096
+                          },
+                          "retrySafe": {
+                            "type": "boolean"
+                          },
+                          "mutationMayHaveOccurred": {
+                            "type": "boolean"
+                          },
+                          "details": {
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string"
+                            },
+                            "additionalProperties": {}
+                          },
+                          "rollback": {
+                            "type": "object",
+                            "properties": {
+                              "rolledBack": {
+                                "type": "string",
+                                "enum": [
+                                  "complete",
+                                  "indeterminate"
+                                ]
+                              },
+                              "failedOperationIndex": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "inversesExecuted": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "detail": {
+                                "type": "string",
+                                "maxLength": 4096
+                              }
+                            },
+                            "required": [
+                              "rolledBack",
+                              "failedOperationIndex",
+                              "inversesExecuted",
+                              "detail"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "message",
+                          "retrySafe",
+                          "mutationMayHaveOccurred"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "metrics": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "commandQueueDepth": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "commandQueueMaxDepth": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "requestsHandled": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "requestTimeouts": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "rollbacks": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "authFailures": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "droppedTelemetryFrames": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "bridgeReconnects": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "uiPumpLastDrainMs": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "uiPumpMaxDrainMs": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "requestLatencyEwmaMs": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "engineBlock": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "engineFrame": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "protocolErrors": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "responseDrops": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "oversizedResults": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "commandQueueDepth",
+                          "commandQueueMaxDepth",
+                          "requestsHandled",
+                          "requestTimeouts",
+                          "rollbacks",
+                          "authFailures",
+                          "droppedTelemetryFrames",
+                          "bridgeReconnects",
+                          "uiPumpLastDrainMs",
+                          "uiPumpMaxDrainMs",
+                          "requestLatencyEwmaMs",
+                          "protocolErrors",
+                          "responseDrops",
+                          "oversizedResults"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "metricsError": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string",
+                            "enum": [
+                              "RACK_NOT_FOUND",
+                              "RACK_DISCONNECTED",
+                              "BRIDGE_NOT_READY",
+                              "WRITER_LEASE_REQUIRED",
+                              "AUTHENTICATION_FAILED",
+                              "PROTOCOL_VERSION_MISMATCH",
+                              "STALE_SESSION",
+                              "STALE_PATCH_EPOCH",
+                              "PATCH_CONFLICT",
+                              "MODEL_NOT_INSTALLED",
+                              "MODULE_NOT_FOUND",
+                              "CABLE_NOT_FOUND",
+                              "PARAMETER_NOT_FOUND",
+                              "PORT_NOT_FOUND",
+                              "VALIDATION_FAILED",
+                              "CONFIRMATION_REQUIRED",
+                              "CONFIRMATION_EXPIRED",
+                              "PATH_NOT_ALLOWED",
+                              "TRANSACTION_TOO_LARGE",
+                              "ROLLBACK_FAILED",
+                              "TIMEOUT",
+                              "UNSUPPORTED_OPERATION",
+                              "OPAQUE_STATE_UNSUPPORTED",
+                              "TELEMETRY_UNAVAILABLE",
+                              "BAD_REQUEST",
+                              "RATE_LIMITED",
+                              "LEASE_HELD",
+                              "INSTANCE_NOT_SELECTED",
+                              "RESULT_TOO_LARGE",
+                              "INTERNAL"
+                            ]
+                          },
+                          "message": {
+                            "type": "string",
+                            "maxLength": 4096
+                          },
+                          "retrySafe": {
+                            "type": "boolean"
+                          },
+                          "mutationMayHaveOccurred": {
+                            "type": "boolean"
+                          },
+                          "details": {
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string"
+                            },
+                            "additionalProperties": {}
+                          },
+                          "rollback": {
+                            "type": "object",
+                            "properties": {
+                              "rolledBack": {
+                                "type": "string",
+                                "enum": [
+                                  "complete",
+                                  "indeterminate"
+                                ]
+                              },
+                              "failedOperationIndex": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "inversesExecuted": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "detail": {
+                                "type": "string",
+                                "maxLength": 4096
+                              }
+                            },
+                            "required": [
+                              "rolledBack",
+                              "failedOperationIndex",
+                              "inversesExecuted",
+                              "detail"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "message",
+                          "retrySafe",
+                          "mutationMayHaveOccurred"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "connected",
+                  "selectedInstanceId",
+                  "instances",
+                  "status",
+                  "statusError",
+                  "metrics",
+                  "metricsError"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "state",
+              "uri",
+              "data"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string",
+                "const": "truncated"
+              },
+              "uri": {
+                "type": "string",
+                "maxLength": 256
+              },
+              "sizeBytes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "limitBytes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              },
+              "useTool": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 64
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "reason": {
+                "type": "string",
+                "maxLength": 512
+              }
+            },
+            "required": [
+              "state",
+              "uri",
+              "sizeBytes",
+              "limitBytes",
+              "useTool",
+              "reason"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "rack://patch/current": {
+      "name": "rack-patch-current",
+      "title": "Current patch",
+      "description": "Structured snapshot of the current patch (opaque state excluded).",
+      "mimeType": "application/json",
+      "output": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string",
+                "const": "ok"
+              },
+              "uri": {
+                "type": "string",
+                "const": "rack://patch/current"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "rackVersion": {
+                    "type": "string",
+                    "maxLength": 64
+                  },
+                  "rackEdition": {
+                    "type": "string",
+                    "enum": [
+                      "Free",
+                      "Pro",
+                      "unknown"
+                    ]
+                  },
+                  "instanceId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "sessionId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "patchEpoch": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9007199254740991
+                  },
+                  "patchName": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 512
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "saved": {
+                    "type": "boolean"
+                  },
+                  "sampleRate": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "modules": {
+                    "maxItems": 4096,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "moduleId": {
+                          "type": "string",
+                          "pattern": "^(0|[1-9][0-9]{0,18})$"
+                        },
+                        "pluginSlug": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 255
+                        },
+                        "pluginVersion": {
+                          "type": "string",
+                          "maxLength": 64
+                        },
+                        "modelSlug": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 255
+                        },
+                        "modelName": {
+                          "type": "string",
+                          "maxLength": 256
+                        },
+                        "bypassed": {
+                          "type": "boolean"
+                        },
+                        "isBridge": {
+                          "type": "boolean"
+                        },
+                        "isProbe": {
+                          "type": "boolean"
+                        },
+                        "gridPosition": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "x": {
+                                  "type": "integer",
+                                  "minimum": -4096,
+                                  "maximum": 4096
+                                },
+                                "y": {
+                                  "type": "integer",
+                                  "minimum": -256,
+                                  "maximum": 256
+                                }
+                              },
+                              "required": [
+                                "x",
+                                "y"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "gridWidth": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 1024
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "params": {
+                          "maxItems": 4096,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "paramId": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 65535
+                              },
+                              "name": {
+                                "type": "string",
+                                "maxLength": 256
+                              },
+                              "value": {
+                                "anyOf": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "minValue": {
+                                "anyOf": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "maxValue": {
+                                "anyOf": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "defaultValue": {
+                                "anyOf": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "normalizedValue": {
+                                "anyOf": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "displayValue": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 256
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "unit": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "snapped": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "paramId",
+                              "name",
+                              "value",
+                              "minValue",
+                              "maxValue",
+                              "defaultValue",
+                              "normalizedValue",
+                              "displayValue",
+                              "unit",
+                              "snapped"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "inputs": {
+                          "maxItems": 1024,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "portId": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 65535
+                              },
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "input",
+                                  "output"
+                                ]
+                              },
+                              "name": {
+                                "type": "string",
+                                "maxLength": 256
+                              },
+                              "channels": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 16
+                              },
+                              "connected": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "portId",
+                              "type",
+                              "name",
+                              "channels",
+                              "connected"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "outputs": {
+                          "maxItems": 1024,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "portId": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 65535
+                              },
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "input",
+                                  "output"
+                                ]
+                              },
+                              "name": {
+                                "type": "string",
+                                "maxLength": 256
+                              },
+                              "channels": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 16
+                              },
+                              "connected": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "portId",
+                              "type",
+                              "name",
+                              "channels",
+                              "connected"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "expanders": {
+                          "type": "object",
+                          "properties": {
+                            "left": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "pattern": "^(0|[1-9][0-9]{0,18})$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "right": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "pattern": "^(0|[1-9][0-9]{0,18})$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "left",
+                            "right"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "opaqueState": {},
+                        "opaqueStateDisclosed": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "moduleId",
+                        "pluginSlug",
+                        "pluginVersion",
+                        "modelSlug",
+                        "modelName",
+                        "bypassed",
+                        "isBridge",
+                        "isProbe",
+                        "gridPosition",
+                        "gridWidth",
+                        "params",
+                        "inputs",
+                        "outputs",
+                        "expanders"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "cables": {
+                    "maxItems": 16384,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "cableId": {
+                          "type": "string",
+                          "pattern": "^(0|[1-9][0-9]{0,18})$"
+                        },
+                        "outputModuleId": {
+                          "type": "string",
+                          "pattern": "^(0|[1-9][0-9]{0,18})$"
+                        },
+                        "outputId": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 65535
+                        },
+                        "inputModuleId": {
+                          "type": "string",
+                          "pattern": "^(0|[1-9][0-9]{0,18})$"
+                        },
+                        "inputId": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 65535
+                        },
+                        "color": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "const": ""
+                            },
+                            {
+                              "type": "string",
+                              "pattern": "^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "cableId",
+                        "outputModuleId",
+                        "outputId",
+                        "inputModuleId",
+                        "inputId",
+                        "color"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "bridgeModuleCount": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "probeModuleCount": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "fingerprint": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "warnings": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 512
+                    }
+                  }
+                },
+                "required": [
+                  "rackVersion",
+                  "rackEdition",
+                  "instanceId",
+                  "sessionId",
+                  "patchEpoch",
+                  "patchName",
+                  "saved",
+                  "sampleRate",
+                  "modules",
+                  "cables",
+                  "bridgeModuleCount",
+                  "probeModuleCount",
+                  "fingerprint",
+                  "warnings"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "state",
+              "uri",
+              "data"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string",
+                "const": "unavailable"
+              },
+              "uri": {
+                "type": "string",
+                "maxLength": 256
+              },
+              "code": {
+                "type": "string",
+                "enum": [
+                  "RACK_NOT_FOUND",
+                  "INSTANCE_NOT_SELECTED",
+                  "RACK_DISCONNECTED"
+                ]
+              },
+              "discoveredInstances": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "hint": {
+                "type": "string",
+                "maxLength": 512
+              }
+            },
+            "required": [
+              "state",
+              "uri",
+              "code",
+              "discoveredInstances",
+              "hint"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string",
+                "const": "error"
+              },
+              "uri": {
+                "type": "string",
+                "maxLength": 256
+              },
+              "error": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "enum": [
+                      "RACK_NOT_FOUND",
+                      "RACK_DISCONNECTED",
+                      "BRIDGE_NOT_READY",
+                      "WRITER_LEASE_REQUIRED",
+                      "AUTHENTICATION_FAILED",
+                      "PROTOCOL_VERSION_MISMATCH",
+                      "STALE_SESSION",
+                      "STALE_PATCH_EPOCH",
+                      "PATCH_CONFLICT",
+                      "MODEL_NOT_INSTALLED",
+                      "MODULE_NOT_FOUND",
+                      "CABLE_NOT_FOUND",
+                      "PARAMETER_NOT_FOUND",
+                      "PORT_NOT_FOUND",
+                      "VALIDATION_FAILED",
+                      "CONFIRMATION_REQUIRED",
+                      "CONFIRMATION_EXPIRED",
+                      "PATH_NOT_ALLOWED",
+                      "TRANSACTION_TOO_LARGE",
+                      "ROLLBACK_FAILED",
+                      "TIMEOUT",
+                      "UNSUPPORTED_OPERATION",
+                      "OPAQUE_STATE_UNSUPPORTED",
+                      "TELEMETRY_UNAVAILABLE",
+                      "BAD_REQUEST",
+                      "RATE_LIMITED",
+                      "LEASE_HELD",
+                      "INSTANCE_NOT_SELECTED",
+                      "RESULT_TOO_LARGE",
+                      "INTERNAL"
+                    ]
+                  },
+                  "message": {
+                    "type": "string",
+                    "maxLength": 4096
+                  },
+                  "retrySafe": {
+                    "type": "boolean"
+                  },
+                  "mutationMayHaveOccurred": {
+                    "type": "boolean"
+                  },
+                  "details": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {}
+                  },
+                  "rollback": {
+                    "type": "object",
+                    "properties": {
+                      "rolledBack": {
+                        "type": "string",
+                        "enum": [
+                          "complete",
+                          "indeterminate"
+                        ]
+                      },
+                      "failedOperationIndex": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "inversesExecuted": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "detail": {
+                        "type": "string",
+                        "maxLength": 4096
+                      }
+                    },
+                    "required": [
+                      "rolledBack",
+                      "failedOperationIndex",
+                      "inversesExecuted",
+                      "detail"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "code",
+                  "message",
+                  "retrySafe",
+                  "mutationMayHaveOccurred"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "state",
+              "uri",
+              "error"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string",
+                "const": "truncated"
+              },
+              "uri": {
+                "type": "string",
+                "maxLength": 256
+              },
+              "sizeBytes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "limitBytes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              },
+              "useTool": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 64
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "reason": {
+                "type": "string",
+                "maxLength": 512
+              }
+            },
+            "required": [
+              "state",
+              "uri",
+              "sizeBytes",
+              "limitBytes",
+              "useTool",
+              "reason"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "rack://catalog/models": {
+      "name": "rack-catalog-models",
+      "title": "Installed models",
+      "description": "First page of installed plugin models for the selected instance.",
+      "mimeType": "application/json",
+      "output": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string",
+                "const": "ok"
+              },
+              "uri": {
+                "type": "string",
+                "const": "rack://catalog/models"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "models": {
+                    "maxItems": 500,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "pluginSlug": {
+                          "type": "string",
+                          "maxLength": 255
+                        },
+                        "pluginName": {
+                          "type": "string",
+                          "maxLength": 256
+                        },
+                        "pluginVersion": {
+                          "type": "string",
+                          "maxLength": 64
+                        },
+                        "modelSlug": {
+                          "type": "string",
+                          "maxLength": 255
+                        },
+                        "modelName": {
+                          "type": "string",
+                          "maxLength": 256
+                        },
+                        "description": {
+                          "type": "string",
+                          "maxLength": 2048
+                        },
+                        "tags": {
+                          "maxItems": 32,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "maxLength": 64
+                          }
+                        }
+                      },
+                      "required": [
+                        "pluginSlug",
+                        "pluginName",
+                        "pluginVersion",
+                        "modelSlug",
+                        "modelName",
+                        "description",
+                        "tags"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "nextCursor": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 256
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "totalModels": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "models",
+                  "nextCursor",
+                  "totalModels"
+                ],
+                "additionalProperties": false
+              },
+              "continueWith": {
+                "type": "object",
+                "properties": {
+                  "tool": {
+                    "type": "string",
+                    "const": "list_installed_models"
+                  },
+                  "cursor": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 256
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "tool",
+                  "cursor"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "state",
+              "uri",
+              "data",
+              "continueWith"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string",
+                "const": "unavailable"
+              },
+              "uri": {
+                "type": "string",
+                "maxLength": 256
+              },
+              "code": {
+                "type": "string",
+                "enum": [
+                  "RACK_NOT_FOUND",
+                  "INSTANCE_NOT_SELECTED",
+                  "RACK_DISCONNECTED"
+                ]
+              },
+              "discoveredInstances": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "hint": {
+                "type": "string",
+                "maxLength": 512
+              }
+            },
+            "required": [
+              "state",
+              "uri",
+              "code",
+              "discoveredInstances",
+              "hint"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string",
+                "const": "error"
+              },
+              "uri": {
+                "type": "string",
+                "maxLength": 256
+              },
+              "error": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "enum": [
+                      "RACK_NOT_FOUND",
+                      "RACK_DISCONNECTED",
+                      "BRIDGE_NOT_READY",
+                      "WRITER_LEASE_REQUIRED",
+                      "AUTHENTICATION_FAILED",
+                      "PROTOCOL_VERSION_MISMATCH",
+                      "STALE_SESSION",
+                      "STALE_PATCH_EPOCH",
+                      "PATCH_CONFLICT",
+                      "MODEL_NOT_INSTALLED",
+                      "MODULE_NOT_FOUND",
+                      "CABLE_NOT_FOUND",
+                      "PARAMETER_NOT_FOUND",
+                      "PORT_NOT_FOUND",
+                      "VALIDATION_FAILED",
+                      "CONFIRMATION_REQUIRED",
+                      "CONFIRMATION_EXPIRED",
+                      "PATH_NOT_ALLOWED",
+                      "TRANSACTION_TOO_LARGE",
+                      "ROLLBACK_FAILED",
+                      "TIMEOUT",
+                      "UNSUPPORTED_OPERATION",
+                      "OPAQUE_STATE_UNSUPPORTED",
+                      "TELEMETRY_UNAVAILABLE",
+                      "BAD_REQUEST",
+                      "RATE_LIMITED",
+                      "LEASE_HELD",
+                      "INSTANCE_NOT_SELECTED",
+                      "RESULT_TOO_LARGE",
+                      "INTERNAL"
+                    ]
+                  },
+                  "message": {
+                    "type": "string",
+                    "maxLength": 4096
+                  },
+                  "retrySafe": {
+                    "type": "boolean"
+                  },
+                  "mutationMayHaveOccurred": {
+                    "type": "boolean"
+                  },
+                  "details": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {}
+                  },
+                  "rollback": {
+                    "type": "object",
+                    "properties": {
+                      "rolledBack": {
+                        "type": "string",
+                        "enum": [
+                          "complete",
+                          "indeterminate"
+                        ]
+                      },
+                      "failedOperationIndex": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "inversesExecuted": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "detail": {
+                        "type": "string",
+                        "maxLength": 4096
+                      }
+                    },
+                    "required": [
+                      "rolledBack",
+                      "failedOperationIndex",
+                      "inversesExecuted",
+                      "detail"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "code",
+                  "message",
+                  "retrySafe",
+                  "mutationMayHaveOccurred"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "state",
+              "uri",
+              "error"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string",
+                "const": "truncated"
+              },
+              "uri": {
+                "type": "string",
+                "maxLength": 256
+              },
+              "sizeBytes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "limitBytes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              },
+              "useTool": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 64
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "reason": {
+                "type": "string",
+                "maxLength": 512
+              }
+            },
+            "required": [
+              "state",
+              "uri",
+              "sizeBytes",
+              "limitBytes",
+              "useTool",
+              "reason"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "rack://adapters": {
+      "name": "rack-adapters",
+      "title": "Adapter pack",
+      "description": "Verified module adapters (semantics, port roles, safe values).",
+      "mimeType": "application/json",
+      "output": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string",
+                "const": "ok"
+              },
+              "uri": {
+                "type": "string",
+                "const": "rack://adapters"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "adapters": {
+                    "maxItems": 512,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "adapterVersion": {
+                          "type": "number",
+                          "const": 1
+                        },
+                        "pluginSlug": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 255
+                        },
+                        "modelSlug": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 255
+                        },
+                        "pluginVersionRange": {
+                          "type": "string",
+                          "maxLength": 128
+                        },
+                        "displayName": {
+                          "type": "string",
+                          "maxLength": 256
+                        },
+                        "summary": {
+                          "type": "string",
+                          "maxLength": 2048
+                        },
+                        "params": {
+                          "maxItems": 1024,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "paramId": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 65535
+                              },
+                              "role": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "description": {
+                                "type": "string",
+                                "maxLength": 1024
+                              },
+                              "safeInitial": {
+                                "type": "number"
+                              },
+                              "safeRange": {
+                                "type": "array",
+                                "prefixItems": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "number"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "paramId",
+                              "role"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "inputs": {
+                          "maxItems": 256,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "portId": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 65535
+                              },
+                              "role": {
+                                "type": "string",
+                                "enum": [
+                                  "audio",
+                                  "cv_unipolar",
+                                  "cv_bipolar",
+                                  "pitch_voct",
+                                  "gate",
+                                  "trigger",
+                                  "clock",
+                                  "unknown"
+                                ]
+                              },
+                              "key": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "description": {
+                                "type": "string",
+                                "maxLength": 1024
+                              },
+                              "polyphony": {
+                                "default": "unknown",
+                                "type": "string",
+                                "enum": [
+                                  "monophonic",
+                                  "polyphonic",
+                                  "poly_from_input",
+                                  "unknown"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "portId",
+                              "role",
+                              "key",
+                              "polyphony"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "outputs": {
+                          "maxItems": 256,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "portId": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 65535
+                              },
+                              "role": {
+                                "type": "string",
+                                "enum": [
+                                  "audio",
+                                  "cv_unipolar",
+                                  "cv_bipolar",
+                                  "pitch_voct",
+                                  "gate",
+                                  "trigger",
+                                  "clock",
+                                  "unknown"
+                                ]
+                              },
+                              "key": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "description": {
+                                "type": "string",
+                                "maxLength": 1024
+                              },
+                              "polyphony": {
+                                "default": "unknown",
+                                "type": "string",
+                                "enum": [
+                                  "monophonic",
+                                  "polyphonic",
+                                  "poly_from_input",
+                                  "unknown"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "portId",
+                              "role",
+                              "key",
+                              "polyphony"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "polyphony": {
+                          "default": "unknown",
+                          "type": "string",
+                          "enum": [
+                            "monophonic",
+                            "polyphonic",
+                            "poly_from_input",
+                            "unknown"
+                          ]
+                        },
+                        "opaqueStateFields": {
+                          "default": [],
+                          "maxItems": 64,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string",
+                                "maxLength": 128
+                              },
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "boolean",
+                                  "integer",
+                                  "number",
+                                  "string"
+                                ]
+                              },
+                              "description": {
+                                "type": "string",
+                                "maxLength": 1024
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "type",
+                              "description"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "validationRules": {
+                          "default": [],
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "maxLength": 128
+                          }
+                        },
+                        "connectionRecipes": {
+                          "default": [],
+                          "maxItems": 64,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string",
+                                "maxLength": 128
+                              },
+                              "description": {
+                                "type": "string",
+                                "maxLength": 2048
+                              },
+                              "fromOutputKey": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "toRole": {
+                                "type": "string",
+                                "enum": [
+                                  "audio",
+                                  "cv_unipolar",
+                                  "cv_bipolar",
+                                  "pitch_voct",
+                                  "gate",
+                                  "trigger",
+                                  "clock",
+                                  "unknown"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "name",
+                              "description",
+                              "fromOutputKey",
+                              "toRole"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "provenance": {
+                          "minItems": 1,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "maxLength": 1024
+                          }
+                        }
+                      },
+                      "required": [
+                        "adapterVersion",
+                        "pluginSlug",
+                        "modelSlug",
+                        "pluginVersionRange",
+                        "displayName",
+                        "summary",
+                        "params",
+                        "inputs",
+                        "outputs",
+                        "polyphony",
+                        "opaqueStateFields",
+                        "validationRules",
+                        "connectionRecipes",
+                        "provenance"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "adapters"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "state",
+              "uri",
+              "data"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string",
+                "const": "truncated"
+              },
+              "uri": {
+                "type": "string",
+                "maxLength": 256
+              },
+              "sizeBytes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "limitBytes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              },
+              "useTool": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 64
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "reason": {
+                "type": "string",
+                "maxLength": 512
+              }
+            },
+            "required": [
+              "state",
+              "uri",
+              "sizeBytes",
+              "limitBytes",
+              "useTool",
+              "reason"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "rack://recipes": {
+      "name": "rack-recipes",
+      "title": "Recipe library",
+      "description": "High-level recipes; resolved against installed models when connected.",
+      "mimeType": "application/json",
+      "output": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string",
+                "const": "ok"
+              },
+              "uri": {
+                "type": "string",
+                "const": "rack://recipes"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "recipes": {
+                    "maxItems": 256,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "recipeVersion": {
+                          "type": "number",
+                          "const": 1
+                        },
+                        "id": {
+                          "type": "string",
+                          "maxLength": 64,
+                          "pattern": "^[a-z0-9_]+$"
+                        },
+                        "name": {
+                          "type": "string",
+                          "maxLength": 256
+                        },
+                        "description": {
+                          "type": "string",
+                          "maxLength": 4096
+                        },
+                        "roles": {
+                          "maxItems": 64,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "role": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "description": {
+                                "type": "string",
+                                "maxLength": 1024
+                              },
+                              "preferred": {
+                                "type": "object",
+                                "properties": {
+                                  "pluginSlug": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 255
+                                  },
+                                  "modelSlug": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 255
+                                  }
+                                },
+                                "required": [
+                                  "pluginSlug",
+                                  "modelSlug"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "adapterVerifiedAlternatives": {
+                                "default": [],
+                                "maxItems": 32,
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "pluginSlug": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 255
+                                    },
+                                    "modelSlug": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 255
+                                    }
+                                  },
+                                  "required": [
+                                    "pluginSlug",
+                                    "modelSlug"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "signalRoles": {
+                                "default": [],
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "enum": [
+                                    "audio",
+                                    "cv_unipolar",
+                                    "cv_bipolar",
+                                    "pitch_voct",
+                                    "gate",
+                                    "trigger",
+                                    "clock",
+                                    "unknown"
+                                  ]
+                                }
+                              }
+                            },
+                            "required": [
+                              "role",
+                              "description",
+                              "preferred",
+                              "adapterVerifiedAlternatives",
+                              "signalRoles"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "operations": {
+                          "maxItems": 128,
+                          "type": "array",
+                          "items": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "op": {
+                                    "type": "string",
+                                    "const": "add_module"
+                                  },
+                                  "pluginSlug": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 255
+                                  },
+                                  "modelSlug": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 255
+                                  },
+                                  "alias": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 64
+                                  },
+                                  "placement": {
+                                    "default": "auto",
+                                    "type": "string",
+                                    "enum": [
+                                      "auto",
+                                      "at"
+                                    ]
+                                  },
+                                  "position": {
+                                    "type": "object",
+                                    "properties": {
+                                      "x": {
+                                        "type": "integer",
+                                        "minimum": -4096,
+                                        "maximum": 4096
+                                      },
+                                      "y": {
+                                        "type": "integer",
+                                        "minimum": -256,
+                                        "maximum": 256
+                                      }
+                                    },
+                                    "required": [
+                                      "x",
+                                      "y"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "initialParams": {
+                                    "maxItems": 256,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "paramId": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "maximum": 65535
+                                        },
+                                        "value": {
+                                          "type": "number"
+                                        },
+                                        "normalized": {
+                                          "type": "number",
+                                          "minimum": 0,
+                                          "maximum": 1
+                                        },
+                                        "display": {
+                                          "type": "string",
+                                          "maxLength": 256
+                                        }
+                                      },
+                                      "required": [
+                                        "paramId"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "bypassed": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "op",
+                                  "pluginSlug",
+                                  "modelSlug",
+                                  "alias",
+                                  "placement"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "op": {
+                                    "type": "string",
+                                    "const": "remove_module"
+                                  },
+                                  "module": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "moduleId": {
+                                            "type": "string",
+                                            "pattern": "^(0|[1-9][0-9]{0,18})$"
+                                          }
+                                        },
+                                        "required": [
+                                          "moduleId"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "alias": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 64
+                                          }
+                                        },
+                                        "required": [
+                                          "alias"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    ]
+                                  },
+                                  "cablePolicy": {
+                                    "type": "string",
+                                    "enum": [
+                                      "remove_attached",
+                                      "fail_if_connected"
+                                    ]
+                                  },
+                                  "allowLastBridge": {
+                                    "default": false,
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "op",
+                                  "module",
+                                  "cablePolicy",
+                                  "allowLastBridge"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "op": {
+                                    "type": "string",
+                                    "const": "move_module"
+                                  },
+                                  "module": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "moduleId": {
+                                            "type": "string",
+                                            "pattern": "^(0|[1-9][0-9]{0,18})$"
+                                          }
+                                        },
+                                        "required": [
+                                          "moduleId"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "alias": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 64
+                                          }
+                                        },
+                                        "required": [
+                                          "alias"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    ]
+                                  },
+                                  "position": {
+                                    "type": "object",
+                                    "properties": {
+                                      "x": {
+                                        "type": "integer",
+                                        "minimum": -4096,
+                                        "maximum": 4096
+                                      },
+                                      "y": {
+                                        "type": "integer",
+                                        "minimum": -256,
+                                        "maximum": 256
+                                      }
+                                    },
+                                    "required": [
+                                      "x",
+                                      "y"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "collision": {
+                                    "type": "string",
+                                    "enum": [
+                                      "fail",
+                                      "nearest",
+                                      "force",
+                                      "squeeze"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "op",
+                                  "module",
+                                  "position",
+                                  "collision"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "op": {
+                                    "type": "string",
+                                    "const": "duplicate_module"
+                                  },
+                                  "module": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "moduleId": {
+                                            "type": "string",
+                                            "pattern": "^(0|[1-9][0-9]{0,18})$"
+                                          }
+                                        },
+                                        "required": [
+                                          "moduleId"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "alias": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 64
+                                          }
+                                        },
+                                        "required": [
+                                          "alias"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    ]
+                                  },
+                                  "alias": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 64
+                                  },
+                                  "copyCables": {
+                                    "type": "boolean"
+                                  },
+                                  "placement": {
+                                    "default": "auto",
+                                    "type": "string",
+                                    "enum": [
+                                      "auto",
+                                      "at"
+                                    ]
+                                  },
+                                  "position": {
+                                    "type": "object",
+                                    "properties": {
+                                      "x": {
+                                        "type": "integer",
+                                        "minimum": -4096,
+                                        "maximum": 4096
+                                      },
+                                      "y": {
+                                        "type": "integer",
+                                        "minimum": -256,
+                                        "maximum": 256
+                                      }
+                                    },
+                                    "required": [
+                                      "x",
+                                      "y"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "required": [
+                                  "op",
+                                  "module",
+                                  "alias",
+                                  "copyCables",
+                                  "placement"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "op": {
+                                    "type": "string",
+                                    "const": "set_parameter"
+                                  },
+                                  "module": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "moduleId": {
+                                            "type": "string",
+                                            "pattern": "^(0|[1-9][0-9]{0,18})$"
+                                          }
+                                        },
+                                        "required": [
+                                          "moduleId"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "alias": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 64
+                                          }
+                                        },
+                                        "required": [
+                                          "alias"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    ]
+                                  },
+                                  "paramId": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 65535
+                                  },
+                                  "value": {
+                                    "type": "number"
+                                  },
+                                  "normalized": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 1
+                                  },
+                                  "display": {
+                                    "type": "string",
+                                    "maxLength": 256
+                                  },
+                                  "smoothMs": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 10000
+                                  }
+                                },
+                                "required": [
+                                  "op",
+                                  "module",
+                                  "paramId"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "op": {
+                                    "type": "string",
+                                    "const": "set_bypass"
+                                  },
+                                  "module": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "moduleId": {
+                                            "type": "string",
+                                            "pattern": "^(0|[1-9][0-9]{0,18})$"
+                                          }
+                                        },
+                                        "required": [
+                                          "moduleId"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "alias": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 64
+                                          }
+                                        },
+                                        "required": [
+                                          "alias"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    ]
+                                  },
+                                  "bypassed": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "op",
+                                  "module",
+                                  "bypassed"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "op": {
+                                    "type": "string",
+                                    "const": "connect"
+                                  },
+                                  "output": {
+                                    "type": "object",
+                                    "properties": {
+                                      "module": {
+                                        "anyOf": [
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "moduleId": {
+                                                "type": "string",
+                                                "pattern": "^(0|[1-9][0-9]{0,18})$"
+                                              }
+                                            },
+                                            "required": [
+                                              "moduleId"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "alias": {
+                                                "type": "string",
+                                                "minLength": 1,
+                                                "maxLength": 64
+                                              }
+                                            },
+                                            "required": [
+                                              "alias"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        ]
+                                      },
+                                      "portType": {
+                                        "type": "string",
+                                        "enum": [
+                                          "input",
+                                          "output"
+                                        ]
+                                      },
+                                      "portId": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 65535
+                                      }
+                                    },
+                                    "required": [
+                                      "module",
+                                      "portType",
+                                      "portId"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "input": {
+                                    "type": "object",
+                                    "properties": {
+                                      "module": {
+                                        "anyOf": [
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "moduleId": {
+                                                "type": "string",
+                                                "pattern": "^(0|[1-9][0-9]{0,18})$"
+                                              }
+                                            },
+                                            "required": [
+                                              "moduleId"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "alias": {
+                                                "type": "string",
+                                                "minLength": 1,
+                                                "maxLength": 64
+                                              }
+                                            },
+                                            "required": [
+                                              "alias"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        ]
+                                      },
+                                      "portType": {
+                                        "type": "string",
+                                        "enum": [
+                                          "input",
+                                          "output"
+                                        ]
+                                      },
+                                      "portId": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 65535
+                                      }
+                                    },
+                                    "required": [
+                                      "module",
+                                      "portType",
+                                      "portId"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "pattern": "^#[0-9a-fA-F]{6}$"
+                                  },
+                                  "inputPolicy": {
+                                    "type": "string",
+                                    "enum": [
+                                      "fail_if_connected",
+                                      "stack",
+                                      "replace_all"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "op",
+                                  "output",
+                                  "input",
+                                  "inputPolicy"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "op": {
+                                    "type": "string",
+                                    "const": "disconnect"
+                                  },
+                                  "cable": {
+                                    "type": "object",
+                                    "properties": {
+                                      "cableId": {
+                                        "type": "string",
+                                        "pattern": "^(0|[1-9][0-9]{0,18})$"
+                                      }
+                                    },
+                                    "required": [
+                                      "cableId"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "required": [
+                                  "op",
+                                  "cable"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "op": {
+                                    "type": "string",
+                                    "const": "disconnect_port"
+                                  },
+                                  "port": {
+                                    "type": "object",
+                                    "properties": {
+                                      "module": {
+                                        "anyOf": [
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "moduleId": {
+                                                "type": "string",
+                                                "pattern": "^(0|[1-9][0-9]{0,18})$"
+                                              }
+                                            },
+                                            "required": [
+                                              "moduleId"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "alias": {
+                                                "type": "string",
+                                                "minLength": 1,
+                                                "maxLength": 64
+                                              }
+                                            },
+                                            "required": [
+                                              "alias"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        ]
+                                      },
+                                      "portType": {
+                                        "type": "string",
+                                        "enum": [
+                                          "input",
+                                          "output"
+                                        ]
+                                      },
+                                      "portId": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 65535
+                                      }
+                                    },
+                                    "required": [
+                                      "module",
+                                      "portType",
+                                      "portId"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "policy": {
+                                    "type": "string",
+                                    "enum": [
+                                      "top",
+                                      "all"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "op",
+                                  "port",
+                                  "policy"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "op": {
+                                    "type": "string",
+                                    "const": "reset_module"
+                                  },
+                                  "module": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "moduleId": {
+                                            "type": "string",
+                                            "pattern": "^(0|[1-9][0-9]{0,18})$"
+                                          }
+                                        },
+                                        "required": [
+                                          "moduleId"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "alias": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 64
+                                          }
+                                        },
+                                        "required": [
+                                          "alias"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "op",
+                                  "module"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "op": {
+                                    "type": "string",
+                                    "const": "randomize_module"
+                                  },
+                                  "module": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "moduleId": {
+                                            "type": "string",
+                                            "pattern": "^(0|[1-9][0-9]{0,18})$"
+                                          }
+                                        },
+                                        "required": [
+                                          "moduleId"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "alias": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 64
+                                          }
+                                        },
+                                        "required": [
+                                          "alias"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "op",
+                                  "module"
+                                ],
+                                "additionalProperties": false
+                              }
+                            ]
+                          }
+                        },
+                        "notes": {
+                          "default": [],
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "maxLength": 1024
+                          }
+                        }
+                      },
+                      "required": [
+                        "recipeVersion",
+                        "id",
+                        "name",
+                        "description",
+                        "roles",
+                        "operations",
+                        "notes"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "resolutions": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string",
+                          "maxLength": 64
+                        },
+                        "additionalProperties": {
+                          "type": "object",
+                          "properties": {
+                            "recipeId": {
+                              "type": "string",
+                              "maxLength": 64
+                            },
+                            "resolved": {
+                              "type": "boolean"
+                            },
+                            "unresolvedRoles": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "role": {
+                                    "type": "string",
+                                    "maxLength": 64
+                                  },
+                                  "description": {
+                                    "type": "string",
+                                    "maxLength": 1024
+                                  },
+                                  "installedAlternatives": {
+                                    "maxItems": 32,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "pluginSlug": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 255
+                                        },
+                                        "modelSlug": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 255
+                                        }
+                                      },
+                                      "required": [
+                                        "pluginSlug",
+                                        "modelSlug"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "role",
+                                  "description",
+                                  "installedAlternatives"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "assignments": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "object",
+                                "properties": {
+                                  "pluginSlug": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 255
+                                  },
+                                  "modelSlug": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 255
+                                  }
+                                },
+                                "required": [
+                                  "pluginSlug",
+                                  "modelSlug"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "recipeId",
+                            "resolved",
+                            "unresolvedRoles",
+                            "assignments"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "catalogComplete": {
+                    "type": "boolean"
+                  },
+                  "modelsScanned": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "totalModels": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "recipes",
+                  "resolutions",
+                  "catalogComplete",
+                  "modelsScanned",
+                  "totalModels"
+                ],
+                "additionalProperties": false
+              },
+              "resolutionState": {
+                "type": "string",
+                "enum": [
+                  "resolved",
+                  "partial",
+                  "unavailable",
+                  "failed"
+                ]
+              },
+              "resolutionError": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "code": {
+                        "type": "string",
+                        "enum": [
+                          "RACK_NOT_FOUND",
+                          "RACK_DISCONNECTED",
+                          "BRIDGE_NOT_READY",
+                          "WRITER_LEASE_REQUIRED",
+                          "AUTHENTICATION_FAILED",
+                          "PROTOCOL_VERSION_MISMATCH",
+                          "STALE_SESSION",
+                          "STALE_PATCH_EPOCH",
+                          "PATCH_CONFLICT",
+                          "MODEL_NOT_INSTALLED",
+                          "MODULE_NOT_FOUND",
+                          "CABLE_NOT_FOUND",
+                          "PARAMETER_NOT_FOUND",
+                          "PORT_NOT_FOUND",
+                          "VALIDATION_FAILED",
+                          "CONFIRMATION_REQUIRED",
+                          "CONFIRMATION_EXPIRED",
+                          "PATH_NOT_ALLOWED",
+                          "TRANSACTION_TOO_LARGE",
+                          "ROLLBACK_FAILED",
+                          "TIMEOUT",
+                          "UNSUPPORTED_OPERATION",
+                          "OPAQUE_STATE_UNSUPPORTED",
+                          "TELEMETRY_UNAVAILABLE",
+                          "BAD_REQUEST",
+                          "RATE_LIMITED",
+                          "LEASE_HELD",
+                          "INSTANCE_NOT_SELECTED",
+                          "RESULT_TOO_LARGE",
+                          "INTERNAL"
+                        ]
+                      },
+                      "message": {
+                        "type": "string",
+                        "maxLength": 4096
+                      },
+                      "retrySafe": {
+                        "type": "boolean"
+                      },
+                      "mutationMayHaveOccurred": {
+                        "type": "boolean"
+                      },
+                      "details": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {}
+                      },
+                      "rollback": {
+                        "type": "object",
+                        "properties": {
+                          "rolledBack": {
+                            "type": "string",
+                            "enum": [
+                              "complete",
+                              "indeterminate"
+                            ]
+                          },
+                          "failedOperationIndex": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "inversesExecuted": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "detail": {
+                            "type": "string",
+                            "maxLength": 4096
+                          }
+                        },
+                        "required": [
+                          "rolledBack",
+                          "failedOperationIndex",
+                          "inversesExecuted",
+                          "detail"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                      "retrySafe",
+                      "mutationMayHaveOccurred"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "state",
+              "uri",
+              "data",
+              "resolutionState",
+              "resolutionError"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string",
+                "const": "truncated"
+              },
+              "uri": {
+                "type": "string",
+                "maxLength": 256
+              },
+              "sizeBytes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "limitBytes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              },
+              "useTool": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 64
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "reason": {
+                "type": "string",
+                "maxLength": 512
+              }
+            },
+            "required": [
+              "state",
+              "uri",
+              "sizeBytes",
+              "limitBytes",
+              "useTool",
+              "reason"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "rack://audit/recent": {
+      "name": "rack-audit-recent",
+      "title": "Recent audit",
+      "description": "Most-recent tool invocations recorded by this server.",
+      "mimeType": "application/json",
+      "output": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string",
+                "const": "ok"
+              },
+              "uri": {
+                "type": "string",
+                "const": "rack://audit/recent"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "entries": {
+                    "maxItems": 200,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "ts": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                        },
+                        "tool": {
+                          "type": "string",
+                          "maxLength": 128
+                        },
+                        "outcome": {
+                          "type": "string",
+                          "enum": [
+                            "ok",
+                            "error"
+                          ]
+                        },
+                        "instanceId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "operationId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "errorCode": {
+                          "type": "string",
+                          "enum": [
+                            "RACK_NOT_FOUND",
+                            "RACK_DISCONNECTED",
+                            "BRIDGE_NOT_READY",
+                            "WRITER_LEASE_REQUIRED",
+                            "AUTHENTICATION_FAILED",
+                            "PROTOCOL_VERSION_MISMATCH",
+                            "STALE_SESSION",
+                            "STALE_PATCH_EPOCH",
+                            "PATCH_CONFLICT",
+                            "MODEL_NOT_INSTALLED",
+                            "MODULE_NOT_FOUND",
+                            "CABLE_NOT_FOUND",
+                            "PARAMETER_NOT_FOUND",
+                            "PORT_NOT_FOUND",
+                            "VALIDATION_FAILED",
+                            "CONFIRMATION_REQUIRED",
+                            "CONFIRMATION_EXPIRED",
+                            "PATH_NOT_ALLOWED",
+                            "TRANSACTION_TOO_LARGE",
+                            "ROLLBACK_FAILED",
+                            "TIMEOUT",
+                            "UNSUPPORTED_OPERATION",
+                            "OPAQUE_STATE_UNSUPPORTED",
+                            "TELEMETRY_UNAVAILABLE",
+                            "BAD_REQUEST",
+                            "RATE_LIMITED",
+                            "LEASE_HELD",
+                            "INSTANCE_NOT_SELECTED",
+                            "RESULT_TOO_LARGE",
+                            "INTERNAL"
+                          ]
+                        },
+                        "durationMs": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "schemaValid": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "ts",
+                        "tool",
+                        "outcome"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "skipped": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "entries",
+                  "skipped"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "state",
+              "uri",
+              "data"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string",
+                "const": "truncated"
+              },
+              "uri": {
+                "type": "string",
+                "maxLength": 256
+              },
+              "sizeBytes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "limitBytes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              },
+              "useTool": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 64
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "reason": {
+                "type": "string",
+                "maxLength": 512
+              }
+            },
+            "required": [
+              "state",
+              "uri",
+              "sizeBytes",
+              "limitBytes",
+              "useTool",
+              "reason"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    }
+  }
+}

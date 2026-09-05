@@ -7,18 +7,22 @@ evidence — a test, a live smoke, or the code that enforces it — and any hone
 caveat.
 
 Verification tiers used below:
-- **Unit** — `pnpm -r test` (219 TypeScript tests across schemas, protocol,
-  adapters, recipes, and the server) and the C++ `ctest` suite (71 doctest
+- **Unit** — `pnpm -r test` (237 TypeScript tests across schemas, protocol,
+  adapters, recipes, and the server) and the C++ `ctest` suite (75 doctest
   cases: framing, queues, crypto, canonical/JSON-limits/UTF-8 clamping,
-  telemetry math, protocol-gen, service, secret/manifest files).
+  frame-cap substitution, telemetry math, protocol-gen, service,
+  secret/manifest files).
 - **Live** — integration smokes in `tests/integration/` that launch the
   installed VCV Rack 2 Pro 2.6.6 against an isolated user directory and drive it
   through the real MCP server over stdio. Verified on **macOS arm64**.
   `contract-smoke` is the output-contract gate: it calls all 29 tools and
-  strict-parses every result against that tool's declared output schema, and
-  fails if a tool in the registry goes unexercised. The server's own output
-  validation is deliberately non-fatal, so without this gate a producer whose
-  payload no longer matches the published schema still shows a green build.
+  reads all 6 `rack://` resources, strict-parses every result against the
+  schema that surface declares, and fails if a tool or resource in the registry
+  goes unexercised. The server's own output validation is deliberately
+  non-fatal, so without this gate a producer whose payload no longer matches
+  the published schema still shows a green build. Resources are the sharper
+  case: MCP has no `outputSchema` field on a resource, so nothing validates one
+  on the wire at all.
 - **Wire fixtures** — that gate needs the installed Rack on macOS, so it cannot
   run in CI. `tests/fixtures/bridge/` holds a captured real response for each of
   the 19 bridge methods, and `packages/schemas/test/bridge-fixtures.test.ts`
@@ -36,6 +40,14 @@ Verification tiers used below:
   The telemetry schemas that the fixtures cannot reach — the engine does not
   step under the harness, so `channels` and `slots` come back thin — are pinned
   directly by `packages/schemas/test/telemetry.test.ts`.
+- **Resource contracts** — `apps/mcp-server/test/resources.test.ts` drives the
+  real resource handlers through a recording stand-in for `McpServer` and
+  strict-parses each body against its registry entry, covering every reachable
+  state (`ok`, `unavailable`, `error`, `truncated`) rather than only the happy
+  one. It runs on every CI platform, needs no Rack, and exercises the
+  size-cap branch with a small limit — that branch is otherwise unreachable in
+  practice, because the 1 MiB bridge frame cap rejects an oversized payload
+  before the 4 MiB resource cap ever sees it.
 - **CI** — `.github/workflows/ci.yml` builds and tests TypeScript and C++ on
   ubuntu/macos/windows, runs a 60 s libFuzzer smoke of the frame decoder on
   Linux, and packages the plugin for mac-arm64, mac-x64, lin-x64, and win-x64.
@@ -128,7 +140,7 @@ reported as heuristic; `validate_patch` surfaces the coverage gap
 [ADR-0004](./ADR-0004-adapter-and-recipe-knowledge-model.md).
 
 **12 — Full suite on every supported platform (CI-only).** The complete suite
-passes locally on macOS arm64: 219 TypeScript unit tests, 71 C++ cases, and the
+passes locally on macOS arm64: 237 TypeScript unit tests, 75 C++ cases, and the
 integration smokes. Windows x64, Linux x64, and macOS x64 are built and tested by
 CI (`.github/workflows/ci.yml`) but have not been verified on local hardware in
 this project; treat them as CI-green, not hand-verified, until a maintainer runs

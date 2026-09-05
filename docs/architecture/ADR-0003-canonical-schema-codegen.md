@@ -48,9 +48,13 @@ the build if either committed artifact differs from a fresh regeneration.
 
 `scripts/gen-schemas.ts` emits one JSON Schema 2020-12 document per top-level
 type via `z.toJSONSchema(schema, { target: "draft-2020-12", unrepresentable:
-"any" })`, plus two aggregate documents: `bridge-methods.schema.json`
-(per-method `mutating` flag with request and result schemas) and
-`tools.schema.json` (the MCP tool contracts). The emitted set covers
+"any" })`, plus three aggregate documents: `bridge-methods.schema.json`
+(per-method `mutating` flag with request and result schemas),
+`tools.schema.json` (the MCP tool contracts) and `resources.schema.json` (the
+`rack://` resource contracts). The resource document exists because MCP has no
+`outputSchema` field on a resource the way it has one on a tool, so nothing
+carries those shapes to a client at runtime -- the artifact and the resource
+description are the only published record of them. The emitted set covers
 `bridge-frame`, `patch-operation`, `instance-manifest`, `patch-snapshot`,
 `probe-reading`, `module-adapter`, `recipe`, `error`, and `validation-finding`.
 

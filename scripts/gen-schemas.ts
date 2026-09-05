@@ -20,6 +20,7 @@ import {
   RackMcpError,
   ValidationFinding,
   TOOLS,
+  RESOURCES,
 } from "../packages/schemas/dist/index.js";
 
 const outDir = join(dirname(fileURLToPath(import.meta.url)), "..", "packages", "schemas", "json");
@@ -142,4 +143,30 @@ emit("validation-finding", ValidationFinding, "Rack MCP validation finding", "ou
   };
   writeFileSync(join(outDir, "tools.schema.json"), JSON.stringify(doc, null, 2) + "\n");
   console.error("wrote tools.schema.json");
+}
+
+// MCP resource contracts in one document.
+//
+// MCP has no `outputSchema` field on a resource the way it has one on a tool,
+// so nothing carries these shapes to a client at runtime. This artifact and the
+// resource description are the only published record of the contract.
+{
+  const resources: Record<string, unknown> = {};
+  for (const r of RESOURCES) {
+    resources[r.uri] = {
+      name: r.name,
+      title: r.title,
+      description: r.description,
+      mimeType: "application/json",
+      output: toSchema(r.output, "output"),
+    };
+  }
+  const doc = {
+    $schema: "https://json-schema.org/draft/2020-12/schema",
+    $id: "https://rackmcp.local/schemas/resources.schema.json",
+    description: "Rack MCP resource contracts",
+    resources,
+  };
+  writeFileSync(join(outDir, "resources.schema.json"), JSON.stringify(doc, null, 2) + "\n");
+  console.error("wrote resources.schema.json");
 }

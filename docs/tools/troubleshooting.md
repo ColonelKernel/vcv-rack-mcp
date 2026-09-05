@@ -95,21 +95,39 @@ it to see, in order, which tool failed and with which `errorCode`.
 
 ### `rack://status` and `get_rack_status` metrics
 
-`rack://status` returns discovery + connection state plus a `status` and `metrics` block
-for the selected instance (it degrades to `connected:false` with a hint when no instance
-is selected). The same data is available as a tool via `get_rack_status`. The metrics are
-the fastest way to tell a stuck queue from an idle engine:
+Every `rack://` resource returns an envelope naming its own `state`, so a client branches
+on a value rather than guessing which shape it received:
+
+| `state` | Meaning |
+| --- | --- |
+| `ok` | The payload is under `data`; some resources add sibling fields (`continueWith`, `resolutionState`) |
+| `unavailable` | No live instance can serve this. `code` is `RACK_NOT_FOUND` (start Rack), `INSTANCE_NOT_SELECTED` (several running, pick one) or `RACK_DISCONNECTED`; `discoveredInstances` says how many discovery can see |
+| `error` | A live read was attempted and failed. `error` is the same `{code, message, retrySafe, mutationMayHaveOccurred}` the tools return |
+| `truncated` | The body exceeded the response-size cap. `useTool` names the paginated tool serving the same data |
+
+`rack://status` reports discovery and connection state plus a `status` and `metrics`
+block for the selected instance. `data.connected` follows the **live bridge session**,
+not merely whether an instance was selected once, so it agrees with `get_rack_status` on
+the same state. `statusError` and `metricsError` are separate fields because the two
+reads fail separately: a null error beside a null payload means the read was never
+attempted, and a non-null error says why it was attempted and failed.
+
+The metrics are the fastest way to tell a stuck queue from an idle engine:
 
 | Metric | Reading it |
 | --- | --- |
 | `commandQueueDepth`, `commandQueueMaxDepth` | Backlog on the UI-thread command pump; a persistently high depth means work is not draining |
 | `uiPumpLastDrainMs`, `uiPumpMaxDrainMs` | How long the last / worst UI-thread drain took |
-| `requestLatencyEwmaMs` | Smoothed round-trip latency |
 | `requestsHandled`, `requestTimeouts` | Throughput and how many calls hit the deadline |
-| `rollbacks` | Failed commits that were inverted |
 | `authFailures` | Rejected pairing challenges |
-| `droppedTelemetryFrames`, `bridgeReconnects` | Telemetry backpressure and bridge churn |
+| `bridgeReconnects` | Connections accepted over the service's lifetime |
+| `protocolErrors`, `responseDrops` | Frames discarded with no reply — a non-zero value here explains a stall that otherwise looks like a plain timeout |
+| `oversizedResults` | Replies too big for one bridge frame, answered with `RESULT_TOO_LARGE` instead of being dropped |
 | `engineFrame`, `engineBlock` | Whether the audio **engine is actually running** — see below |
+
+`rollbacks`, `droppedTelemetryFrames` and `requestLatencyEwmaMs` are published because
+the spec names them, but nothing increments them yet: the plugin sends a literal `0`.
+Read them as *unimplemented*, not as *nothing happened*.
 
 If `engineFrame` is not advancing between two reads, the Rack engine is idle: no audio is
 being processed, so Probe telemetry will read zero regardless of the patch. This is

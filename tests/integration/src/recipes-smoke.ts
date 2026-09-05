@@ -119,29 +119,44 @@ try {
   }
 
   // --- rack:// resources ---
-  const adaptersRes = await readJsonResource(client, "rack://adapters");
+  // Every body is an envelope: {state, uri, data, ...}. Contract conformance is
+  // checked in contract-smoke; these are the behavioural assertions.
+  const body = async (uri: string) => {
+    const b = await readJsonResource(client, uri);
+    ok(`${uri} reports state "ok"`, b.state === "ok", String(b.state));
+    return (b.data ?? {}) as Record<string, unknown>;
+  };
+
+  const adaptersRes = await body("rack://adapters");
   ok("rack://adapters lists the full adapter pack",
     Array.isArray(adaptersRes.adapters) && (adaptersRes.adapters as unknown[]).length === listAdapters().length,
     `${(adaptersRes.adapters as unknown[])?.length}/${listAdapters().length}`);
 
-  const recipesRes = await readJsonResource(client, "rack://recipes");
+  const recipesRes = await body("rack://recipes");
   const recipesList = recipesRes.recipes as Array<{ id: string }>;
   ok("rack://recipes lists all recipes", Array.isArray(recipesList) && recipesList.length === 8, `${recipesList?.length}`);
   const resolutions = recipesRes.resolutions as Record<string, { resolved: boolean }> | null;
   ok("rack://recipes includes live resolutions when connected",
     !!resolutions && resolutions["basic_mono_subtractive"]?.resolved === true);
+  // A partial catalog scan makes an unresolved role a wrong answer rather than
+  // a missing one, so the body has to say the scan finished.
+  ok("rack://recipes resolved against the whole catalog", recipesRes.catalogComplete === true,
+    `scanned ${recipesRes.modelsScanned} of ${recipesRes.totalModels}`);
 
-  const statusRes = await readJsonResource(client, "rack://status");
+  const statusRes = await body("rack://status");
   ok("rack://status reports connected", statusRes.connected === true);
+  ok("rack://status carries no error next to a live status",
+    statusRes.status !== null && statusRes.statusError === null);
 
-  const catalogRes = await readJsonResource(client, "rack://catalog/models");
+  const catalogRes = await body("rack://catalog/models");
   ok("rack://catalog/models returns models", Array.isArray(catalogRes.models) && (catalogRes.models as unknown[]).length > 0);
 
-  const patchRes = await readJsonResource(client, "rack://patch/current");
+  const patchRes = await body("rack://patch/current");
   ok("rack://patch/current returns a snapshot", Array.isArray((patchRes as { modules?: unknown[] }).modules));
 
-  const auditRes = await readJsonResource(client, "rack://audit/recent");
+  const auditRes = await body("rack://audit/recent");
   ok("rack://audit/recent returns entries", Array.isArray(auditRes.entries) && (auditRes.entries as unknown[]).length > 0);
+  ok("rack://audit/recent parsed every line it read", auditRes.skipped === 0, `${auditRes.skipped} skipped`);
 
   await client.close();
 } catch (e) {

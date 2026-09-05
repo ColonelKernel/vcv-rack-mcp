@@ -9,3 +9,4 @@ export * from "./adapters.js";
 export * from "./recipes.js";
 export * from "./bridge.js";
 export * from "./tools.js";
+export * from "./resources.js";

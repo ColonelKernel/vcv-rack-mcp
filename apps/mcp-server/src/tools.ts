@@ -5,6 +5,7 @@ import type { ConnectionManager } from "./connection.js";
 import { ToolError } from "./errors.js";
 import { randomUUID } from "node:crypto";
 import { TransactionManager } from "./transactions.js";
+import { listInstanceSummaries, mapStatus } from "./projections.js";
 
 /** Everything a tool handler needs. */
 export interface ToolContext {
@@ -32,26 +33,9 @@ function pending(tool: string): ToolHandler {
 // ---------------------------------------------------------------------------
 
 const listRackInstances: ToolHandler = async (_args, ctx) => {
-  const found = ctx.conn.listInstances();
-  const selectedId = ctx.conn.selectedInstance?.instanceId ?? null;
   return {
     discoveryDir: (ctx.conn as unknown as { config: { discoveryDir: string } }).config?.discoveryDir ?? "",
-    instances: found.map((i) => ({
-      instanceId: i.manifest.instanceId,
-      pid: i.manifest.pid,
-      rackVersion: i.manifest.rackVersion,
-      rackEdition: i.manifest.rackEdition,
-      bridgeVersion: i.manifest.bridgeVersion,
-      port: i.manifest.port,
-      startTime: i.manifest.startTime,
-      lastHeartbeat: i.manifest.lastHeartbeat,
-      mode: i.manifest.mode,
-      patchName: i.manifest.patchName,
-      commandPumpPresent: i.manifest.commandPumpPresent,
-      bridgeModulePresent: i.manifest.bridgeModulePresent,
-      stale: i.stale,
-      selected: i.manifest.instanceId === selectedId,
-    })),
+    instances: listInstanceSummaries(ctx.conn),
   };
 };
 
@@ -61,25 +45,6 @@ const selectRackInstance: ToolHandler = async (args, ctx) => {
   const status = await ctx.conn.request<Record<string, unknown>>("status.get", {});
   return { status: mapStatus(status), connected: true as const };
 };
-
-function mapStatus(s: Record<string, unknown>): Record<string, unknown> {
-  return {
-    instanceId: s.instanceId,
-    sessionId: s.sessionId,
-    patchEpoch: s.patchEpoch,
-    rackVersion: s.rackVersion,
-    rackEdition: s.rackEdition,
-    bridgeVersion: s.bridgeVersion,
-    bridgeProtocolVersion: s.bridgeProtocolVersion,
-    mode: s.mode,
-    sampleRate: s.sampleRate,
-    patchName: s.patchName ?? null,
-    saved: s.saved,
-    bridgeModulePresent: s.bridgeModulePresent,
-    commandPumpPresent: s.commandPumpPresent,
-    writerLease: s.writerLease,
-  };
-}
 
 const getRackStatus: ToolHandler = async (_args, ctx) => {
   const selected = ctx.conn.selectedInstance;
