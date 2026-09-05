@@ -110,16 +110,29 @@ requests, floods commands, or tries to mutate without authorization.
   a 36-character UUID `operationId`; without the lease the plugin returns
   `WRITER_LEASE_REQUIRED`. Read-only connections are allowed but can never
   mutate.
-- **Two-phase, fingerprinted transactions.** A commit re-checks the patch
-  fingerprint (SHA-256 over a canonical patch dump) against the preview's
-  `baseFingerprint` and rejects with `PATCH_CONFLICT` if the patch changed under
-  it. `planHash` is recomputed plugin-side so the TypeScript and C++
-  canonicalizers cannot silently disagree.
-- **Bounded blast radius.** A transaction is capped at 128 operations / 32 added
-  modules (`TRANSACTION_TOO_LARGE`); parameter changes are rate-limited to 30/s
-  per client (`RATE_LIMITED`); MCP results are capped at 4 MiB
-  (`RESULT_TOO_LARGE`). The plugin refuses to remove the last Bridge module by
-  default, so a client cannot lock itself out.
+- **Two-phase, fingerprinted transactions.** A commit is bound to the state its
+  plan was previewed against on *two* independent checks, and both must pass.
+  The server compares the caller's `expectedFingerprint` against the cached
+  plan's `baseFingerprint` (`PATCH_CONFLICT`), which is what stops a plan being
+  committed against a patch it was not computed for; the plugin then compares
+  the same value against the live patch immediately before mutating, which is
+  what stops the patch changing between the check and the apply. The server-side
+  half is the one that matters when a caller re-reads the fingerprint after the
+  patch changed: without it both values agree with each other while neither is
+  the state the plan was built on. `planHash` is recomputed plugin-side so the
+  TypeScript and C++ canonicalizers cannot silently disagree.
+- **Bounded blast radius.** A transaction is capped at 128 operations (by the
+  tool's input schema) and 32 added modules (`TRANSACTION_TOO_LARGE`, enforced
+  in `TransactionManager.preview`); parameter changes are rate-limited to 30/s
+  per client over a sliding window (`RATE_LIMITED`, charged at commit, since a
+  preview mutates nothing). The plugin refuses to remove the last Bridge module
+  by default, so a client cannot lock itself out.
+- **Response size.** The binding limit is the 1 MiB bridge frame, not the 4 MiB
+  MCP result cap — a payload large enough to reach the result cap cannot cross
+  the bridge in the first place. An oversized reply is answered with
+  `RESULT_TOO_LARGE` naming both sizes, rather than dropped; before that it was
+  discarded in the writer loop and surfaced to the caller as an unexplained
+  timeout.
 - **Stale-reference rejection.** Requests carry `instanceId` / `sessionId` /
   `patchEpoch`; a stale one is rejected (`STALE_SESSION`, `STALE_PATCH_EPOCH`)
   rather than applied to the wrong target.

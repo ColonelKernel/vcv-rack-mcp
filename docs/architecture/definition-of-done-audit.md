@@ -7,7 +7,7 @@ evidence — a test, a live smoke, or the code that enforces it — and any hone
 caveat.
 
 Verification tiers used below:
-- **Unit** — `pnpm -r test` (242 TypeScript tests across schemas, protocol,
+- **Unit** — `pnpm -r test` (267 TypeScript tests across schemas, protocol,
   adapters, recipes, and the server) and the C++ `ctest` suite (79 doctest
   cases: framing, queues, crypto, canonical/JSON-limits/UTF-8 clamping,
   frame-cap substitution, latency-EWMA arithmetic, telemetry math,
@@ -140,7 +140,7 @@ reported as heuristic; `validate_patch` surfaces the coverage gap
 [ADR-0004](./ADR-0004-adapter-and-recipe-knowledge-model.md).
 
 **12 — Full suite on every supported platform (CI-only).** The complete suite
-passes locally on macOS arm64: 242 TypeScript unit tests, 79 C++ cases, and the
+passes locally on macOS arm64: 267 TypeScript unit tests, 79 C++ cases, and the
 integration smokes. Windows x64, Linux x64, and macOS x64 are built and tested by
 CI (`.github/workflows/ci.yml`) but have not been verified on local hardware in
 this project; treat them as CI-green, not hand-verified, until a maintainer runs

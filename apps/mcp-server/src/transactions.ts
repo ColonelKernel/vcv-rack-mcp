@@ -2,6 +2,7 @@ import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { LIMITS } from "@rackmcp/schemas";
 import type { ConnectionManager, SelectedInstance } from "./connection.js";
 import { ToolError } from "./errors.js";
+import { RateLimiter } from "./ratelimit.js";
 
 /**
  * Confirmation-token minting/validation and preview-plan caching (spec section
@@ -15,6 +16,14 @@ import { ToolError } from "./errors.js";
 interface CachedPlan {
   plan: unknown;
   baseFingerprint: string;
+  /**
+   * Parameter-changing operations in the plan, counted from the caller's own
+   * operation list at preview time. Counted there rather than from the plugin's
+   * normalized plan because the input shape is the one this server declares and
+   * validates; charged against the rate limit at commit, since a preview
+   * mutates nothing.
+   */
+  paramChanges: number;
   patchEpoch: number;
   riskLevel: string;
   confirmationRequired: boolean;
@@ -52,7 +61,10 @@ export class TransactionManager {
   private plans = new Map<string, CachedPlan>();
   private loadBindings = new Map<string, LoadBinding>();
 
-  constructor(private readonly conn: ConnectionManager) {}
+  constructor(
+    private readonly conn: ConnectionManager,
+    private readonly limiter: RateLimiter = new RateLimiter(),
+  ) {}
 
   private mintToken(binding: TokenBinding): string {
     const body = Buffer.from(JSON.stringify(binding), "utf8").toString("base64url");
@@ -90,6 +102,23 @@ export class TransactionManager {
     expected: { fingerprint?: string | undefined; patchEpoch?: number | undefined } = {},
   ) {
     this.pruneExpired();
+    // Bounded blast radius (spec section 13, threat model): the 128-operation
+    // cap is enforced by the tool's input schema, but the added-module cap had
+    // no reader anywhere -- LIMITS.txnMaxAddedModules was exported, mirrored
+    // into the generated C++ header and asserted by a constant test, while
+    // nothing ever compared anything to it. TRANSACTION_TOO_LARGE likewise had
+    // no producer. A single transaction could add 128 modules against a
+    // documented limit of 32.
+    const added = operations.filter(
+      (o) => (o as { op?: string } | null)?.op === "add_module",
+    ).length;
+    if (added > LIMITS.txnMaxAddedModules) {
+      throw new ToolError(
+        "TRANSACTION_TOO_LARGE",
+        `this plan adds ${added} modules; the limit is ${LIMITS.txnMaxAddedModules} per transaction. ` +
+          "Split it into smaller transactions.",
+      );
+    }
     const scope = {
       instanceId: instance.instanceId,
       sessionId: instance.sessionId,
@@ -127,6 +156,7 @@ export class TransactionManager {
     this.plans.set(result.planHash, {
       plan: result.plan,
       baseFingerprint: result.baseFingerprint,
+      paramChanges: RateLimiter.countParamChanges(operations),
       patchEpoch: result.patchEpoch,
       riskLevel: result.risk.level,
       confirmationRequired: result.risk.confirmationRequired,
@@ -174,6 +204,27 @@ export class TransactionManager {
     if (cached.instanceId !== args.instance.instanceId || cached.sessionId !== args.instance.sessionId) {
       throw new ToolError("STALE_SESSION", "plan was previewed against a different session");
     }
+    // Bind the commit to the state the plan was previewed against.
+    //
+    // Without this, only the confirmation-token path was bound: on a low-risk
+    // plan the caller's expectedFingerprint went straight to the plugin, which
+    // compares it against the LIVE patch, so a client that re-read the
+    // fingerprint after the patch changed would commit a plan computed against
+    // a different patch -- both values agree with each other and neither is the
+    // one the plan was built on. Module ids come from the patch file, so a
+    // different patch can legitimately carry the same ids the plan resolved,
+    // and the operations would land on whatever now holds them.
+    //
+    // docs/security/threat-model.md states a commit re-checks the fingerprint
+    // "against the preview's baseFingerprint"; before this it only did so for
+    // plans that required confirmation.
+    if (args.expectedFingerprint !== cached.baseFingerprint) {
+      throw new ToolError(
+        "PATCH_CONFLICT",
+        "expectedFingerprint is not the fingerprint this plan was previewed against; " +
+          "the patch changed since the preview, so re-run preview",
+      );
+    }
     if (cached.confirmationRequired) {
       if (!args.confirmationToken) {
         throw new ToolError("CONFIRMATION_REQUIRED", "this plan requires a confirmation token");
@@ -188,6 +239,10 @@ export class TransactionManager {
         throw new ToolError("CONFIRMATION_REQUIRED", "confirmation token does not bind this commit");
       }
     }
+
+    // Charged at commit, not preview: a preview mutates nothing, and a client
+    // that previews repeatedly without committing has changed no parameters.
+    this.limiter.admit(cached.paramChanges);
 
     await this.conn.ensureLease();
     const scope = {

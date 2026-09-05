@@ -49,6 +49,7 @@ function fakeConn(state: { fingerprint?: string; patchEpoch?: number } = {}) {
           warnings: [],
         };
       }
+      if (method === "txn.commit") return { committed: true };
       throw new Error(`unexpected bridge method ${method}`);
     },
     async ensureLease() {},
@@ -134,5 +135,121 @@ describe("load/clear/restore confirmation tokens", () => {
     const restore = txns.mintLoadToken({ ...binding, kind: "restore", path: "/checkpoints/c.vcv" });
     expect(txns.verifyLoadToken(restore).kind).toBe("restore");
     expect(txns.verifyLoadToken(txns.mintLoadToken(binding)).kind).toBe("load");
+  });
+});
+
+/**
+ * The commit path had no test at all, and two of the controls the threat model
+ * describes were missing from it.
+ */
+describe("commit binds to the state the plan was previewed against", () => {
+  const OPS = [{ op: "set_parameter", paramId: 1 }];
+
+  async function previewed(fingerprint = FP_A) {
+    const txns = managerFor({ fingerprint });
+    await txns.preview("l", OPS, INSTANCE, {});
+    return txns;
+  }
+
+  it("commits when the fingerprint matches the preview", async () => {
+    const txns = await previewed();
+    await expect(
+      txns.commit({
+        operationId: "33333333-3333-4333-8333-333333333333",
+        planHash: PLAN_HASH,
+        expectedFingerprint: FP_A,
+        instance: INSTANCE,
+      }),
+    ).resolves.toEqual({ committed: true });
+  });
+
+  it("rejects a low-risk commit whose fingerprint is not the previewed one", async () => {
+    // The defect this closes: only the confirmation-token path was bound. On a
+    // low-risk plan the caller's fingerprint went straight to the plugin, which
+    // compares it against the LIVE patch -- so a client that re-read the
+    // fingerprint after the patch changed had both values agree with each other
+    // while neither was the state the plan was built on.
+    const txns = await previewed(FP_A);
+    await expectCode(
+      txns.commit({
+        operationId: "33333333-3333-4333-8333-333333333333",
+        planHash: PLAN_HASH,
+        expectedFingerprint: FP_B,
+        instance: INSTANCE,
+      }),
+      "PATCH_CONFLICT",
+    );
+  });
+
+  it("rejects a commit against a different session", async () => {
+    const txns = await previewed();
+    await expectCode(
+      txns.commit({
+        operationId: "33333333-3333-4333-8333-333333333333",
+        planHash: PLAN_HASH,
+        expectedFingerprint: FP_A,
+        instance: { ...INSTANCE, sessionId: "99999999-9999-4999-8999-999999999999" },
+      }),
+      "STALE_SESSION",
+    );
+  });
+
+  it("rejects a commit for a plan it never previewed", async () => {
+    const txns = await previewed();
+    await expectCode(
+      txns.commit({
+        operationId: "33333333-3333-4333-8333-333333333333",
+        planHash: "d".repeat(64),
+        expectedFingerprint: FP_A,
+        instance: INSTANCE,
+      }),
+      "CONFIRMATION_EXPIRED",
+    );
+  });
+});
+
+describe("bounded blast radius", () => {
+  const addModules = (n: number) =>
+    Array.from({ length: n }, (_, i) => ({
+      op: "add_module",
+      pluginSlug: "Fundamental",
+      modelSlug: "VCO",
+      alias: `m${i}`,
+    }));
+
+  it("allows a plan at the added-module limit", async () => {
+    const txns = managerFor();
+    await expect(txns.preview("l", addModules(32), INSTANCE, {})).resolves.toBeDefined();
+  });
+
+  it("rejects a plan past the limit with TRANSACTION_TOO_LARGE", async () => {
+    // LIMITS.txnMaxAddedModules was exported, mirrored into the generated C++
+    // header and asserted by a constant test, while nothing compared anything
+    // to it -- and TRANSACTION_TOO_LARGE had no producer at all.
+    const txns = managerFor();
+    await expectCode(txns.preview("l", addModules(33), INSTANCE, {}), "TRANSACTION_TOO_LARGE");
+  });
+
+  it("counts only module additions, not every operation", async () => {
+    const txns = managerFor();
+    const mixed = [...addModules(32), ...Array.from({ length: 40 }, () => ({ op: "connect" }))];
+    await expect(txns.preview("l", mixed, INSTANCE, {})).resolves.toBeDefined();
+  });
+
+  it("rate-limits parameter changes at commit, not at preview", async () => {
+    // A preview mutates nothing, so previewing repeatedly must not consume the
+    // budget; the charge lands when the plan is committed.
+    const txns = managerFor();
+    const many = Array.from({ length: 31 }, (_, i) => ({ op: "set_parameter", paramId: i }));
+    await expect(txns.preview("l", many, INSTANCE, {})).resolves.toBeDefined();
+    await expectCode(
+      txns.commit({
+        operationId: "33333333-3333-4333-8333-333333333333",
+        planHash: PLAN_HASH,
+        expectedFingerprint: FP_A,
+        instance: INSTANCE,
+      }),
+      "RATE_LIMITED",
+    );
   });
 });
