@@ -158,20 +158,26 @@ export const BridgeMetrics = z
     requestsHandled: z.number().int().min(0),
     /** Commands whose deadline expired while queued for the UI thread. */
     requestTimeouts: z.number().int().min(0),
-    // NOT YET MEASURED: the plugin sends a literal 0 for `rollbacks`,
-    // `droppedTelemetryFrames` and `requestLatencyEwmaMs`. No counter is
-    // incremented at the rollback site, the probe's seqlock buffer does not
-    // track windows overwritten before a reader saw them, and no latency is
-    // sampled. Read them as "unimplemented", not as "nothing happened". They
-    // are published because spec section 13 names them; wiring each to a real
-    // source is separate work.
+    /** Transactions whose apply failed and whose inverses were run. */
     rollbacks: z.number().int().min(0),
     authFailures: z.number().int().min(0),
+    /**
+     * Always zero, and correct: telemetry is pull-based -- `probe.read` is a
+     * request -- so no telemetry frame is ever pushed and none can be dropped.
+     * Published because spec section 13 names it. Not the same thing as an
+     * unimplemented counter: there is no event here to count.
+     */
     droppedTelemetryFrames: z.number().int().min(0),
     /** Connections accepted over this service's lifetime, first one included. */
     bridgeReconnects: z.number().int().min(0),
     uiPumpLastDrainMs: z.number().min(0),
     uiPumpMaxDrainMs: z.number().min(0),
+    /**
+     * Smoothed queue wait plus execution for commands the UI pump drains
+     * (alpha = 1/8). Requests answered inline on the reader thread -- leases,
+     * ping -- never queue and are not sampled, so this measures the path where
+     * the time actually goes.
+     */
     requestLatencyEwmaMs: z.number().min(0),
     // Engine progress counters. Advance only while the audio/fallback engine
     // thread is stepping; a stalled engine (e.g. no master module and paused)

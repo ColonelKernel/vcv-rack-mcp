@@ -67,13 +67,16 @@ static std::string handleMetricsGet(const BridgeCommand& cmd) {
         "commandQueueMaxDepth", (json_int_t) bridge.commandQueue().maxDepth(),
         "requestsHandled", (json_int_t) (c.requestsInline.load() + c.requestsEnqueued.load()),
         "requestTimeouts", (json_int_t) c.requestTimeouts.load(),
-        "rollbacks", (json_int_t) 0,
+        "rollbacks", (json_int_t) c.rollbacks.load(),
         "authFailures", (json_int_t) c.authFailures.load(),
+        // Structurally zero, not unimplemented: telemetry is pull-based
+        // (probe.read is a request), so there is no pushed telemetry frame that
+        // could be dropped. Kept because spec section 13 names it.
         "droppedTelemetryFrames", (json_int_t) 0,
         "bridgeReconnects", (json_int_t) c.connectionsAccepted.load(),
         "uiPumpLastDrainMs", (double) bridge.pumpLastDrainMs.load(),
         "uiPumpMaxDrainMs", (double) bridge.pumpMaxDrainMs.load(),
-        "requestLatencyEwmaMs", 0.0,
+        "requestLatencyEwmaMs", (double) c.requestLatencyEwmaUs.load() / 1000.0,
         "engineBlock", (json_int_t) engineBlock,
         "engineFrame", (json_int_t) engineFrame,
         "protocolErrors", (json_int_t) c.protocolErrors.load(),

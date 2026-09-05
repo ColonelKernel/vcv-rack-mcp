@@ -121,6 +121,11 @@ json_t* buildProbeReading(int64_t probeModuleId, int probeInputId, std::string& 
         json_array_append_new(channels, ch);
     }
     json_object_set_new(root, "channels", channels);
+    // Always zero, and true: process() accumulates every frame it is handed and
+    // publishes when the window fills, so the DSP never discards engine frames.
+    // A caller that wants to know whether it MISSED windows -- a reader-side
+    // question this producer cannot answer -- compares `sequence` across two
+    // reads; the gap is the number of windows published in between.
     json_object_set_new(root, "droppedFrames", json_integer(0));
     json_object_set_new(root, "sequence", json_integer(snap.sequence));
     return root;

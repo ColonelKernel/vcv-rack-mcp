@@ -409,6 +409,7 @@ bool BridgeServer::handleRequest(Session& session, json_t* root) {
     cmd.method = method;
     cmd.operationId = operationId;
     cmd.deadlineAtMs = deadlineAtMs;
+    cmd.enqueuedAtUs = steadyNowUs();
     cmd.mutating = spec->mutating;
     cmd.leaseId = leaseIdAtEnqueue;
     cmd.payload = payload ? json_incref(payload) : json_object();

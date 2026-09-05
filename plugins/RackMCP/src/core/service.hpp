@@ -31,6 +31,7 @@ struct BridgeCommand {
     std::string operationId; // empty when not a mutating request
     json_t* payload = nullptr; // ownership passes to the sink on successful enqueue
     int64_t deadlineAtMs = 0;  // steadyNowMs() deadline
+    int64_t enqueuedAtUs = 0;  // steadyNowUs() at enqueue, for latency sampling
     bool mutating = false;     // the method's spec->mutating flag
     // Writer lease held by connectionId when the command was enqueued (mutating
     // methods only). The lease can lapse, be released, or move to another
@@ -89,7 +90,36 @@ struct ServiceCounters {
     std::atomic<uint64_t> requestTimeouts{0};
     /** Results too large for one frame, answered with RESULT_TOO_LARGE. */
     std::atomic<uint64_t> oversizedResults{0};
+    /** Transactions whose apply failed and whose inverses were run. */
+    std::atomic<uint64_t> rollbacks{0};
+    /**
+     * Smoothed queue-wait-plus-execution time, in microseconds.
+     *
+     * Covers commands drained by the UI pump, which is where time is actually
+     * spent; requests answered inline on the reader thread (leases, ping) never
+     * queue and are not sampled. Written only by the pump, so a plain relaxed
+     * load/store pair is enough -- there is exactly one writer.
+     */
+    std::atomic<uint64_t> requestLatencyEwmaUs{0};
 };
+
+/**
+ * One EWMA step, alpha = 1/8, in fixed-point microseconds.
+ *
+ * `prevUs == 0` means nothing has been sampled yet, so the first sample seeds
+ * the average outright rather than being dragged down from zero -- otherwise
+ * the reported latency would take a dozen requests to become meaningful and
+ * would understate the whole time it was climbing. Integer arithmetic keeps
+ * this usable from the audio-adjacent UI thread with no floating point.
+ */
+inline uint64_t ewmaStepUs(uint64_t prevUs, uint64_t sampleUs) {
+    if (prevUs == 0)
+        return sampleUs;
+    // prev + (sample - prev) / 8, without unsigned underflow when sample < prev.
+    if (sampleUs >= prevUs)
+        return prevUs + (sampleUs - prevUs) / 8;
+    return prevUs - (prevUs - sampleUs) / 8;
+}
 
 class BridgeServer {
 public:

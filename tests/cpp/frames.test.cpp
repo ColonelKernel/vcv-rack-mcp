@@ -84,3 +84,49 @@ TEST_CASE("capResponseFrame clamps a hostile method name so the answer still fit
     if (root)
         json_decref(root);
 }
+
+#include "core/service.hpp"
+
+/**
+ * `requestLatencyEwmaMs` was a hardcoded 0 on the wire. Now that it reports a
+ * real average, the arithmetic behind it is worth pinning: it runs in integer
+ * microseconds on the UI thread, and unsigned subtraction is one wrong turn
+ * away from wrapping to an astronomical latency.
+ */
+
+TEST_CASE("ewmaStepUs seeds on the first sample instead of climbing from zero") {
+    // Seeding matters: from a 0 start, alpha=1/8 needs a dozen samples to
+    // approach the truth, and the metric would understate latency the whole way.
+    CHECK(ewmaStepUs(0, 4000) == 4000);
+    CHECK(ewmaStepUs(0, 1) == 1);
+}
+
+TEST_CASE("ewmaStepUs moves an eighth of the way toward the sample") {
+    CHECK(ewmaStepUs(1000, 1800) == 1100); // 1000 + 800/8
+    CHECK(ewmaStepUs(1800, 1000) == 1700); // 1800 - 800/8
+    // A steady stream of identical samples is a fixed point.
+    CHECK(ewmaStepUs(1000, 1000) == 1000);
+}
+
+TEST_CASE("ewmaStepUs never wraps when the sample is below the average") {
+    // The subtraction is unsigned: `prev + (sample - prev) / 8` written the
+    // obvious way underflows to ~2.3e18 us here, which would surface as a
+    // latency of 2.3 trillion ms.
+    uint64_t v = ewmaStepUs(1000000, 1);
+    CHECK(v < 1000000);
+    CHECK(v == 875001); // 1000000 - 999999/8
+    CHECK(ewmaStepUs(8, 0) == 7);
+}
+
+TEST_CASE("ewmaStepUs converges toward a changed steady state") {
+    uint64_t v = 0;
+    for (int i = 0; i < 100; i++)
+        v = ewmaStepUs(v, 2000);
+    CHECK(v == 2000);
+    for (int i = 0; i < 200; i++)
+        v = ewmaStepUs(v, 500);
+    // Integer division stalls the tail one step above the target; what matters
+    // is that it lands there and stays, rather than drifting.
+    CHECK(v <= 507);
+    CHECK(v >= 500);
+}

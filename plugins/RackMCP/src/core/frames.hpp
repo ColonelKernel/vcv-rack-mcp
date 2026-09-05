@@ -63,4 +63,11 @@ std::string authMessage(const std::string& nonce, const std::string& instanceId,
 /** Monotonic milliseconds for deadlines and lease expiry. */
 int64_t steadyNowMs();
 
+/**
+ * Monotonic microseconds, for latency sampling. Most commands complete inside
+ * a millisecond, so a millisecond clock would report a smoothed latency of 0
+ * however long they really took.
+ */
+int64_t steadyNowUs();
+
 } // namespace rackmcp

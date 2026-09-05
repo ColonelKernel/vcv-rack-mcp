@@ -81,6 +81,17 @@ void CommandPumpWidget::step() {
             frame = capResponseFrame(frame, cmd.requestId, cmd.method,
                                      bridge.server().maxFrameBytes(), cmd.mutating);
         }
+        // Sampled here rather than around executeCommand: what a caller waits
+        // for is the queue wait plus the execution, and the queue wait is the
+        // half that grows when the UI thread is busy.
+        if (cmd.enqueuedAtUs > 0) {
+            int64_t latencyUs = steadyNowUs() - cmd.enqueuedAtUs;
+            if (latencyUs < 0)
+                latencyUs = 0;
+            std::atomic<uint64_t>& ewma = bridge.server().counters().requestLatencyEwmaUs;
+            ewma.store(ewmaStepUs(ewma.load(std::memory_order_relaxed), (uint64_t) latencyUs),
+                       std::memory_order_relaxed);
+        }
         bridge.server().sendFrame(cmd.connectionId, frame);
         drained++;
     }

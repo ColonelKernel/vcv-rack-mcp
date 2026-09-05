@@ -1,8 +1,8 @@
 {
   "rackVersion": "2.6.6",
   "rackEdition": "Pro",
-  "instanceId": "1757e9b9-fead-40c2-ba94-7c343b72e2ce",
-  "sessionId": "30d0c117-c861-47c3-b16c-80982704929c",
+  "instanceId": "4fc08384-ac66-4e7a-95d8-d851b3e9aa4f",
+  "sessionId": "12adf536-29f1-43c5-b2a6-4a7269fc07c0",
   "patchEpoch": 1,
   "patchName": null,
   "saved": true,
@@ -40,11 +40,11 @@
       "outputs": [],
       "expanders": {
         "left": null,
-        "right": "6558968886662395"
+        "right": "3781278570557522"
       }
     },
     {
-      "moduleId": "6558968886662395",
+      "moduleId": "3781278570557522",
       "pluginSlug": "Fundamental",
       "pluginVersion": "2.6.4",
       "modelSlug": "VCO",
@@ -217,11 +217,11 @@
       ],
       "expanders": {
         "left": "1",
-        "right": "8797253495131838"
+        "right": "6618656420768757"
       }
     },
     {
-      "moduleId": "8797253495131838",
+      "moduleId": "6618656420768757",
       "pluginSlug": "RackMCP",
       "pluginVersion": "2.0.0",
       "modelSlug": "Probe",
@@ -295,23 +295,23 @@
       ],
       "outputs": [],
       "expanders": {
-        "left": "6558968886662395",
+        "left": "3781278570557522",
         "right": null
       }
     }
   ],
   "cables": [
     {
-      "cableId": "3020128356454998",
-      "outputModuleId": "6558968886662395",
+      "cableId": "1261999722635301",
+      "outputModuleId": "3781278570557522",
       "outputId": 0,
-      "inputModuleId": "8797253495131838",
+      "inputModuleId": "6618656420768757",
       "inputId": 0,
       "color": "#c8542a"
     }
   ],
   "bridgeModuleCount": 1,
   "probeModuleCount": 1,
-  "fingerprint": "3f7656bd73598aeed9e4016626f62439825c2aa284327a276809defcb4989850",
+  "fingerprint": "49017eb8d1364719c0af52d0d0f6d2062df0140966ce6e2bd0e3fe34ba332a80",
   "warnings": []
 }

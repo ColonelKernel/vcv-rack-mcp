@@ -8,10 +8,10 @@ caveat.
 
 Verification tiers used below:
 - **Unit** — `pnpm -r test` (237 TypeScript tests across schemas, protocol,
-  adapters, recipes, and the server) and the C++ `ctest` suite (75 doctest
+  adapters, recipes, and the server) and the C++ `ctest` suite (79 doctest
   cases: framing, queues, crypto, canonical/JSON-limits/UTF-8 clamping,
-  frame-cap substitution, telemetry math, protocol-gen, service,
-  secret/manifest files).
+  frame-cap substitution, latency-EWMA arithmetic, telemetry math,
+  protocol-gen, service, secret/manifest files).
 - **Live** — integration smokes in `tests/integration/` that launch the
   installed VCV Rack 2 Pro 2.6.6 against an isolated user directory and drive it
   through the real MCP server over stdio. Verified on **macOS arm64**.
@@ -140,7 +140,7 @@ reported as heuristic; `validate_patch` surfaces the coverage gap
 [ADR-0004](./ADR-0004-adapter-and-recipe-knowledge-model.md).
 
 **12 — Full suite on every supported platform (CI-only).** The complete suite
-passes locally on macOS arm64: 237 TypeScript unit tests, 75 C++ cases, and the
+passes locally on macOS arm64: 237 TypeScript unit tests, 79 C++ cases, and the
 integration smokes. Windows x64, Linux x64, and macOS x64 are built and tested by
 CI (`.github/workflows/ci.yml`) but have not been verified on local hardware in
 this project; treat them as CI-green, not hand-verified, until a maintainer runs

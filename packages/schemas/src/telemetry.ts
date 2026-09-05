@@ -29,6 +29,12 @@ export const ProbeReading = z
     windowFrames: z.number().int().min(0),
     channels: z.array(ProbeChannelStats).max(16),
     /** Count of telemetry frames dropped since attach (UI thread fell behind). */
+    /**
+     * Always zero. The probe accumulates every frame it is handed and publishes
+     * when the window fills, so the DSP never discards engine frames. To learn
+     * whether YOU missed windows -- a reader-side question the producer cannot
+     * answer -- compare `sequence` across two reads.
+     */
     droppedFrames: z.number().int().min(0),
     /** Monotonic sequence number of this published window. */
     sequence: z.number().int().min(0),

@@ -1167,6 +1167,10 @@ TxnOutcome txnCommit(json_t* request) {
     }
 
     if (applyFailed) {
+        // Counted whether or not the inverses prove complete: an indeterminate
+        // rollback is still a rollback, and it is the one an operator most
+        // needs to see in the metrics.
+        RackBridge::instance().server().counters().rollbacks++;
         // Roll back everything applied so far via the ComplexAction inverses,
         // then discard it without pushing a history entry. Completeness is
         // proven against the pre-transaction fingerprint, never assumed: an

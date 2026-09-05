@@ -119,15 +119,21 @@ The metrics are the fastest way to tell a stuck queue from an idle engine:
 | `commandQueueDepth`, `commandQueueMaxDepth` | Backlog on the UI-thread command pump; a persistently high depth means work is not draining |
 | `uiPumpLastDrainMs`, `uiPumpMaxDrainMs` | How long the last / worst UI-thread drain took |
 | `requestsHandled`, `requestTimeouts` | Throughput and how many calls hit the deadline |
+| `requestLatencyEwmaMs` | Smoothed queue wait **plus** execution for pump-drained commands (alpha 1/8). Requests answered inline — leases, ping — never queue and are not sampled |
+| `rollbacks` | Transactions whose apply failed and whose inverses were run, counted whether or not the rollback proved complete |
 | `authFailures` | Rejected pairing challenges |
 | `bridgeReconnects` | Connections accepted over the service's lifetime |
 | `protocolErrors`, `responseDrops` | Frames discarded with no reply — a non-zero value here explains a stall that otherwise looks like a plain timeout |
 | `oversizedResults` | Replies too big for one bridge frame, answered with `RESULT_TOO_LARGE` instead of being dropped |
 | `engineFrame`, `engineBlock` | Whether the audio **engine is actually running** — see below |
 
-`rollbacks`, `droppedTelemetryFrames` and `requestLatencyEwmaMs` are published because
-the spec names them, but nothing increments them yet: the plugin sends a literal `0`.
-Read them as *unimplemented*, not as *nothing happened*.
+`droppedTelemetryFrames` is always `0`, and that is correct rather than unimplemented:
+telemetry is pull-based (`probe.read` is a request), so no telemetry frame is ever
+pushed and none can be dropped. `read_probe`'s own `droppedFrames` is always `0` for the
+same kind of reason — the probe accumulates every frame it is handed and publishes when
+the window fills, so the DSP never discards engine frames. To find out whether *you*
+missed windows, compare `sequence` across two reads; the gap is how many were published
+in between.
 
 If `engineFrame` is not advancing between two reads, the Rack engine is idle: no audio is
 being processed, so Probe telemetry will read zero regardless of the patch. This is
