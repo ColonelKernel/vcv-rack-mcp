@@ -42,6 +42,7 @@ const getRackStatus: ToolHandler = async (_args, ctx) => {
       status: null,
       connected: false,
       selectedInstanceId: selected?.instanceId ?? null,
+      userNotesPending: false,
       server: serverInfo(ctx),
     };
   }
@@ -56,6 +57,7 @@ const getRackStatus: ToolHandler = async (_args, ctx) => {
     status: mapStatus(status),
     connected: true,
     selectedInstanceId: selected.instanceId,
+    userNotesPending: ctx.conn.hasPendingUserNotes(),
     server: { ...serverInfo(ctx), ...(metrics ? { metrics } : {}) },
   };
 };
@@ -175,6 +177,7 @@ import {
   previewAttachProbe,
   readProbe,
 } from "./telemetry.js";
+import { postChatMessage, readUserNotes } from "./chat.js";
 
 // ---------------------------------------------------------------------------
 // Mutation
@@ -278,6 +281,8 @@ const HANDLERS: Record<string, ToolHandler> = {
   preview_attach_probe: previewAttachProbe,
   commit_attach_probe: commitAttachProbe,
   read_probe: readProbe,
+  read_user_notes: readUserNotes,
+  post_chat_message: postChatMessage,
   detach_probe: detachProbe,
 };
 

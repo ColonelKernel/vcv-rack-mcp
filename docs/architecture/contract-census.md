@@ -11,17 +11,17 @@ has no implementation behind it and no stated reason for standing alone.
 
 | Declared kind | Count |
 | --- | ---: |
-| bridge_method | 19 |
+| bridge_method | 21 |
 | error_code | 30 |
 | limit | 21 |
 | operation_type | 11 |
 | resource | 6 |
 | risk_flag | 13 |
-| schema_property | 310 |
-| tool | 29 |
-| **total** | **439** |
+| schema_property | 319 |
+| tool | 31 |
+| **total** | **452** |
 
-Scanned across 12 source roots and 129 files,
+Scanned across 12 source roots and 134 files,
 plus 24 documentation files and 111 distinct JSON keys
 emitted by the plugin.
 

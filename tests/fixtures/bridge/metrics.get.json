@@ -9,7 +9,7 @@
   "bridgeReconnects": 1,
   "uiPumpLastDrainMs": 0,
   "uiPumpMaxDrainMs": 0,
-  "requestLatencyEwmaMs": 26.812,
+  "requestLatencyEwmaMs": 4.5760000000000005,
   "engineBlock": 0,
   "engineFrame": 0,
   "protocolErrors": 0,

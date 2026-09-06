@@ -85,6 +85,53 @@ static std::string handleMetricsGet(const BridgeCommand& cmd) {
     return buildResOk(cmd.requestId, payload);
 }
 
+static std::string handleChatPoll(const BridgeCommand& cmd) {
+    RackBridge& bridge = RackBridge::instance();
+    json_int_t sinceSeq = 0;
+    if (cmd.payload) {
+        json_t* v = json_object_get(cmd.payload, "sinceSeq");
+        if (json_is_integer(v) && json_integer_value(v) > 0)
+            sinceSeq = json_integer_value(v);
+    }
+    std::vector<ChatEntry> notes = bridge.pollUserNotes((unsigned long long) sinceSeq);
+    json_t* arr = json_array();
+    for (size_t i = 0; i < notes.size(); i++) {
+        json_t* n = json_pack("{s:I, s:s, s:s}",
+                              "seq", (json_int_t) notes[i].seq,
+                              "text", notes[i].text.c_str(),
+                              "clock", notes[i].clock.c_str());
+        json_array_append_new(arr, n);
+    }
+    json_t* payload = json_pack("{s:o, s:I, s:I}",
+                                "notes", arr,
+                                "lastSeq", (json_int_t) bridge.userNotesLastSeq(),
+                                "dropped", (json_int_t) bridge.userNotesDropped());
+    return buildResOk(cmd.requestId, payload);
+}
+
+static std::string handleChatPost(const BridgeCommand& cmd) {
+    RackBridge& bridge = RackBridge::instance();
+    const char* text = NULL;
+    json_int_t ackThrough = 0;
+    if (cmd.payload) {
+        json_t* t = json_object_get(cmd.payload, "text");
+        if (json_is_string(t))
+            text = json_string_value(t);
+        json_t* a = json_object_get(cmd.payload, "ackThroughSeq");
+        if (json_is_integer(a) && json_integer_value(a) > 0)
+            ackThrough = json_integer_value(a);
+    }
+    if (!text || *text == '\0')
+        return buildResError(cmd.requestId, "BAD_REQUEST", "text must be a non-empty string",
+                             false, false);
+    const unsigned long long seq = bridge.postAssistantMessage(text);
+    const size_t acknowledged = bridge.ackUserNotes((unsigned long long) ackThrough);
+    json_t* payload = json_pack("{s:I, s:I}",
+                                "seq", (json_int_t) seq,
+                                "acknowledged", (json_int_t) acknowledged);
+    return buildResOk(cmd.requestId, payload);
+}
+
 /**
  * Handler result. `cacheable` marks results that must be replayed on retries
  * with the same operation id: successful mutations, and failures where the
@@ -439,6 +486,10 @@ std::string executeCommand(const BridgeCommand& cmd) {
         result.frame = handleProbeList(cmd);
     else if (cmd.method == "probe.read")
         result.frame = handleProbeRead(cmd);
+    else if (cmd.method == "chat.poll")
+        result.frame = handleChatPoll(cmd);
+    else if (cmd.method == "chat.post")
+        result.frame = handleChatPost(cmd);
     else
         result.frame = buildResError(cmd.requestId, "UNSUPPORTED_OPERATION",
                                      "method not implemented in this bridge phase: " + cmd.method,

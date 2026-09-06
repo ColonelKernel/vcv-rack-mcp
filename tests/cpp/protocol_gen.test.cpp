@@ -25,7 +25,7 @@ TEST_CASE("error code round trip") {
 }
 
 TEST_CASE("method and operation tables are populated") {
-    CHECK(METHOD_SPEC_COUNT == 19);
+    CHECK(METHOD_SPEC_COUNT == 21);
     CHECK(OPERATION_SPEC_COUNT == 11);
     CHECK(FRAME_SPEC_COUNT == 9);
     bool sawCommit = false;

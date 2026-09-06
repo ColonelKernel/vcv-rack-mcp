@@ -37,6 +37,14 @@
       "tags": [
         "Utility"
       ]
+    },
+    {
+      "slug": "Chat",
+      "name": "RackMCP-Chat",
+      "description": "Talk to your MCP assistant from inside Rack: a transcript of what it has been doing, a place to type a note back, and its replies. Notes are queued until the assistant's next turn and are marked pending until then.",
+      "tags": [
+        "Utility"
+      ]
     }
   ]
 }

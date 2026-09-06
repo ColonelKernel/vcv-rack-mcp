@@ -45,5 +45,7 @@ export const VALID_TOOL_INPUTS: Record<string, object> = {
   },
   commit_attach_probe: { operationId: UUID, planHash: HASH, expectedFingerprint: HASH },
   read_probe: { probeModuleId: "5", probeInputId: 0 },
+  read_user_notes: { sinceSeq: 0 },
+  post_chat_message: { text: "Cutoff 8.0 -> 4.2 kHz. Undo with undo_last_mcp_transaction.", ackThroughSeq: 3 },
   detach_probe: { probeModuleId: "5", probeInputId: 0, operationId: UUID, expectedPatchEpoch: 1 },
 };

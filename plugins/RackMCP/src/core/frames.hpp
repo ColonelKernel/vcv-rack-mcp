@@ -74,6 +74,16 @@ std::string authMessage(const std::string& nonce, const std::string& instanceId,
  */
 int selectProtocolVersion(const json_t* versions, int minSupported, int maxSupported);
 
+/**
+ * The error code carried by a response frame, or empty when it succeeded.
+ *
+ * Reads the encoded frame rather than tracking the outcome alongside it,
+ * because the frame is the only thing that survives every path out of
+ * executeCommand — including the oversize substitution, which replaces a
+ * successful result with a RESULT_TOO_LARGE error after the fact.
+ */
+std::string errorCodeOf(const std::string& responseFrame);
+
 /** Monotonic milliseconds for deadlines and lease expiry. */
 int64_t steadyNowMs();
 

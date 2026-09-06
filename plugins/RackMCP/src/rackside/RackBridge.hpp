@@ -8,6 +8,7 @@
 #include <thread>
 #include <vector>
 
+#include "core/activitylog.hpp"
 #include "core/manifest.hpp"
 #include "core/queues.hpp"
 #include "core/service.hpp"
@@ -50,6 +51,35 @@ public:
     /** Last executed operation summary, for the Bridge panel display. */
     void setLastOp(const std::string& summary);
     std::string lastOp();
+
+    // --- RackMCP-Chat panel ------------------------------------------------
+    /** Records one executed bridge method for the activity transcript. */
+    void recordActivity(const std::string& method, const std::string& errorCode,
+                        long long elapsedMs);
+    std::vector<ActivityEntry> activity() const { return activity_.snapshot(); }
+
+    /**
+     * Queues a note the user typed in Rack, and rings the doorbell.
+     *
+     * The event is only a hint: it is fire-and-forget with no ack, so the note
+     * is retained until a client actually polls for it. Losing the event costs
+     * latency, never the note.
+     */
+    unsigned long long postUserNote(const std::string& text);
+    std::vector<ChatEntry> pollUserNotes(unsigned long long sinceSeq) const {
+        return userNotes_.since(sinceSeq);
+    }
+    unsigned long long userNotesLastSeq() const { return userNotes_.lastSeq(); }
+    unsigned long long userNotesDropped() const { return userNotes_.evicted(); }
+    /** Notes still waiting for the assistant to acknowledge them. */
+    size_t userNotesUndelivered() const;
+    size_t ackUserNotes(unsigned long long throughSeq) {
+        return userNotes_.markDelivered(throughSeq);
+    }
+    /** Records an assistant reply for display; returns its sequence number. */
+    unsigned long long postAssistantMessage(const std::string& text);
+    /** The whole conversation, oldest first, for the panel. */
+    std::vector<ChatEntry> conversation() const;
 
     /** Records the last committed MCP transaction (for undo eligibility). */
     void setLastMcpTransaction(const std::string& operationId, const std::string& postFingerprint);
@@ -122,6 +152,11 @@ private:
     std::atomic<bool> savedHint_{true};
     std::mutex lastOpMutex_;
     std::string lastOp_ = "none";
+    // Bounded so a long session cannot grow without limit; the panel shows a
+    // window of these and reports what was dropped.
+    BoundedRing<ActivityEntry> activity_{128};
+    BoundedRing<ChatEntry> userNotes_{32};
+    BoundedRing<ChatEntry> assistantMessages_{32};
     std::mutex lastTxnMutex_;
     bool hasLastTxn_ = false;
     std::string lastTxnOpId_;

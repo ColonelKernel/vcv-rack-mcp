@@ -1,8 +1,8 @@
 {
   "rackVersion": "2.6.6",
   "rackEdition": "Pro",
-  "instanceId": "ba2001f2-f1dc-46c0-8fbd-b4e3e99cb561",
-  "sessionId": "0c9e39f5-29c5-4dce-963c-7bd7a1ef73c0",
+  "instanceId": "648e3905-f581-4405-81f9-fee3422acd31",
+  "sessionId": "76ecf0bc-54b0-42e8-9663-47437dacbef4",
   "patchEpoch": 1,
   "patchName": null,
   "saved": true,
@@ -40,90 +40,11 @@
       "outputs": [],
       "expanders": {
         "left": null,
-        "right": "5525015237980711"
+        "right": "6549723989214009"
       }
     },
     {
-      "moduleId": "3378588811677858",
-      "pluginSlug": "RackMCP",
-      "pluginVersion": "2.0.0",
-      "modelSlug": "Probe",
-      "modelName": "RackMCP-Probe",
-      "bypassed": false,
-      "isBridge": false,
-      "isProbe": true,
-      "gridPosition": {
-        "x": 17,
-        "y": 0
-      },
-      "gridWidth": 8,
-      "params": [],
-      "inputs": [
-        {
-          "portId": 0,
-          "type": "input",
-          "name": "Probe 1",
-          "channels": 1,
-          "connected": true
-        },
-        {
-          "portId": 1,
-          "type": "input",
-          "name": "Probe 2",
-          "channels": 0,
-          "connected": false
-        },
-        {
-          "portId": 2,
-          "type": "input",
-          "name": "Probe 3",
-          "channels": 0,
-          "connected": false
-        },
-        {
-          "portId": 3,
-          "type": "input",
-          "name": "Probe 4",
-          "channels": 0,
-          "connected": false
-        },
-        {
-          "portId": 4,
-          "type": "input",
-          "name": "Probe 5",
-          "channels": 0,
-          "connected": false
-        },
-        {
-          "portId": 5,
-          "type": "input",
-          "name": "Probe 6",
-          "channels": 0,
-          "connected": false
-        },
-        {
-          "portId": 6,
-          "type": "input",
-          "name": "Probe 7",
-          "channels": 0,
-          "connected": false
-        },
-        {
-          "portId": 7,
-          "type": "input",
-          "name": "Probe 8",
-          "channels": 0,
-          "connected": false
-        }
-      ],
-      "outputs": [],
-      "expanders": {
-        "left": "5525015237980711",
-        "right": null
-      }
-    },
-    {
-      "moduleId": "5525015237980711",
+      "moduleId": "6549723989214009",
       "pluginSlug": "Fundamental",
       "pluginVersion": "2.6.4",
       "modelSlug": "VCO",
@@ -296,22 +217,101 @@
       ],
       "expanders": {
         "left": "1",
-        "right": "3378588811677858"
+        "right": "7148663732756487"
+      }
+    },
+    {
+      "moduleId": "7148663732756487",
+      "pluginSlug": "RackMCP",
+      "pluginVersion": "2.0.0",
+      "modelSlug": "Probe",
+      "modelName": "RackMCP-Probe",
+      "bypassed": false,
+      "isBridge": false,
+      "isProbe": true,
+      "gridPosition": {
+        "x": 17,
+        "y": 0
+      },
+      "gridWidth": 8,
+      "params": [],
+      "inputs": [
+        {
+          "portId": 0,
+          "type": "input",
+          "name": "Probe 1",
+          "channels": 1,
+          "connected": true
+        },
+        {
+          "portId": 1,
+          "type": "input",
+          "name": "Probe 2",
+          "channels": 0,
+          "connected": false
+        },
+        {
+          "portId": 2,
+          "type": "input",
+          "name": "Probe 3",
+          "channels": 0,
+          "connected": false
+        },
+        {
+          "portId": 3,
+          "type": "input",
+          "name": "Probe 4",
+          "channels": 0,
+          "connected": false
+        },
+        {
+          "portId": 4,
+          "type": "input",
+          "name": "Probe 5",
+          "channels": 0,
+          "connected": false
+        },
+        {
+          "portId": 5,
+          "type": "input",
+          "name": "Probe 6",
+          "channels": 0,
+          "connected": false
+        },
+        {
+          "portId": 6,
+          "type": "input",
+          "name": "Probe 7",
+          "channels": 0,
+          "connected": false
+        },
+        {
+          "portId": 7,
+          "type": "input",
+          "name": "Probe 8",
+          "channels": 0,
+          "connected": false
+        }
+      ],
+      "outputs": [],
+      "expanders": {
+        "left": "6549723989214009",
+        "right": null
       }
     }
   ],
   "cables": [
     {
-      "cableId": "7920800095972065",
-      "outputModuleId": "5525015237980711",
+      "cableId": "3831423011158701",
+      "outputModuleId": "6549723989214009",
       "outputId": 0,
-      "inputModuleId": "3378588811677858",
+      "inputModuleId": "7148663732756487",
       "inputId": 0,
       "color": "#c8542a"
     }
   ],
   "bridgeModuleCount": 1,
   "probeModuleCount": 1,
-  "fingerprint": "de76debd0de3859ad0c55540d8f01f4e4429380d387e8770d6c2d482875d9022",
+  "fingerprint": "ab570f8c29a0cf91155137ddee2a211d70def583007c8d35fd562eae4036fce3",
   "warnings": []
 }

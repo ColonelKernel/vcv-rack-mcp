@@ -111,6 +111,69 @@ void RackBridge::publishUiState(const UiStateCache& state) {
     savedHint_.store(state.saved);
 }
 
+void RackBridge::recordActivity(const std::string& method, const std::string& errorCode,
+                                long long elapsedMs) {
+    ActivityEntry entry;
+    entry.method = method;
+    entry.errorCode = errorCode;
+    entry.elapsedMs = elapsedMs;
+    entry.clock = clockNow();
+    activity_.push(entry);
+}
+
+unsigned long long RackBridge::postUserNote(const std::string& text) {
+    ChatEntry note;
+    note.fromUser = true;
+    note.text = clampChatText(text);
+    note.clock = clockNow();
+    note.delivered = false;
+    const unsigned long long seq = userNotes_.push(note);
+    // A doorbell, not a delivery: the note is already durable in the ring, so a
+    // dropped event costs the assistant a little latency and nothing else.
+    server_.broadcastEvent(buildEvent("user_note_pending"));
+    return seq;
+}
+
+unsigned long long RackBridge::postAssistantMessage(const std::string& text) {
+    ChatEntry reply;
+    reply.fromUser = false;
+    reply.text = clampChatText(text);
+    reply.clock = clockNow();
+    reply.delivered = true; // it arrived here, so it is by definition delivered
+    return assistantMessages_.push(reply);
+}
+
+size_t RackBridge::userNotesUndelivered() const {
+    size_t pending = 0;
+    for (const ChatEntry& note : userNotes_.snapshot())
+        if (!note.delivered)
+            pending++;
+    return pending;
+}
+
+std::vector<ChatEntry> RackBridge::conversation() const {
+    // Two rings merged by sequence. They share no counter, so ordering across
+    // them is by arrival within each side plus the clock, which is what the
+    // panel shows anyway; interleaving by seq alone would put an old reply
+    // after a new note.
+    std::vector<ChatEntry> notes = userNotes_.snapshot();
+    std::vector<ChatEntry> replies = assistantMessages_.snapshot();
+    std::vector<ChatEntry> out;
+    out.reserve(notes.size() + replies.size());
+    size_t a = 0, b = 0;
+    while (a < notes.size() && b < replies.size()) {
+        if (notes[a].clock <= replies[b].clock)
+            out.push_back(notes[a++]);
+        else
+            out.push_back(replies[b++]);
+    }
+    while (a < notes.size())
+        out.push_back(notes[a++]);
+    while (b < replies.size())
+        out.push_back(replies[b++]);
+    return out;
+}
+
 void RackBridge::setLastOp(const std::string& summary) {
     std::lock_guard<std::mutex> lock(lastOpMutex_);
     lastOp_ = summary.size() > 24 ? summary.substr(0, 24) : summary;

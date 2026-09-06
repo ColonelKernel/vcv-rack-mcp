@@ -293,6 +293,20 @@ try {
     );
   }
 
+  // Chat methods. There is no way to type into the panel from here, so the
+  // poll is captured empty first, then a reply is posted and the poll repeated
+  // — which is also the only shape a client will ever see before the user has
+  // said anything.
+  save("chat.poll", await client.request("chat.poll", { scope: scope(), sinceSeq: 0 }));
+  save(
+    "chat.post",
+    await client.request("chat.post", {
+      scope: scope(),
+      text: "captured by capture-bridge-fixtures",
+      ackThroughSeq: 0,
+    }),
+  );
+
   // Patch-file methods. saveCopy leaves the current patch path alone; save,
   // load and clear each bump the epoch, so re-read the scope as we go.
   // Talking to the bridge directly skips the MCP server, which is what

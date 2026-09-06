@@ -262,6 +262,13 @@ static const FieldSpec METHOD_FIELDS_17[] = {
 static const FieldSpec METHOD_FIELDS_18[] = {
 	{nullptr, nullptr}
 };
+static const FieldSpec METHOD_FIELDS_19[] = {
+	{nullptr, nullptr}
+};
+static const FieldSpec METHOD_FIELDS_20[] = {
+	{"text", "string"},
+	{nullptr, nullptr}
+};
 static const MethodSpec METHOD_SPECS[] = {
 	{"status.get", false, METHOD_FIELDS_0, 0},
 	{"lease.acquire", false, METHOD_FIELDS_1, 1},
@@ -282,8 +289,10 @@ static const MethodSpec METHOD_SPECS[] = {
 	{"probe.list", false, METHOD_FIELDS_16, 0},
 	{"probe.read", false, METHOD_FIELDS_17, 3},
 	{"metrics.get", false, METHOD_FIELDS_18, 0},
+	{"chat.poll", false, METHOD_FIELDS_19, 0},
+	{"chat.post", false, METHOD_FIELDS_20, 1},
 };
-static const size_t METHOD_SPEC_COUNT = 19;
+static const size_t METHOD_SPEC_COUNT = 21;
 
 // Patch operations and required fields
 struct OperationSpec { const char* op; const FieldSpec* fields; size_t fieldCount; };

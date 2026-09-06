@@ -282,7 +282,9 @@
             "patchfile.clear",
             "probe.list",
             "probe.read",
-            "metrics.get"
+            "metrics.get",
+            "chat.poll",
+            "chat.post"
           ]
         },
         "deadlineMs": {
@@ -474,7 +476,8 @@
           "enum": [
             "shutting_down",
             "patch_epoch_changed",
-            "lease_revoked"
+            "lease_revoked",
+            "user_note_pending"
           ]
         },
         "payload": {}

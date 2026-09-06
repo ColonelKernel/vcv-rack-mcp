@@ -3,7 +3,7 @@
 > Generated from the canonical tool schemas (`packages/schemas/json/tools.schema.json`) by
 > `scripts/gen-tool-reference.ts`. Do not edit by hand — re-run the generator.
 
-Rack MCP exposes **29 tools**. Every tool has a strict input
+Rack MCP exposes **31 tools**. Every tool has a strict input
 schema and structured output. Destructive tools mutate the patch and require a valid,
 preview-bound confirmation (see the transaction model). Read-only tools never mutate Rack
 state. All 64-bit Rack ids cross the boundary as decimal strings.
@@ -55,6 +55,7 @@ _No parameters._
 - `status`: object | null
 - `connected`: boolean
 - `selectedInstanceId`: string (uuid) | null
+- `userNotesPending`: boolean
 - `server`: object
 
 ### `acquire_writer_lease`
@@ -566,3 +567,39 @@ Disconnect a Probe input's cable(s). The Probe module itself is left in place.
 - `removedCableIds`: string[]
 - `newFingerprint`: string
 - `replayed`: boolean
+
+## Other
+
+### `read_user_notes`
+
+*Read notes from the rack* — read-only · idempotent
+
+Read anything the person typed into the RackMCP-Chat module's panel since you last looked. Nothing inside Rack can interrupt you, so notes wait here until you ask; call this when you start a turn, or after a long operation, to see whether they said something while you worked. Notes are returned oldest first and are not removed by reading — acknowledge them by passing the highest seq you have handled to post_chat_message, which is what marks them delivered in the panel.
+
+**Input**
+
+- `sinceSeq`: integer _(≥ 0, ≤ 9007199254740991)_ _(optional)_
+- `expectedPatchEpoch`: integer _(≥ 1, ≤ 9007199254740991)_ _(optional)_
+
+**Output**
+
+- `notes`: object[]
+- `lastSeq`: integer _(≥ 0, ≤ 9007199254740991)_
+- `dropped`: integer _(≥ 0, ≤ 9007199254740991)_
+
+### `post_chat_message`
+
+*Reply into the rack* — **mutating**
+
+Write a short message into the RackMCP-Chat panel, so the person sees your answer in Rack rather than only in the host application. Use it to answer a note, or to say what you just changed and how to undo it. Pass ackThroughSeq to mark their notes as delivered; a note that is never acknowledged keeps showing as pending, which is how the panel stays honest about whether you have actually seen it. This does not touch the patch and needs no writer lease.
+
+**Input**
+
+- `text`: string _(min length 1, max length 2000)_ _(required)_
+- `ackThroughSeq`: integer _(≥ 0, ≤ 9007199254740991)_ _(optional)_
+- `expectedPatchEpoch`: integer _(≥ 1, ≤ 9007199254740991)_ _(optional)_
+
+**Output**
+
+- `seq`: integer _(≤ 9007199254740991)_
+- `acknowledged`: integer _(≥ 0, ≤ 9007199254740991)_

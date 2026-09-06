@@ -82,6 +82,24 @@ int selectProtocolVersion(const json_t* versions, int minSupported, int maxSuppo
     return selected;
 }
 
+std::string errorCodeOf(const std::string& responseFrame) {
+    json_error_t err;
+    json_t* root = json_loadb(responseFrame.data(), responseFrame.size(), 0, &err);
+    if (!root)
+        return "INTERNAL"; // unparseable is not success
+    std::string code;
+    json_t* error = json_object_get(root, "error");
+    if (json_is_object(error)) {
+        json_t* c = json_object_get(error, "code");
+        if (json_is_string(c))
+            code = json_string_value(c);
+        else
+            code = "INTERNAL"; // an error with no code is still an error
+    }
+    json_decref(root);
+    return code;
+}
+
 std::string buildAuthResult(bool ok, const char* errorCode, const char* message) {
     json_t* o;
     if (ok) {

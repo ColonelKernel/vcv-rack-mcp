@@ -36,6 +36,9 @@ const SPEC_TOOLS = [
   "preview_attach_probe",
   "commit_attach_probe",
   "read_probe",
+  // In-Rack chat (RackMCP-Chat panel)
+  "read_user_notes",
+  "post_chat_message",
   "detach_probe",
 ];
 

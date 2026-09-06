@@ -8,6 +8,7 @@ void init(rack::plugin::Plugin* p) {
     p->addModel(modelBridge);
     p->addModel(modelProbe);
     p->addModel(modelTutorial);
+    p->addModel(modelChat);
     rackmcp::RackBridge::instance().start();
 }
 

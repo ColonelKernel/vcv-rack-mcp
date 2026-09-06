@@ -65,8 +65,12 @@ void CommandPumpWidget::step() {
                                   "writer lease no longer held by this connection", true, false);
         }
         else {
+            const int64_t began = steadyNowMs();
             frame = executeCommand(cmd);
             bridge.setLastOp(cmd.method);
+            // The Chat panel's transcript. setLastOp truncates to 24 chars for
+            // the Bridge panel; this keeps the full method name and the outcome.
+            bridge.recordActivity(cmd.method, errorCodeOf(frame), steadyNowMs() - began);
         }
         if (cmd.payload) {
             json_decref(cmd.payload);

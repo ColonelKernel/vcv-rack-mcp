@@ -70,14 +70,14 @@ bridge. The **MCP Bridge** panel on the left shows the connection state
 | Path | What | License |
 | --- | --- | --- |
 | `apps/mcp-server` | Stdio MCP server (TypeScript, MCP SDK 1.30.0) | MIT |
-| `plugins/RackMCP` | Rack 2 plugin: Bridge, Probe and Tutorial modules, loopback bridge service (C++11) | GPL-3.0-or-later |
+| `plugins/RackMCP` | Rack 2 plugin: Bridge, Probe, Tutorial and Chat modules, loopback bridge service (C++11) | GPL-3.0-or-later |
 | `packages/schemas` | Canonical Zod schemas → JSON Schema + C++ codegen | MIT |
 | `packages/protocol` | Bridge framing + client (TypeScript side) | MIT |
 | `packages/adapters` | 22 versioned module adapters (Core + Fundamental + RackMCP) | MIT |
 | `packages/recipes` | 8 versioned high-level patch recipes | MIT |
 | `packages/test-client` | Scriptable MCP test client | MIT |
 
-The MCP surface is **29 tools**, **6 resources** (`rack://…`), and **5 prompts**.
+The MCP surface is **31 tools**, **6 resources** (`rack://…`), and **5 prompts**.
 See [the licensing note](docs/security/licensing.md) for why the plugin is
 GPL-3.0-or-later while the server and packages are MIT.
 

@@ -169,3 +169,21 @@ TEST_CASE("protocol version selection picks the highest mutually supported versi
     CHECK(selectProtocolVersion(notAnArray, 1, 3) == 0);
     json_decref(notAnArray);
 }
+
+TEST_CASE("errorCodeOf reads the outcome out of the encoded frame") {
+    CHECK(errorCodeOf(buildResOk("7", json_object())).empty());
+
+    CHECK(errorCodeOf(buildResError("7", "WRITER_LEASE_REQUIRED", "no lease", true, false)) ==
+          "WRITER_LEASE_REQUIRED");
+
+    // Unparseable is not success: reporting a truncated or corrupt frame as OK
+    // would put a green line in the transcript for a request that failed.
+    CHECK(errorCodeOf("{not json") == "INTERNAL");
+    CHECK(errorCodeOf("") == "INTERNAL");
+
+    // An error object with no code is still an error.
+    CHECK(errorCodeOf("{\"kind\":\"res\",\"id\":\"1\",\"ok\":false,\"error\":{}}") == "INTERNAL");
+
+    // "error": null is how a success frame may spell the absence of one.
+    CHECK(errorCodeOf("{\"kind\":\"res\",\"id\":\"1\",\"ok\":true,\"error\":null}").empty());
+}

@@ -350,12 +350,21 @@ connection:
 {"kind":"evt","event":"patch_epoch_changed"}
 ```
 
-Defined events are `shutting_down`, `patch_epoch_changed`, and `lease_revoked`.
-Events let the client invalidate cached refs (a bumped patch epoch invalidates
-outstanding fingerprints and confirmation tokens) and shut down cleanly.
+Defined events are `shutting_down`, `patch_epoch_changed`, `lease_revoked` and
+`user_note_pending`. Events let the client invalidate cached refs (a bumped
+patch epoch invalidates outstanding fingerprints and confirmation tokens), shut
+down cleanly, and learn that someone typed something into the RackMCP-Chat
+panel.
 
-The plugin emits `shutting_down` from `RackBridge::stop()` and `resetPairing()`,
-and `patch_epoch_changed` on every patch-epoch bump:
+Every event carries an empty payload, deliberately. An event is fire-and-forget
+— no id, no ack, no retry — so anything delivered only that way can be lost.
+`user_note_pending` is therefore a doorbell: the note itself lives in the
+plugin until a client fetches it with `chat.poll`, and losing the event costs
+latency rather than the note.
+
+The plugin emits `user_note_pending` from `RackBridge::postUserNote()`,
+`shutting_down` from `RackBridge::stop()` and `resetPairing()`, and
+`patch_epoch_changed` on every patch-epoch bump:
 
 - a successful `patchfile.load` or `patchfile.clear`;
 - a **failed** `patchfile.load` — Rack's `patch::Manager::load()` clears the
@@ -408,6 +417,8 @@ others run on Rack's UI thread.
 | `patchfile.clear` | **yes** | Clear to an empty patch (bumps the patch epoch). |
 | `probe.list` | no | List active probe slots. |
 | `probe.read` | no | Read one probe channel's telemetry window. |
+| `chat.poll` | no | Read notes typed into the RackMCP-Chat panel since a sequence number. |
+| `chat.post` | no | Write a reply into that panel, and acknowledge notes as delivered. |
 | `lease.acquire` | no* | Acquire the single writer lease; returns `leaseId` + `expiresInMs`. |
 | `lease.renew` | no* | Renew a held lease before it expires. |
 | `lease.release` | no* | Release a held lease. |

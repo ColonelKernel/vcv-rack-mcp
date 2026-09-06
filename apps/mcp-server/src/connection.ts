@@ -19,6 +19,20 @@ export interface SelectedInstance {
  * beyond what the bridge needs and normalizes disconnects.
  */
 export class ConnectionManager {
+  /**
+   * Set when the plugin rings the doorbell for a note typed in Rack. Read by
+   * `get_rack_status` so an assistant that never calls `read_user_notes` still
+   * finds out there is something waiting, and cleared once the notes are read.
+   */
+  private userNotesPending = false;
+
+  hasPendingUserNotes(): boolean {
+    return this.userNotesPending;
+  }
+  clearPendingUserNotes(): void {
+    this.userNotesPending = false;
+  }
+
   private client: BridgeClient | null = null;
   private selected: SelectedInstance | null = null;
   private leaseId: string | null = null;
@@ -108,6 +122,9 @@ export class ConnectionManager {
     client.onEvent = (event) => {
       log.info("bridge event", { event, instanceId });
       if (event === "shutting_down") this.disconnect();
+      // A doorbell. Nothing can act on it here — this server cannot push to its
+      // host — so it is recorded for a tool to notice on the next turn.
+      if (event === "user_note_pending") this.userNotesPending = true;
     };
 
     const welcome = await client.connect(found.manifest.port);

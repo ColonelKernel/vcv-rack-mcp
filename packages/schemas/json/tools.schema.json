@@ -433,6 +433,9 @@
               }
             ]
           },
+          "userNotesPending": {
+            "type": "boolean"
+          },
           "server": {
             "type": "object",
             "properties": {
@@ -564,6 +567,7 @@
           "status",
           "connected",
           "selectedInstanceId",
+          "userNotesPending",
           "server"
         ],
         "additionalProperties": false
@@ -8864,6 +8868,142 @@
           "channels",
           "droppedFrames",
           "sequence"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "read_user_notes": {
+      "title": "Read notes from the rack",
+      "description": "Read anything the person typed into the RackMCP-Chat module's panel since you last looked. Nothing inside Rack can interrupt you, so notes wait here until you ask; call this when you start a turn, or after a long operation, to see whether they said something while you worked. Notes are returned oldest first and are not removed by reading — acknowledge them by passing the highest seq you have handled to post_chat_message, which is what marks them delivered in the panel.",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "input": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "sinceSeq": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "expectedPatchEpoch": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "additionalProperties": false
+      },
+      "output": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "notes": {
+            "maxItems": 32,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "seq": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "text": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                },
+                "clock": {
+                  "type": "string",
+                  "maxLength": 16
+                }
+              },
+              "required": [
+                "seq",
+                "text",
+                "clock"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "lastSeq": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "dropped": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "notes",
+          "lastSeq",
+          "dropped"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "post_chat_message": {
+      "title": "Reply into the rack",
+      "description": "Write a short message into the RackMCP-Chat panel, so the person sees your answer in Rack rather than only in the host application. Use it to answer a note, or to say what you just changed and how to undo it. Pass ackThroughSeq to mark their notes as delivered; a note that is never acknowledged keeps showing as pending, which is how the panel stays honest about whether you have actually seen it. This does not touch the patch and needs no writer lease.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "input": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "ackThroughSeq": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "expectedPatchEpoch": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "additionalProperties": false
+      },
+      "output": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "seq": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "acknowledged": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "seq",
+          "acknowledged"
         ],
         "additionalProperties": false
       }

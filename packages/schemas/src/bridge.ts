@@ -96,6 +96,8 @@ export const BRIDGE_METHOD_NAMES = [
   "probe.list",
   "probe.read",
   "metrics.get",
+  "chat.poll",
+  "chat.post",
 ] as const;
 export const BridgeMethod = z.enum(BRIDGE_METHOD_NAMES);
 export type BridgeMethod = z.infer<typeof BridgeMethod>;
@@ -129,7 +131,18 @@ export const PongFrame = z.object({ kind: z.literal("pong"), id: RequestId }).st
 export const EventFrame = z
   .object({
     kind: z.literal("evt"),
-    event: z.enum(["shutting_down", "patch_epoch_changed", "lease_revoked"]),
+    /**
+     * `user_note_pending` is a doorbell, not a message: it carries no payload,
+     * and the note itself is fetched with an ordinary `chat.poll`. Keeping the
+     * payload empty is deliberate — an event is fire-and-forget with no id, no
+     * ack and no retry, so anything delivered only that way can be lost.
+     */
+    event: z.enum([
+      "shutting_down",
+      "patch_epoch_changed",
+      "lease_revoked",
+      "user_note_pending",
+    ]),
     payload: z.unknown().optional(),
   })
   .strict();
@@ -532,6 +545,73 @@ export interface BridgeMethodSpec {
   mutating: boolean;
 }
 
+// ---------------------------------------------------------------------------
+// In-Rack chat (RackMCP-Chat panel)
+// ---------------------------------------------------------------------------
+
+/**
+ * A note the user typed into the Chat module's panel.
+ *
+ * Nothing inside Rack can wake the assistant — the bridge is request/response
+ * with the server as the requester, and the server cannot push to its host
+ * either. So a note waits in the plugin until the assistant next calls a tool,
+ * and `seq` exists so a client can resume without re-reading what it has
+ * already seen.
+ */
+export const UserNote = z
+  .object({
+    seq: z.number().int().positive(),
+    text: z.string().min(1).max(2000),
+    /** hh:mm:ss local time, as it was shown on the panel. */
+    clock: z.string().max(16),
+  })
+  .strict();
+export type UserNote = z.infer<typeof UserNote>;
+
+export const ChatPollPayload = z
+  .object({
+    /** Return only notes newer than this. 0 asks for everything retained. */
+    sinceSeq: z.number().int().min(0).default(0),
+  })
+  .strict();
+
+export const ChatPollResult = z
+  .object({
+    notes: z.array(UserNote).max(32),
+    /** Highest sequence the plugin has ever issued, retained or not. */
+    lastSeq: z.number().int().min(0),
+    /**
+     * Notes dropped to stay inside the ring. Reported rather than hidden: a
+     * client that has been away long enough to miss notes should be able to
+     * say so instead of silently answering the wrong question.
+     */
+    dropped: z.number().int().min(0),
+  })
+  .strict();
+export type ChatPollResult = z.infer<typeof ChatPollResult>;
+
+export const ChatPostPayload = z
+  .object({
+    /** Shown in the panel as the assistant's reply. */
+    text: z.string().min(1).max(2000),
+    /**
+     * Mark every note up to here as delivered. The panel shows undelivered
+     * notes as pending, which is the honest UI for "the assistant has not had
+     * a turn yet".
+     */
+    ackThroughSeq: z.number().int().min(0).default(0),
+  })
+  .strict();
+
+export const ChatPostResult = z
+  .object({
+    seq: z.number().int().positive(),
+    /** How many pending notes this post marked delivered. */
+    acknowledged: z.number().int().min(0),
+  })
+  .strict();
+export type ChatPostResult = z.infer<typeof ChatPostResult>;
+
 export const BRIDGE_METHODS: Record<BridgeMethod, BridgeMethodSpec> = {
   "status.get": { request: EmptyObject, result: StatusResult, mutating: false },
   "lease.acquire": { request: LeaseAcquirePayload, result: LeaseAcquireResult, mutating: false },
@@ -552,6 +632,11 @@ export const BRIDGE_METHODS: Record<BridgeMethod, BridgeMethodSpec> = {
   "probe.list": { request: EmptyObject, result: ProbeListResult, mutating: false },
   "probe.read": { request: ProbeReadPayload, result: ProbeReading, mutating: false },
   "metrics.get": { request: EmptyObject, result: BridgeMetrics, mutating: false },
+  // Neither chat method touches the patch, so neither needs the writer lease:
+  // requiring it would mean the user could not leave a note while another
+  // client held the lease, which is exactly when they would most want to.
+  "chat.poll": { request: ChatPollPayload, result: ChatPollResult, mutating: false },
+  "chat.post": { request: ChatPostPayload, result: ChatPostResult, mutating: false },
 };
 
 // ---------------------------------------------------------------------------

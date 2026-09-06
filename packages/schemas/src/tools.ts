@@ -2,6 +2,8 @@ import { z } from "zod";
 import {
   BridgeMetrics,
   CatalogListResult,
+  ChatPollResult,
+  ChatPostResult,
   InspectModelResult,
   ProbeListResult,
   StatusResult,
@@ -113,6 +115,15 @@ export const GetRackStatusOutput = z
     status: StatusResult.nullable(),
     connected: z.boolean(),
     selectedInstanceId: Uuid.nullable(),
+    /**
+     * True when someone has typed a note into the RackMCP-Chat panel that has
+     * not been read yet.
+     *
+     * Reported here because nothing inside Rack can interrupt an assistant: the
+     * only way to find out is to be told on a call you were making anyway. Read
+     * them with read_user_notes.
+     */
+    userNotesPending: z.boolean(),
     server: z
       .object({
         serverVersion: z.string().max(64),
@@ -483,6 +494,25 @@ export const ReadProbeInput = z
   .strict();
 export const ReadProbeOutput = ProbeReading;
 
+export const ReadUserNotesInput = z
+  .object({
+    /** Return only notes newer than this; 0 asks for everything retained. */
+    sinceSeq: z.number().int().min(0).default(0),
+    ...ExpectedEpoch,
+  })
+  .strict();
+export const ReadUserNotesOutput = ChatPollResult;
+
+export const PostChatMessageInput = z
+  .object({
+    text: z.string().min(1).max(2000),
+    /** Highest note seq you have handled. 0 acknowledges nothing. */
+    ackThroughSeq: z.number().int().min(0).default(0),
+    ...ExpectedEpoch,
+  })
+  .strict();
+export const PostChatMessageOutput = ChatPostResult;
+
 export const DetachProbeInput = z
   .object({
     probeModuleId: DecimalId,
@@ -760,6 +790,33 @@ export const TOOLS: readonly ToolSpec[] = [
     input: ReadProbeInput,
     output: ReadProbeOutput,
     annotations: RO,
+  },
+  {
+    name: "read_user_notes",
+    title: "Read notes from the rack",
+    description:
+      "Read anything the person typed into the RackMCP-Chat module's panel since you last looked. " +
+      "Nothing inside Rack can interrupt you, so notes wait here until you ask; call this when you " +
+      "start a turn, or after a long operation, to see whether they said something while you worked. " +
+      "Notes are returned oldest first and are not removed by reading — acknowledge them by passing " +
+      "the highest seq you have handled to post_chat_message, which is what marks them delivered in " +
+      "the panel.",
+    input: ReadUserNotesInput,
+    output: ReadUserNotesOutput,
+    annotations: RO,
+  },
+  {
+    name: "post_chat_message",
+    title: "Reply into the rack",
+    description:
+      "Write a short message into the RackMCP-Chat panel, so the person sees your answer in Rack " +
+      "rather than only in the host application. Use it to answer a note, or to say what you just " +
+      "changed and how to undo it. Pass ackThroughSeq to mark their notes as delivered; a note that " +
+      "is never acknowledged keeps showing as pending, which is how the panel stays honest about " +
+      "whether you have actually seen it. This does not touch the patch and needs no writer lease.",
+    input: PostChatMessageInput,
+    output: PostChatMessageOutput,
+    annotations: MUT(false, false),
   },
   {
     name: "detach_probe",
