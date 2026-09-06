@@ -225,6 +225,24 @@ std::vector<int64_t> cablesOnPort(const PreviewState& st, int64_t moduleId,
 }
 
 /** Whether `box` is free of every module the plan leaves in place (except `self`). */
+/**
+ * Whether `box` is clear of every panel except `self`.
+ *
+ * Two details here resist being extracted into Rack-free code by module id,
+ * and both change behaviour if they are:
+ *
+ * - `self` is a WIDGET POINTER, compared by identity. It is not "the occupant
+ *   whose module id matches". A module-less widget can never equal a module
+ *   the caller named, and RackWidget::getModule(id) and getModules() are not
+ *   documented to agree, so an id-based `self` skips a different set.
+ * - A widget whose `->module` is NULL is still an obstacle. It is skipped by
+ *   the removal test and by the plannedBoxes substitution below, but it still
+ *   reaches the intersection check. A snapshot keyed by module id cannot
+ *   represent it at all.
+ *
+ * Whatever replaces this must carry a widget-identity token (an index into the
+ * occupant list, resolved rackside) and must keep id-less occupants.
+ */
 bool positionFree(const PreviewState& st, app::ModuleWidget* self, math::Rect box) {
     std::vector<app::ModuleWidget*> mws = APP->scene->rack->getModules();
     for (size_t i = 0; i < mws.size(); i++) {
@@ -528,6 +546,32 @@ TxnOutcome txnPreview(json_t* request) {
         return out;
     }
 
+    // Sampled BEFORE validation, deliberately.
+    //
+    // baseFingerprint is what the client hands back as expectedFingerprint, and
+    // txnCommit refuses to apply when it no longer matches the live patch. Taken
+    // AFTER the validation loop -- as it was -- the value does not cover the
+    // validation window itself: a mutation landing between the last validateOne
+    // and the sample yields a diff describing the patch as it WAS and a
+    // fingerprint describing the patch as it now IS, so the commit gate sees
+    // agreement and applies a plan validated against a patch that no longer
+    // exists. Sampling first inverts that: the fingerprint is then stale with
+    // respect to the mutation, the gate fires, and the client re-previews.
+    // Refusing is the correct outcome; committing quietly is not.
+    //
+    // Only a mutation from another thread can reach this window -- txnPreview
+    // runs on the UI thread inside one CommandPumpWidget::step(), so the user
+    // cannot act during it -- but engine::Engine's mutators are public and
+    // lock-protected rather than UI-thread-asserted, so a third-party module
+    // with a worker thread can. There is no test for this: reproducing it needs
+    // real concurrency against a running Rack, and the harness does not even
+    // step the engine. The ordering is the whole defence, hence this comment.
+    //
+    // The FAILURE is reported after the loop, so a plan that is both invalid and
+    // unfingerprintable still returns its validation error, exactly as before.
+    std::string baseFingerprint;
+    const bool fingerprintTaken = safeFingerprint(baseFingerprint);
+
     PreviewState st;
     ValidationError verr;
     size_t idx;
@@ -540,8 +584,7 @@ TxnOutcome txnPreview(json_t* request) {
         }
     }
 
-    std::string baseFingerprint;
-    if (!safeFingerprint(baseFingerprint)) {
+    if (!fingerprintTaken) {
         out.errorCode = "INTERNAL";
         out.errorMessage = "the patch fingerprint could not be computed";
         return out;
