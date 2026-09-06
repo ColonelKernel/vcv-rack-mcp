@@ -3,6 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { loadConfig } from "./config.js";
 import { createServer } from "./server.js";
 import { log } from "./logger.js";
+import { normalizeOmittedArguments } from "./transport-compat.js";
 
 /**
  * Entry point: launched by an MCP host over stdio. Never writes to stdout
@@ -28,6 +29,8 @@ async function main(): Promise<void> {
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
+  // After connect: that is when the protocol installs the handler this wraps.
+  normalizeOmittedArguments(transport);
   log.info("rack-mcp-server listening on stdio", {
     rackUserDir: config.rackUserDir,
   });

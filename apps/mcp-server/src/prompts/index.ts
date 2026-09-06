@@ -109,7 +109,10 @@ export function registerPrompts(server: McpServer): void {
     {
       title: "Explain signal flow",
       description: "Explain how the current patch works, in musical terms.",
-      argsSchema: {},
+      // No argsSchema at all, not an empty one: the SDK builds a Zod object
+      // from whatever shape it is given, and an empty object schema still
+      // rejects `undefined`. Omitting it makes the SDK skip argument
+      // validation, which is the right behaviour for a prompt that takes none.
     },
     () =>
       userMessage(
@@ -122,7 +125,7 @@ export function registerPrompts(server: McpServer): void {
     {
       title: "Prepare a live performance patch",
       description: "Make the current patch safe and robust for live performance.",
-      argsSchema: {},
+      // See explain_signal_flow: an empty argsSchema is not the same as none.
     },
     () =>
       userMessage(
