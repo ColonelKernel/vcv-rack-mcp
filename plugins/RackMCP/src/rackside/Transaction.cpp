@@ -16,6 +16,7 @@
 #include <jansson.h>
 
 #include "core/canonical.hpp"
+#include "core/layout.hpp"
 #include "core/frames.hpp"
 #include "rackside/RackBridge.hpp"
 #include "rackside/Snapshot.hpp"
@@ -94,19 +95,45 @@ static bool safeFingerprint(std::string& fingerprint) {
 // Grid <-> pixel conversion
 // ---------------------------------------------------------------------------
 
-static math::Vec gridToPixel(int gx, int gy) {
-    return math::Vec((gx + 2000) * RACK_GRID_WIDTH, (gy + 100) * RACK_GRID_HEIGHT);
+/**
+ * Rack's grid, handed to core/layout so no SDK constant is copied there.
+ *
+ * RACK_GRID_WIDTH is `static const float`, which C++11 cannot use in a
+ * constant expression, so a copy in core/ could not be static_assert-ed
+ * against it -- and a runtime or text check would have to live in tests/cpp,
+ * whose CI job never fetches the SDK and therefore could never fail. Passing
+ * the values means there is nothing to keep in sync.
+ */
+static layout::Grid rackGrid() {
+    return layout::Grid(RACK_GRID_WIDTH, RACK_GRID_HEIGHT);
 }
 
-/** Rightmost occupied pixel x, for automatic placement. */
+static layout::Box toBox(const math::Rect& r) {
+    return layout::Box(r.pos.x, r.pos.y, r.size.x, r.size.y);
+}
+
+static math::Vec gridToPixel(int gx, int gy) {
+    const layout::Point p = layout::gridToPixel(gx, gy, rackGrid());
+    return math::Vec(p.x, p.y);
+}
+
+/**
+ * Rightmost occupied pixel x, for automatic placement.
+ *
+ * Reads the panels fresh on every call, deliberately. applyAdd installs the
+ * new widget and only then asks where to put it, so this must see the rack as
+ * it is at that moment; reusing a snapshot taken during preview would place
+ * two auto-added modules at the same x, commit successfully, change the
+ * fingerprint and assert nothing.
+ */
 static float rightmostEdge() {
-    float maxX = gridToPixel(0, 0).x;
+    std::vector<layout::Occupant> occupants;
     for (int64_t id : APP->engine->getModuleIds()) {
         app::ModuleWidget* mw = APP->scene->rack->getModule(id);
         if (mw)
-            maxX = std::max(maxX, mw->box.pos.x + mw->box.size.x);
+            occupants.push_back(layout::Occupant(id, toBox(mw->box)));
     }
-    return maxX;
+    return layout::rightmostEdge(occupants, rackGrid());
 }
 
 // ---------------------------------------------------------------------------
@@ -228,42 +255,35 @@ std::vector<int64_t> cablesOnPort(const PreviewState& st, int64_t moduleId,
 /**
  * Whether `box` is clear of every panel except `self`.
  *
- * Two details here resist being extracted into Rack-free code by module id,
- * and both change behaviour if they are:
- *
- * - `self` is a WIDGET POINTER, compared by identity. It is not "the occupant
- *   whose module id matches". A module-less widget can never equal a module
- *   the caller named, and RackWidget::getModule(id) and getModules() are not
- *   documented to agree, so an id-based `self` skips a different set.
- * - A widget whose `->module` is NULL is still an obstacle. It is skipped by
- *   the removal test and by the plannedBoxes substitution below, but it still
- *   reaches the intersection check. A snapshot keyed by module id cannot
- *   represent it at all.
- *
- * Whatever replaces this must carry a widget-identity token (an index into the
- * occupant list, resolved rackside) and must keep id-less occupants.
+ * The judgement itself is layout::positionFree; this reads the rack for it.
+ * Two details are easy to lose in the translation and both change behaviour:
+ * `self` is exempt by widget IDENTITY, not by module id, and a widget whose
+ * `module` is NULL is still an obstacle even though it can never be removed or
+ * re-planned. Hence an index into the occupant list, and an occupant list that
+ * keeps id-less entries.
  */
 bool positionFree(const PreviewState& st, app::ModuleWidget* self, math::Rect box) {
     std::vector<app::ModuleWidget*> mws = APP->scene->rack->getModules();
+    std::vector<layout::Occupant> occupants;
+    size_t selfIndex = layout::kNoSelf;
     for (size_t i = 0; i < mws.size(); i++) {
         app::ModuleWidget* other = mws[i];
-        if (!other || other == self)
+        if (!other)
             continue;
-        if (other->module && st.moduleRemoved(other->module->id))
-            continue;
-        // Where an earlier operation in this plan already moved `other`, judge
-        // against that position rather than the one it still occupies live.
-        math::Rect otherBox = other->box;
-        if (other->module) {
-            std::map<int64_t, math::Rect>::const_iterator it =
-                st.plannedBoxes.find(other->module->id);
-            if (it != st.plannedBoxes.end())
-                otherBox = it->second;
-        }
-        if (box.isIntersecting(otherBox))
-            return false;
+        if (other == self)
+            selfIndex = occupants.size();
+        occupants.push_back(other->module
+                                ? layout::Occupant(other->module->id, toBox(other->box))
+                                : layout::Occupant(toBox(other->box)));
     }
-    return true;
+
+    layout::PlanLayout plan;
+    plan.removedModules = st.removedModules;
+    for (std::map<int64_t, math::Rect>::const_iterator it = st.plannedBoxes.begin();
+         it != st.plannedBoxes.end(); ++it)
+        plan.plannedBoxes[it->first] = toBox(it->second);
+
+    return layout::positionFree(occupants, selfIndex, toBox(box), plan);
 }
 
 bool validateOne(json_t* op, PreviewState& st, ValidationError& err) {
