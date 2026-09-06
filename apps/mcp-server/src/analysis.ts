@@ -323,26 +323,9 @@ type EntityRef =
  * Kept in lockstep with the `add(...)` calls below by a test that reads this
  * source file, so a new rule cannot ship without appearing here.
  */
-export const VALIDATION_RULES = [
-  "cable.dangling",
-  "port.out_of_bounds",
-  "cable.duplicate",
-  "inputs.stacked",
-  "module.collision",
-  "expander.adjacency",
-  "param.non_finite",
-  "param.out_of_range",
-  "param.outside_safe_range",
-  "bridge.missing",
-  "bypass.interrupts_path",
-  "cycle.feedback",
-  "adapter.signal_role_cross",
-  "adapter.pitch_gate_confusion",
-  "adapter.poly_into_mono",
-  "adapter.unverified_modules",
-  "audio.no_input",
-  "audio.no_destination",
-] as const;
+import { VALIDATION_RULES } from "@rackmcp/schemas";
+
+export { VALIDATION_RULES };
 
 export const validatePatch: ToolHandler = async (args, ctx) => {
   const snap = await snapshot(ctx, args.expectedPatchEpoch as number | undefined);

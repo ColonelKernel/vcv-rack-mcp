@@ -20,7 +20,7 @@ you bump anything.
 | Plugin version | `plugins/RackMCP/plugin.json` (`version`) | `2.0.0` | The Rack-facing plugin version. It names the `.vcvplugin` file and is what Rack (and the VCV Library) shows. | Every plugin release, following semver against the plugin's own behavior. |
 | Bridge protocol version | `packages/schemas/src/limits.ts` (`BRIDGE_PROTOCOL_VERSION`, `BRIDGE_PROTOCOL_MIN_SUPPORTED`) → generated into `plugins/RackMCP/src/gen/rackmcp_protocol_gen.hpp` | `1` (min supported `1`) | The wire contract negotiated over the loopback bridge. A single integer. | Only on a wire-incompatible change (see §6). |
 | Bridge service version | `plugins/RackMCP/src/rackmcp_plugin.hpp` (`RACKMCP_BRIDGE_VERSION`) | `0.1.0` | Informational build tag for the bridge service, reported in the `welcome` frame and the discovery manifest. Not used for compatibility gating. | At your discretion, per bridge-service change. |
-| npm package versions | root `package.json` and each `apps/*` / `packages/*` `package.json` | `0.1.0` | Workspace versions: `rack-mcp` (root, private), `@rackmcp/mcp-server`, `@rackmcp/schemas`, `@rackmcp/protocol`, `@rackmcp/adapters`, `@rackmcp/recipes`. All private (not published to npm). The server bundle stamps `@rackmcp/mcp-server`'s version into `process.env.RACKMCP_SERVER_VERSION` at bundle time. | Per server/package release, following semver. |
+| npm package versions | root `package.json` and each `apps/*` / `packages/*` `package.json` | `0.1.0` | Workspace versions: `rack-mcp` (root, private), `@rackmcp/mcp-server`, `@rackmcp/schemas`, `@rackmcp/protocol`, `@rackmcp/adapters`, `@rackmcp/recipes`. All private (not published to npm). `@rackmcp/mcp-server`'s version is generated into `apps/mcp-server/src/version.ts` by `scripts/gen-version.ts` and verified by `check:gen`, so the reported version cannot drift from the package. | Per server/package release, following semver. |
 
 Key point: the **plugin version** (`2.0.0`) and the **bridge protocol version**
 (`1`) are unrelated. You can ship many plugin releases without ever touching the
@@ -254,9 +254,12 @@ cp <previous>/rackwright.md       ./rackwright.md
 ```
 
 Keep the previous release's bundle set archived precisely so a rollback is a file
-copy, never a rebuild. The running server reports its version via
-`process.env.RACKMCP_SERVER_VERSION` (stamped at bundle time), so you can confirm
-which bundle is live.
+copy, never a rebuild.
+
+To confirm which bundle is live, call `get_rack_status` and read `serverVersion`.
+That is a live check against the process the host actually launched, which is the
+thing in doubt during a rollback — a file's contents on disk are not evidence that
+the host restarted and picked it up.
 
 ### Recovering patches after a rollback
 

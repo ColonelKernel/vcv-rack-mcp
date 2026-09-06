@@ -21,7 +21,7 @@ has no implementation behind it and no stated reason for standing alone.
 | tool | 29 |
 | **total** | **439** |
 
-Scanned across 12 source roots and 123 files,
+Scanned across 12 source roots and 125 files,
 plus 24 documentation files and 110 distinct JSON keys
 emitted by the plugin.
 

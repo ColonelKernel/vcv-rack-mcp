@@ -10,7 +10,9 @@ import { bindServerConfig, buildToolTable, RESULT_LIMIT_BYTES, type ToolContext 
 import { registerPrompts } from "./prompts/index.js";
 import { registerResources } from "./resources.js";
 
-export const SERVER_VERSION = "0.1.0";
+import { SERVER_VERSION } from "./version.js";
+
+export { SERVER_VERSION };
 
 /**
  * Builds the MCP server, registering all tools with strict input schemas,

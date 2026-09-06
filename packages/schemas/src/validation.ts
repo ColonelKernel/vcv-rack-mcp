@@ -25,10 +25,45 @@ export const EntityRef = z.discriminatedUnion("kind", [
 ]);
 export type EntityRef = z.infer<typeof EntityRef>;
 
+/**
+ * Every rule `validate_patch` can report, as a closed set.
+ *
+ * Published so a client can enumerate what was checked. That matters more here
+ * than in most registries: a finding-free result means "none of these fired",
+ * not "the patch is correct", and several rules stay silent on modules with no
+ * adapter. A client that cannot see the list cannot tell those apart.
+ *
+ * Kept in lockstep with the implementation by a test in the server package that
+ * reads analysis.ts and compares the `add(...)` calls against this list.
+ */
+export const VALIDATION_RULES = [
+  "cable.dangling",
+  "port.out_of_bounds",
+  "cable.duplicate",
+  "inputs.stacked",
+  "module.collision",
+  "expander.adjacency",
+  "param.non_finite",
+  "param.out_of_range",
+  "param.outside_safe_range",
+  "bridge.missing",
+  "bypass.interrupts_path",
+  "cycle.feedback",
+  "adapter.signal_role_cross",
+  "adapter.pitch_gate_confusion",
+  "adapter.poly_into_mono",
+  "adapter.unverified_modules",
+  "audio.no_input",
+  "audio.no_destination",
+] as const;
+
+export const ValidationRuleId = z.enum(VALIDATION_RULES);
+export type ValidationRuleId = z.infer<typeof ValidationRuleId>;
+
 export const ValidationFinding = z
   .object({
     /** Stable rule id, e.g. "structural.port_index_bounds". Never renamed. */
-    ruleId: z.string().regex(/^[a-z0-9_.]+$/).max(128),
+    ruleId: ValidationRuleId,
     severity: Severity,
     confidence: Confidence,
     entities: z.array(EntityRef).max(64),

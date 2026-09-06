@@ -35,7 +35,6 @@ const result = await build({
   legalComments: "none",
   logLevel: "info",
   metafile: true,
-  define: { "process.env.RACKMCP_SERVER_VERSION": JSON.stringify(pkg.version) },
 });
 
 // The Rackwright identity is read at runtime from a sibling of the entry module.

@@ -11,9 +11,9 @@
   "scripts": {
     "build": "pnpm -r run build",
     "test": "pnpm -r run test",
-    "gen": "tsx scripts/gen-schemas.ts && tsx scripts/gen-cpp.ts && tsx scripts/gen-census.ts",
+    "gen": "tsx scripts/gen-version.ts && tsx scripts/gen-schemas.ts && tsx scripts/gen-cpp.ts && tsx scripts/gen-census.ts",
     "docs:tools": "tsx scripts/gen-tool-reference.ts",
-    "check:gen": "tsx scripts/gen-schemas.ts && tsx scripts/gen-cpp.ts && tsx scripts/gen-census.ts && git diff --exit-code -- packages/schemas/json plugins/RackMCP/src/gen docs/architecture/contract-census.md",
+    "check:gen": "tsx scripts/gen-version.ts && tsx scripts/gen-schemas.ts && tsx scripts/gen-cpp.ts && tsx scripts/gen-census.ts && git diff --exit-code -- apps/mcp-server/src/version.ts packages/schemas/json plugins/RackMCP/src/gen docs/architecture/contract-census.md",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

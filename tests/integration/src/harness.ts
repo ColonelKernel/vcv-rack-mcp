@@ -5,6 +5,22 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { scanInstances, type DiscoveredInstance } from "@rackmcp/protocol";
 
+/**
+ * The plugin version the harness writes into its synthetic autosave patch.
+ * Read from plugin.json rather than written out again: Rack refuses to load a
+ * module whose recorded version does not match the installed plugin, so a
+ * hardcoded copy would turn a version bump into a confusing load failure.
+ */
+const PLUGIN_VERSION: string = (
+  JSON.parse(
+    readFileSync(
+      join(fileURLToPath(new URL("../../../", import.meta.url)), "plugins/RackMCP/plugin.json"),
+      "utf8",
+    ),
+  ) as { version: string }
+).version;
+
+
 const REPO_ROOT = resolve(fileURLToPath(import.meta.url), "../../../..");
 
 export const RACK_APP = "/Applications/VCV Rack 2 Pro.app/Contents/MacOS/Rack";
@@ -88,7 +104,7 @@ export class RackHarness {
         id: 1,
         plugin: "RackMCP",
         model: "Bridge",
-        version: "2.0.0",
+        version: PLUGIN_VERSION,
         params: [{ id: 0, value: 0.0 }],
         pos: [0, 0],
       },

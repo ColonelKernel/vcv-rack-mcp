@@ -6,8 +6,26 @@
   "properties": {
     "ruleId": {
       "type": "string",
-      "maxLength": 128,
-      "pattern": "^[a-z0-9_.]+$"
+      "enum": [
+        "cable.dangling",
+        "port.out_of_bounds",
+        "cable.duplicate",
+        "inputs.stacked",
+        "module.collision",
+        "expander.adjacency",
+        "param.non_finite",
+        "param.out_of_range",
+        "param.outside_safe_range",
+        "bridge.missing",
+        "bypass.interrupts_path",
+        "cycle.feedback",
+        "adapter.signal_role_cross",
+        "adapter.pitch_gate_confusion",
+        "adapter.poly_into_mono",
+        "adapter.unverified_modules",
+        "audio.no_input",
+        "audio.no_destination"
+      ]
     },
     "severity": {
       "type": "string",
