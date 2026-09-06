@@ -7,6 +7,7 @@
 // A builder never returns a non-empty string that is not valid JSON, and
 // callers must never put an empty string on the wire (a 0-length frame makes
 // the client tear the session down).
+#include <cstddef>
 #include <cstdint>
 #include <string>
 

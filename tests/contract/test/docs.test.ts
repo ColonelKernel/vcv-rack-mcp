@@ -13,6 +13,7 @@ import {
   trackedPaths,
 } from "../src/docs.js";
 import { REPO_ROOT } from "../src/sources.js";
+import { INCLUDE_RULES, loadCoreUnits, missingIncludes } from "../src/cppincludes.js";
 
 suite("documentation referents", () => {
   test("the scanner reads the documentation set", () => {
@@ -119,5 +120,33 @@ suite("the ignore check does not depend on what happens to be on disk", () => {
     // Same question asked of the real tree, where the directories DO exist.
     // Both answers must be "ignored"; before the fix they differed.
     expect(gitIgnored(REPO_ROOT, ["vendor/Rack-SDK"]).has("vendor/Rack-SDK")).toBe(true);
+  });
+});
+
+suite("core/ standard includes", () => {
+  test("every standard type used in core/ is explicitly included", () => {
+    // See src/cppincludes.ts: this is the check that would have caught
+    // core/layout.hpp using int64_t with no <cstdint>, which built on macOS
+    // and broke the ubuntu and windows jobs.
+    expect(
+      missingIncludes().map((m) => `${m.path} uses ${m.what} without <${m.header}>`),
+      "a core/ file relies on a standard header arriving transitively, which libc++ does and libstdc++ does not",
+    ).toEqual([]);
+  });
+
+  test("the rules actually match the code they are about", () => {
+    // A rule whose pattern matches nothing in the tree is not protecting
+    // anything, and would not be noticed: the suite above passes either way.
+    // This does not require every rule to fire -- some are there for types the
+    // repo has not used yet -- but it does require the load-bearing ones to.
+    const units = loadCoreUnits();
+    for (const header of ["cstdint", "size_t", "std::string", "std::vector"]) {
+      const rule = INCLUDE_RULES.find((r) => r.header === header || r.what.includes(header));
+      expect(rule, `no rule covers ${header}`).toBeDefined();
+      expect(
+        units.some((u) => rule!.pattern.test(u.body)),
+        `no core/ file uses ${rule!.what}, so that rule is vacuous`,
+      ).toBe(true);
+    }
   });
 });

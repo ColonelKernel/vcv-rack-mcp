@@ -14,6 +14,7 @@
 // never fetches the SDK and so could never fail. Rather than guard a copy that
 // cannot be guarded, there is no copy: rackside passes Rack's own values in.
 #include <cstddef>
+#include <cstdint>
 #include <map>
 #include <vector>
 

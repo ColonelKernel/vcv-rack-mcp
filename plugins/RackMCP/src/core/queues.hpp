@@ -5,6 +5,7 @@
 //   and the UI command pump. Never used from Module::process().
 // - TelemetrySnapshotBuffer<T>: lock-free single-writer / multi-reader
 //   double buffer (seqlock) for POD telemetry snapshots published by DSP.
+#include <cstddef>
 #include <condition_variable>
 #include <cstdint>
 #include <deque>

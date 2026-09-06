@@ -7,6 +7,7 @@
 // protocol path is unit tested out of tree. Network threads never touch Rack:
 // they authenticate, parse, validate, enqueue commands, and write completed
 // responses (spec section 4).
+#include <cstddef>
 #include <atomic>
 #include <cstdint>
 #include <map>

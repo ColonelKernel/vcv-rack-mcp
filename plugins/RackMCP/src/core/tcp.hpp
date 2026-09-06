@@ -2,6 +2,7 @@
 // Minimal cross-platform loopback TCP. Binds only to 127.0.0.1 by design;
 // there is deliberately no way to bind any other interface.
 // No Rack dependencies; C++11; unit tested out of tree.
+#include <cstddef>
 #include <cstdint>
 #include <string>
 

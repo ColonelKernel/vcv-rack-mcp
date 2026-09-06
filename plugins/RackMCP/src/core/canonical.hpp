@@ -3,6 +3,7 @@
 // Canonical form: UTF-8, objects with keys sorted bytewise, arrays in place,
 // compact separators, reals encoded with 17 significant digits.
 // No Rack dependencies (jansson only); C++11; unit tested out of tree.
+#include <cstddef>
 #include <string>
 
 typedef struct json_t json_t;
