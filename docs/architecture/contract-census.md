@@ -18,9 +18,9 @@ has no implementation behind it and no stated reason for standing alone.
 | prompt | 5 |
 | resource | 6 |
 | risk_flag | 13 |
-| schema_property | 319 |
-| tool | 31 |
-| **total** | **457** |
+| schema_property | 320 |
+| tool | 32 |
+| **total** | **459** |
 
 Scanned across 12 source roots and 142 files,
 plus 24 documentation files and 111 distinct JSON keys

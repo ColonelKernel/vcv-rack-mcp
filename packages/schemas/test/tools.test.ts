@@ -22,6 +22,7 @@ const SPEC_TOOLS = [
   "commit_patch_transaction",
   "undo_last_mcp_transaction",
   "build_patch",
+  "build_recipe",
   // Patch files and recovery
   "list_patch_files",
   "create_checkpoint",

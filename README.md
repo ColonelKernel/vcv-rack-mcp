@@ -77,7 +77,7 @@ bridge. The **MCP Bridge** panel on the left shows the connection state
 | `packages/recipes` | 8 versioned high-level patch recipes | MIT |
 | `packages/test-client` | Scriptable MCP test client | MIT |
 
-The MCP surface is **31 tools**, **6 resources** (`rack://…`), and **5 prompts**.
+The MCP surface is **32 tools**, **6 resources** (`rack://…`), and **5 prompts**.
 See [the licensing note](docs/security/licensing.md) for why the plugin is
 GPL-3.0-or-later while the server and packages are MIT.
 

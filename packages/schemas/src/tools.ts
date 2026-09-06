@@ -15,6 +15,7 @@ import { LIMITS } from "./limits.js";
 import { PatchOperation } from "./operations.js";
 import { DecimalId, HexHash, PatchEpoch, PortRef, SmallIndex, Uuid } from "./refs.js";
 import { ModuleSnapshot, ParamSnapshot, PatchSnapshot } from "./snapshot.js";
+import { RecipeResolution } from "./recipes.js";
 import { ProbeReading } from "./telemetry.js";
 import { ValidationReport } from "./validation.js";
 
@@ -287,6 +288,43 @@ export const BuildPatchOutput = z
     phase: z.enum(["previewed", "committed"]),
     preview: TxnPreviewResult,
     confirmation: ConfirmationInfo,
+    commit: TxnCommitResult.optional(),
+  })
+  .strict();
+
+export const BuildRecipeInput = z
+  .object({
+    /** An id from `rack://recipes`. */
+    recipeId: z.string().min(1).max(64),
+    /** Defaults to the recipe's own name, so the undo entry reads sensibly. */
+    label: z.string().min(1).max(128).optional(),
+    autoCommit: z.boolean().default(true),
+    operationId: Uuid,
+    ...ExpectedEpoch,
+  })
+  .strict();
+export const BuildRecipeOutput = z
+  .object({
+    /**
+     * `unresolved` is a successful answer, not a failure: the recipe named a
+     * module this Rack does not have, and `resolution.unresolvedRoles` says
+     * which. Nothing was previewed and nothing was changed.
+     */
+    phase: z.enum(["unresolved", "previewed", "committed"]),
+    recipeId: z.string().max(64),
+    resolution: RecipeResolution,
+    /**
+     * False when the installed-model scan hit its page bound.
+     *
+     * This qualifies `unresolved` and nothing else. The catalog is ordered by
+     * plugin then model slug, so a truncated scan cuts the alphabet: a role
+     * whose module sorts past the cut is reported missing on a machine where
+     * it is installed. A client must not tell the user to install something on
+     * the strength of an incomplete scan.
+     */
+    catalogComplete: z.boolean(),
+    preview: TxnPreviewResult.optional(),
+    confirmation: ConfirmationInfo.optional(),
     commit: TxnCommitResult.optional(),
   })
   .strict();
@@ -681,6 +719,15 @@ export const TOOLS: readonly ToolSpec[] = [
       "High-level convenience: preview a structured operation graph and, when no confirmation is required, commit it in one call. Never bypasses validation or confirmation; risky plans return a token instead of committing.",
     input: BuildPatchInput,
     output: BuildPatchOutput,
+    annotations: MUT(true, true),
+  },
+  {
+    name: "build_recipe",
+    title: "Build recipe",
+    description:
+      "Build a patch from a recipe in the recipe library: resolve its functional roles against the installed models, expand them into operations, preview, and commit when no confirmation is required. Reports unresolved roles instead of substituting a different module, because expansion keeps the port and parameter ids chosen for the preferred model.",
+    input: BuildRecipeInput,
+    output: BuildRecipeOutput,
     annotations: MUT(true, true),
   },
   {

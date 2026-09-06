@@ -31,6 +31,7 @@ export const VALID_TOOL_INPUTS: Record<string, object> = {
   commit_patch_transaction: { operationId: UUID, planHash: HASH, expectedFingerprint: HASH },
   undo_last_mcp_transaction: { operationId: UUID },
   build_patch: { label: "Add oscillator", operations: [ADD_MODULE_SAMPLE], operationId: UUID },
+  build_recipe: { recipeId: "basic_mono_subtractive", operationId: UUID },
   list_patch_files: {},
   create_checkpoint: { operationId: UUID },
   save_patch: { operationId: UUID },

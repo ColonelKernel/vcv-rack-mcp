@@ -6,6 +6,8 @@ import { ToolError } from "./errors.js";
 import { randomUUID } from "node:crypto";
 import { TransactionManager } from "./transactions.js";
 import { listInstanceSummaries, mapStatus } from "./projections.js";
+import { getRecipe, resolveRecipe, expandRecipeOperations } from "@rackmcp/recipes";
+import { scanInstalledModels } from "./resources.js";
 
 /** Everything a tool handler needs. */
 export interface ToolContext {
@@ -205,26 +207,100 @@ const commitPatchTransaction: ToolHandler = async (args, ctx) => {
   });
 };
 
-const buildPatch: ToolHandler = async (args, ctx) => {
-  const instance = await ctx.conn.ensureConnected();
-  const { preview, confirmation } = await ctx.txns.preview(
-    args.label as string,
-    args.operations as unknown[],
-    instance,
-    { patchEpoch: args.expectedPatchEpoch as number | undefined },
-  );
-  const autoCommit = (args.autoCommit as boolean | undefined) ?? true;
+/**
+ * Preview a plan and commit it when nothing needs confirming.
+ *
+ * Shared by build_patch and build_recipe so the two cannot drift on the one
+ * decision that matters here -- whether to commit without asking. Two copies of
+ * this would be two places to get the confirmation gate wrong.
+ */
+async function previewAndMaybeCommit(
+  ctx: ToolContext,
+  instance: Awaited<ReturnType<ConnectionManager["ensureConnected"]>>,
+  label: string,
+  operations: unknown[],
+  opts: { autoCommit: boolean; operationId: string; expectedPatchEpoch: number | undefined },
+): Promise<{
+  phase: "previewed" | "committed";
+  preview: Awaited<ReturnType<TransactionManager["preview"]>>["preview"];
+  confirmation: Awaited<ReturnType<TransactionManager["preview"]>>["confirmation"];
+  commit?: Awaited<ReturnType<TransactionManager["commit"]>>;
+}> {
+  const { preview, confirmation } = await ctx.txns.preview(label, operations, instance, {
+    patchEpoch: opts.expectedPatchEpoch,
+  });
   // Never bypass confirmation: risky plans stop at the preview with a token.
-  if (!autoCommit || confirmation.confirmationRequired) {
+  if (!opts.autoCommit || confirmation.confirmationRequired) {
     return { phase: "previewed" as const, preview, confirmation };
   }
   const commit = await ctx.txns.commit({
-    operationId: args.operationId as string,
+    operationId: opts.operationId,
     planHash: preview.planHash,
     expectedFingerprint: preview.baseFingerprint,
     instance,
   });
   return { phase: "committed" as const, preview, confirmation, commit };
+}
+
+const buildPatch: ToolHandler = async (args, ctx) => {
+  const instance = await ctx.conn.ensureConnected();
+  return previewAndMaybeCommit(ctx, instance, args.label as string, args.operations as unknown[], {
+    autoCommit: (args.autoCommit as boolean | undefined) ?? true,
+    operationId: args.operationId as string,
+    expectedPatchEpoch: args.expectedPatchEpoch as number | undefined,
+  });
+};
+
+/**
+ * Build a patch from the recipe library.
+ *
+ * Until this existed, `packages/recipes` could only be READ: `rack://recipes`
+ * published the recipes and their resolutions, and a client wanting to build
+ * one had to reconstruct the operations itself from the published template --
+ * re-implementing role substitution, and getting no benefit from the
+ * expansion the package already does correctly.
+ */
+const buildRecipe: ToolHandler = async (args, ctx) => {
+  const recipeId = args.recipeId as string;
+  const recipe = getRecipe(recipeId);
+  if (!recipe) {
+    throw new ToolError(
+      "BAD_REQUEST",
+      `no recipe with id "${recipeId}"; see rack://recipes for the available ids`,
+      true,
+    );
+  }
+
+  const instance = await ctx.conn.ensureConnected();
+  const scan = await scanInstalledModels(ctx.conn);
+  const resolution = resolveRecipe(recipe, scan.models);
+
+  // An unresolved recipe is an answer, not an error: it names what is missing.
+  // Substitution is deliberately not attempted -- expansion rewrites the
+  // add_module slugs but keeps the port and parameter ids chosen for the
+  // preferred model, so a swapped-in module would build without error and be
+  // wired wrong.
+  if (!resolution.resolved) {
+    return {
+      phase: "unresolved" as const,
+      recipeId,
+      resolution,
+      catalogComplete: scan.complete,
+    };
+  }
+
+  const result = await previewAndMaybeCommit(
+    ctx,
+    instance,
+    (args.label as string | undefined) ?? recipe.name,
+    expandRecipeOperations(recipe, resolution),
+    {
+      autoCommit: (args.autoCommit as boolean | undefined) ?? true,
+      operationId: args.operationId as string,
+      expectedPatchEpoch: args.expectedPatchEpoch as number | undefined,
+    },
+  );
+  return { ...result, recipeId, resolution, catalogComplete: scan.complete };
 };
 
 const undoLastMcpTransaction: ToolHandler = async (args, ctx) => {
@@ -269,6 +345,7 @@ const HANDLERS: Record<string, ToolHandler> = {
   commit_patch_transaction: commitPatchTransaction,
   undo_last_mcp_transaction: undoLastMcpTransaction,
   build_patch: buildPatch,
+  build_recipe: buildRecipe,
   list_patch_files: listPatchFiles,
   create_checkpoint: createCheckpoint,
   save_patch: savePatch,

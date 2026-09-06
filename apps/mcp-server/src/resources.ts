@@ -36,7 +36,7 @@ interface ModelsPage {
   nextCursor: string | null;
 }
 
-interface CatalogScan {
+export interface CatalogScan {
   models: InstalledModel[];
   /** False when paging stopped with a live cursor still outstanding. */
   complete: boolean;
@@ -53,7 +53,7 @@ interface CatalogScan {
  * as "not installed" on a machine where it is installed. The caller needs to
  * know the scan was truncated before it trusts an unresolved role.
  */
-async function scanInstalledModels(conn: ConnectionManager): Promise<CatalogScan> {
+export async function scanInstalledModels(conn: ConnectionManager): Promise<CatalogScan> {
   const models: InstalledModel[] = [];
   let cursor: string | null = null;
   let totalModels: number | null = null;

@@ -3,7 +3,7 @@
 > Generated from the canonical tool schemas (`packages/schemas/json/tools.schema.json`) by
 > `scripts/gen-tool-reference.ts`. Do not edit by hand — re-run the generator.
 
-Rack MCP exposes **31 tools**. Every tool has a strict input
+Rack MCP exposes **32 tools**. Every tool has a strict input
 schema and structured output. Destructive tools mutate the patch and require a valid,
 preview-bound confirmation (see the transaction model). Read-only tools never mutate Rack
 state. All 64-bit Rack ids cross the boundary as decimal strings.
@@ -569,6 +569,30 @@ Disconnect a Probe input's cable(s). The Probe module itself is left in place.
 - `replayed`: boolean
 
 ## Other
+
+### `build_recipe`
+
+*Build recipe* — **mutating** · **destructive** (needs confirmation) · idempotent
+
+Build a patch from a recipe in the recipe library: resolve its functional roles against the installed models, expand them into operations, preview, and commit when no confirmation is required. Reports unresolved roles instead of substituting a different module, because expansion keeps the port and parameter ids chosen for the preferred model.
+
+**Input**
+
+- `recipeId`: string _(min length 1, max length 64)_ _(required)_
+- `label`: string _(min length 1, max length 128)_ _(optional)_
+- `autoCommit`: boolean _(optional)_
+- `operationId`: string (uuid) _(required)_
+- `expectedPatchEpoch`: integer _(≥ 1, ≤ 9007199254740991)_ _(optional)_
+
+**Output**
+
+- `phase`: "unresolved" | "previewed" | "committed"
+- `recipeId`: string _(max length 64)_
+- `resolution`: object
+- `catalogComplete`: boolean
+- `preview`: object
+- `confirmation`: object
+- `commit`: object
 
 ### `read_user_notes`
 
