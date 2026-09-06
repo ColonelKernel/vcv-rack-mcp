@@ -171,7 +171,7 @@ void BridgeServer::readerLoop(std::shared_ptr<Session> session) {
     if (session->authed.load())
         authedSessions_.fetch_sub(1);
     leases_.onDisconnect(session->id);
-    leaseHeldHint_.store(leases_.holder(steadyNowMs()).held);
+    refreshLeaseHint();
     // Let the writer flush any final frames (e.g. an auth error) before the
     // socket is torn down; the writer exits once the queue is closed and empty.
     session->outbound.close();
@@ -467,7 +467,7 @@ void BridgeServer::handleLeaseRequest(Session& session, const std::string& id,
         enqueueOutbound(session, buildResError(id, "UNSUPPORTED_OPERATION", "unknown lease method",
                                                false, false));
     }
-    leaseHeldHint_.store(leases_.holder(steadyNowMs()).held);
+    refreshLeaseHint();
 }
 
 // ---------------------------------------------------------------------------

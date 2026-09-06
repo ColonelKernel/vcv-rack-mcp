@@ -4275,6 +4275,10 @@
               }
             ]
           },
+          "path": {
+            "type": "string",
+            "maxLength": 4096
+          },
           "saved": {
             "type": "boolean"
           },
@@ -4297,6 +4301,7 @@
           "fingerprint",
           "patchEpoch",
           "patchName",
+          "path",
           "saved",
           "bridgeModulePresent",
           "warnings",
@@ -4379,6 +4384,10 @@
               }
             ]
           },
+          "path": {
+            "type": "string",
+            "maxLength": 4096
+          },
           "saved": {
             "type": "boolean"
           },
@@ -4401,6 +4410,7 @@
           "fingerprint",
           "patchEpoch",
           "patchName",
+          "path",
           "saved",
           "bridgeModulePresent",
           "warnings",
@@ -4487,6 +4497,10 @@
               }
             ]
           },
+          "path": {
+            "type": "string",
+            "maxLength": 4096
+          },
           "saved": {
             "type": "boolean"
           },
@@ -4509,6 +4523,7 @@
           "fingerprint",
           "patchEpoch",
           "patchName",
+          "path",
           "saved",
           "bridgeModulePresent",
           "warnings",
@@ -4585,6 +4600,10 @@
               }
             ]
           },
+          "path": {
+            "type": "string",
+            "maxLength": 4096
+          },
           "saved": {
             "type": "boolean"
           },
@@ -4607,6 +4626,7 @@
           "fingerprint",
           "patchEpoch",
           "patchName",
+          "path",
           "saved",
           "bridgeModulePresent",
           "warnings",

@@ -16,6 +16,7 @@
 #include <thread>
 #include <vector>
 
+#include "core/frames.hpp"
 #include "core/lease.hpp"
 #include "core/queues.hpp"
 #include "core/tcp.hpp"
@@ -154,6 +155,22 @@ public:
     /** Lock-free hints for DSP-side status lights. */
     int activeSessions() const { return authedSessions_.load(); }
     bool leaseHeldHint() const { return leaseHeldHint_.load(); }
+
+    /**
+     * Recomputes the lease hint. Must be called periodically from the UI
+     * thread, not only on lease traffic.
+     *
+     * A lease also ends by simply timing out, and nothing sends a message when
+     * that happens: a client that acquires the lease and then goes idle without
+     * releasing it leaves the hint stuck true until its next lease request or
+     * its disconnect. The Bridge panel's LEASE light would then claim a writer
+     * holds the lease for as long as that client stayed connected -- while the
+     * panel's own text, which reads leases().holder() live, said otherwise.
+     *
+     * It cannot be computed on demand where it is read: leaseHeldHint() is
+     * called from Module::process(), and holder() takes a mutex.
+     */
+    void refreshLeaseHint() { leaseHeldHint_.store(leases_.holder(steadyNowMs()).held); }
 
     LeaseManager& leases() { return leases_; }
     ServiceCounters& counters() { return counters_; }

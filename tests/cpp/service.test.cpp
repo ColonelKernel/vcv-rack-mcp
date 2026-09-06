@@ -672,3 +672,46 @@ TEST_CASE("stop() flushes queued frames before closing the socket") {
     json_decref(evt);
     delete h;
 }
+
+/**
+ * A writer lease also ends by timing out, and nothing sends a message when it
+ * does. The DSP-side hint behind the Bridge panel's LEASE light was only
+ * recomputed on lease traffic and on disconnect, so a client that acquired the
+ * lease and then sat idle left the light asserting a writer held the lease for
+ * as long as it stayed connected -- contradicting the panel's own text, which
+ * reads holder() live on the UI thread.
+ */
+TEST_CASE("lease hint stops claiming a holder once the lease has timed out") {
+    BridgeServer server;
+    int64_t now = steadyNowMs();
+    std::string leaseId;
+    REQUIRE(server.leases().acquire(1, "test-client", now, 50, leaseId) ==
+            LeaseManager::AcquireResult::Ok);
+
+    server.refreshLeaseHint();
+    CHECK(server.leaseHeldHint() == true);
+    CHECK(server.leases().holder(steadyNowMs()).held == true);
+
+    // Let the TTL lapse with no traffic at all: no release, no renew, no
+    // disconnect -- exactly the case that had no code path to react to it.
+    std::this_thread::sleep_for(std::chrono::milliseconds(80));
+
+    // The truth has already changed...
+    CHECK(server.leases().holder(steadyNowMs()).held == false);
+    // ...and before the periodic refresh existed, the hint had not.
+    server.refreshLeaseHint();
+    CHECK(server.leaseHeldHint() == false);
+}
+
+TEST_CASE("lease hint follows an ordinary acquire and release") {
+    BridgeServer server;
+    CHECK(server.leaseHeldHint() == false);
+    std::string leaseId;
+    REQUIRE(server.leases().acquire(7, "test-client", steadyNowMs(), 60000, leaseId) ==
+            LeaseManager::AcquireResult::Ok);
+    server.refreshLeaseHint();
+    CHECK(server.leaseHeldHint() == true);
+    CHECK(server.leases().release(7, leaseId) == true);
+    server.refreshLeaseHint();
+    CHECK(server.leaseHeldHint() == false);
+}

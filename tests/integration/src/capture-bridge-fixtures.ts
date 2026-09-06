@@ -94,8 +94,28 @@ function compareShapes(a: Shape, b: Shape, path: string, diffs: string[], notes:
 const captured = new Set<string>();
 const coverageNotes: string[] = [];
 
-function save(method: string, payload: unknown): void {
+/**
+ * Replaces this run's throwaway Rack user dir with a stable placeholder.
+ *
+ * These fixtures are committed to a public repository, and patchfile results
+ * carry real absolute paths. On macOS the harness dir sits under
+ * /var/folders/<hash>/T/, where the hash is derived from the user account --
+ * nothing anyone needs, and not ours to publish. The schemas check the shape of
+ * a path, not its value, so a placeholder tests exactly as well.
+ */
+function redactPaths(payload: unknown): unknown {
+  const roots = [harness.userDir, scratch].filter((r) => r && r.length > 1);
+  if (roots.length === 0) return payload;
+  let text = JSON.stringify(payload);
+  for (const root of roots) {
+    text = text.split(JSON.stringify(root).slice(1, -1)).join("<RACK_USER_DIR>");
+  }
+  return JSON.parse(text);
+}
+
+function save(method: string, rawPayload: unknown): void {
   captured.add(method);
+  const payload = redactPaths(rawPayload);
   const file = join(FIXTURE_DIR, `${method}.json`);
   if (!VERIFY) {
     writeFileSync(file, JSON.stringify(payload, null, 2) + "\n");

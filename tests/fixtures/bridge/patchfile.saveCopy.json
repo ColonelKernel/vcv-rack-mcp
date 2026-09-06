@@ -1,8 +1,9 @@
 {
-  "fingerprint": "49017eb8d1364719c0af52d0d0f6d2062df0140966ce6e2bd0e3fe34ba332a80",
+  "fingerprint": "de76debd0de3859ad0c55540d8f01f4e4429380d387e8770d6c2d482875d9022",
   "patchEpoch": 1,
   "patchName": null,
   "saved": false,
+  "path": "",
   "bridgeModulePresent": true,
   "warnings": [],
   "replayed": false

@@ -332,7 +332,12 @@ export const SavePatchInput = z
   .strict();
 export const SavePatchOutput = z
   .object({
-    path: z.string().max(4096),
+    /**
+     * Where the patch was written. Never empty: `save_patch` with no `path`
+     * saves where the patch already lives, and a save with no current path is
+     * refused plugin-side (PATH_NOT_ALLOWED) rather than succeeding namelessly.
+     */
+    path: z.string().min(1).max(4096),
     fingerprint: HexHash,
     saved: z.literal(true),
     bridgeModulePresent: z.boolean(),

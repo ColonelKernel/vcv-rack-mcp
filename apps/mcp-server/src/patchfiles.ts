@@ -2,6 +2,7 @@ import { readdirSync, statSync } from "node:fs";
 import { basename, join } from "node:path";
 import { platform } from "node:os";
 import { randomUUID } from "node:crypto";
+import type { PatchFileResult } from "@rackmcp/schemas";
 import type { ServerConfig } from "./config.js";
 import type { ConnectionManager, SelectedInstance } from "./connection.js";
 import { ToolError, toErrorPayload } from "./errors.js";
@@ -13,16 +14,6 @@ import type { ToolContext, ToolHandler } from "./tools.js";
  * recovery-checkpoint orchestration; the plugin performs the actual .vcv I/O
  * via Rack's patch manager and reports Bridge presence.
  */
-
-interface PatchFileResult {
-  fingerprint: string;
-  patchEpoch: number;
-  patchName: string | null;
-  saved: boolean;
-  bridgeModulePresent: boolean;
-  warnings: string[];
-  replayed: boolean;
-}
 
 interface PatchFingerprint {
   fingerprint: string;
@@ -126,8 +117,13 @@ export const savePatch: ToolHandler = async (args, ctx) => {
     { scope: scopeFor(instance), path: path ?? "", operationId: args.operationId },
     { operationId: args.operationId as string, deadlineMs: 60_000 },
   );
+  // The plugin reports where it actually saved. That matters when no path was
+  // requested: "save" then means "save where this patch already lives", which
+  // only the plugin can resolve, and this used to answer with "" for a file it
+  // had just written.
+  const savedAt = res.path || path || "";
   return {
-    path: path ?? "",
+    path: savedAt,
     fingerprint: res.fingerprint,
     saved: true as const,
     bridgeModulePresent: res.bridgeModulePresent,

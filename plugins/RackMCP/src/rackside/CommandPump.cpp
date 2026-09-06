@@ -117,6 +117,10 @@ void CommandPumpWidget::step() {
 
 void CommandPumpWidget::refreshUiStateCache() {
     RackBridge& bridge = RackBridge::instance();
+    // A lease can end by timing out, which produces no message to react to, so
+    // the DSP-side hint has to be recomputed on a clock rather than on traffic.
+    if (bridge.running())
+        bridge.server().refreshLeaseHint();
     UiStateCache state;
     state.commandPumpPresent = true;
     state.bridgeModulePresent = bridge.bridgeModuleCount() > 0;

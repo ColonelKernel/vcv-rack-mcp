@@ -481,12 +481,22 @@ export const PatchFileResult = z
     fingerprint: HexHash,
     patchEpoch: PatchEpoch,
     patchName: z.string().max(512).nullable(),
+    /**
+     * The path the CURRENT patch now lives at, resolved plugin-side. `save`
+     * with no request path means "save where this patch already lives", and
+     * only the plugin knows where that is. Empty after a clear, which genuinely
+     * leaves the patch pathless, and unchanged by `saveCopy`, which writes a
+     * copy without adopting its path -- so it reports where the live patch
+     * still points, not where the copy went (the caller supplied that).
+     */
+    path: z.string().max(4096),
     saved: z.boolean(),
     bridgeModulePresent: z.boolean(),
     warnings: z.array(z.string().max(1024)).max(64),
     replayed: z.boolean(),
   })
   .strict();
+export type PatchFileResult = z.infer<typeof PatchFileResult>;
 
 // --- Probes ----------------------------------------------------------------
 

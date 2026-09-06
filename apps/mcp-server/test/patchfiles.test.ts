@@ -14,7 +14,9 @@ import {
   previewClearPatch,
   previewLoadPatch,
   restoreCheckpoint,
+  savePatch,
 } from "../src/patchfiles.js";
+import { SavePatchOutput } from "@rackmcp/schemas";
 import type { ToolContext } from "../src/tools.js";
 
 /**
@@ -44,6 +46,8 @@ class FakeBridge {
   fingerprint = FP_A;
   patchEpoch = 5;
   saveCopyError: unknown = null;
+  /** Where the plugin says the patch ended up; "" reproduces the old bug. */
+  resolvedPath = "/patches/current.vcv";
 
   async ensureConnected(): Promise<SelectedInstance> {
     return this.instance;
@@ -60,6 +64,7 @@ class FakeBridge {
       case "patchfile.saveCopy":
         if (this.saveCopyError) throw this.saveCopyError;
         return this.fileResult();
+      case "patchfile.save":
       case "patchfile.load":
       case "patchfile.clear":
         return this.fileResult();
@@ -73,6 +78,7 @@ class FakeBridge {
       fingerprint: this.fingerprint,
       patchEpoch: this.patchEpoch,
       patchName: null,
+      path: this.resolvedPath,
       saved: true,
       bridgeModulePresent: true,
       warnings: [],
@@ -368,5 +374,63 @@ describe("restore_checkpoint", () => {
       ),
       "PATH_NOT_ALLOWED",
     );
+  });
+});
+
+describe("save_patch reports where it saved", () => {
+  /**
+   * `save_patch` with no `path` means "save where this patch already lives" --
+   * Rack's own Save. The server has no idea where that is, and it was answering
+   * `path: ""` alongside `saved: true`, telling a caller a file had been
+   * written and refusing to say which. `SavePatchOutput.path` was only
+   * `z.string()`, so the empty string satisfied the published contract too.
+   *
+   * The plugin now returns the path it settled on, and the schema requires one.
+   */
+  it("returns the path the plugin resolved when the caller supplied none", async () => {
+    bridge.resolvedPath = "/somewhere/existing.vcv";
+    const res = (await savePatch({ operationId: randomUUID() }, ctx)) as { path: string };
+    expect(res.path).toBe("/somewhere/existing.vcv");
+    expect(SavePatchOutput.safeParse(res).success).toBe(true);
+  });
+
+  it("prefers what the plugin says over what was requested", async () => {
+    // The plugin is the authority on where the file went: it canonicalizes the
+    // path it was handed and is the only side that can resolve an empty one.
+    const target = join(cfg.patchesDir, "explicit.vcv");
+    bridge.resolvedPath = target;
+    const res = (await savePatch({ path: target, operationId: randomUUID() }, ctx)) as {
+      path: string;
+    };
+    expect(res.path).toBe(target);
+    expect(bridge.payloadsFor("patchfile.save")[0]!.path).toBe(target);
+    expect(SavePatchOutput.safeParse(res).success).toBe(true);
+  });
+
+  it("falls back to the requested path if an older plugin sends none", async () => {
+    // Version skew: a plugin built before this field still answers without it,
+    // and the tool should still say something true rather than "".
+    const target = join(cfg.patchesDir, "explicit.vcv");
+    bridge.resolvedPath = "";
+    const res = (await savePatch({ path: target, operationId: randomUUID() }, ctx)) as {
+      path: string;
+    };
+    expect(res.path).toBe(target);
+    expect(SavePatchOutput.safeParse(res).success).toBe(true);
+  });
+
+  it("no longer satisfies its own output schema with an empty path", () => {
+    // The regression this guards: an empty path used to validate, so the
+    // contract could not have caught the tool answering with nothing.
+    const shaped = {
+      path: "",
+      fingerprint: FP_A,
+      saved: true as const,
+      bridgeModulePresent: true,
+      warnings: [],
+      replayed: false,
+    };
+    expect(SavePatchOutput.safeParse(shaped).success).toBe(false);
+    expect(SavePatchOutput.safeParse({ ...shaped, path: "/p.vcv" }).success).toBe(true);
   });
 });

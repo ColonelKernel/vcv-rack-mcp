@@ -249,6 +249,14 @@ static json_t* buildResult(bool saved, const std::vector<std::string>& warnings)
         name = system::getStem(APP->patch->path);
     json_object_set_new(payload, "patchName", name.empty() ? json_null() : json_string(name.c_str()));
     json_object_set_new(payload, "saved", json_boolean(saved));
+    // Where the CURRENT patch now lives. save with an empty request path means
+    // "save where this patch already lives", which only this side can resolve
+    // -- the server was reporting path "" for a file it had just written,
+    // telling a caller the save succeeded but not where. Empty after a clear,
+    // and unchanged by saveCopy, which deliberately does not adopt the copy's
+    // path.
+    json_object_set_new(payload, "path",
+                        json_string(APP->patch ? APP->patch->path.c_str() : ""));
     json_object_set_new(payload, "bridgeModulePresent", json_boolean(patchHasBridge()));
     json_t* warnJ = json_array();
     for (auto& w : warnings)
