@@ -88,13 +88,36 @@ let ignored: ReadonlySet<string> | undefined;
  */
 export function ignoredPaths(candidates: readonly string[]): ReadonlySet<string> {
   if (ignored) return ignored;
-  if (candidates.length === 0) return (ignored = new Set());
+  return (ignored = gitIgnored(REPO_ROOT, candidates));
+}
+
+/**
+ * Which of `candidates` .gitignore excludes, in the repository at `cwd`.
+ *
+ * Separate from ignoredPaths so it can be pointed at a scratch repository: the
+ * property that matters here is that the answer does NOT depend on which files
+ * happen to exist, and that can only be tested somewhere the files do not.
+ */
+export function gitIgnored(cwd: string, candidates: readonly string[]): Set<string> {
+  if (candidates.length === 0) return new Set();
+  // Every path is asked about twice, with and without a trailing slash, and
+  // the answers are folded back onto the bare spelling.
+  //
+  // This is not defensive noise. A directory-only .gitignore pattern
+  // (`vendor/Rack-SDK/`) matches a slashless path ONLY when git can see that
+  // the path is a directory -- which it learns from the filesystem, not from
+  // the pattern. So `git check-ignore vendor/Rack-SDK` says "ignored" on a
+  // machine that has fetched the SDK and "not ignored" on a clean checkout,
+  // for the same repository at the same commit. Asking about
+  // `vendor/Rack-SDK/` as well makes the answer a function of .gitignore
+  // alone, which is the only thing this check is entitled to depend on.
+  const query = candidates.flatMap((c) => (c.endsWith("/") ? [c] : [c, c + "/"]));
   let out = "";
   try {
     out = execFileSync("git", ["check-ignore", "--stdin"], {
-      cwd: REPO_ROOT,
+      cwd,
       encoding: "utf8",
-      input: candidates.join("\n"),
+      input: query.join("\n"),
     });
   } catch (err) {
     // git check-ignore exits 1 when nothing matches, which is not an error.
@@ -102,8 +125,8 @@ export function ignoredPaths(candidates: readonly string[]): ReadonlySet<string>
     if (e.status !== 1) throw err;
     out = e.stdout ?? "";
   }
-  ignored = new Set(out.split("\n").filter(Boolean));
-  return ignored;
+  const hits = out.split("\n").filter(Boolean);
+  return new Set(hits.map((h) => (h.endsWith("/") ? h.slice(0, -1) : h)).concat(hits));
 }
 
 export interface BrokenRef {
