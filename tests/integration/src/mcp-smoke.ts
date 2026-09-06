@@ -10,6 +10,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { TOOLS } from "@rackmcp/schemas";
 import { RackHarness } from "./harness.js";
 
 const REPO_ROOT = resolve(fileURLToPath(import.meta.url), "../../../..");
@@ -49,9 +50,15 @@ try {
   await client.connect(transport);
   ok("mcp connect over stdio", true);
 
-  // Tool discovery: all 29 spec tools advertised with correct hints.
+  // Tool discovery: every tool in the registry advertised, with correct hints.
+  // Read from TOOLS rather than repeated as a literal -- as a literal this said
+  // 29 while the server served 31, so the check that existed to catch a
+  // dropped tool would instead have failed on a deliberately added one.
   const tools = await client.listTools();
-  ok("lists 29 tools", tools.tools.length === 29, `${tools.tools.length}`);
+  ok(`lists all ${TOOLS.length} tools`, tools.tools.length === TOOLS.length, `${tools.tools.length}`);
+  const advertised = new Set(tools.tools.map((t) => t.name));
+  const unadvertised = TOOLS.map((t) => t.name).filter((n) => !advertised.has(n));
+  ok("every declared tool is advertised", unadvertised.length === 0, unadvertised.join(", "));
   const snapshotTool = tools.tools.find((t) => t.name === "get_patch_snapshot");
   ok("snapshot tool is read-only", snapshotTool?.annotations?.readOnlyHint === true);
   const commitTool = tools.tools.find((t) => t.name === "commit_patch_transaction");

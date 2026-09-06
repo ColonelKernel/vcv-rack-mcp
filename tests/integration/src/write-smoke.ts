@@ -61,6 +61,12 @@ const SYNTH_OPS = [
   cn("vca", "output", 0, "audio", "input", 0),
 ];
 
+// Derived from the plan above, not restated. These counts describe SYNTH_OPS,
+// so writing them as literals means editing the patch quietly falsifies the
+// assertions that are supposed to be checking it.
+const ADDS = SYNTH_OPS.filter((o) => o.op === "add_module").length;
+const CONNECTS = SYNTH_OPS.filter((o) => o.op === "connect").length;
+
 try {
   await harness.waitForInstance();
   transport = new StdioClientTransport({
@@ -78,8 +84,8 @@ try {
   ok("preview returns plan hash", typeof (preview.preview as any).planHash === "string");
   ok("preview base fingerprint", typeof (preview.preview as any).baseFingerprint === "string");
   const diff = (preview.preview as any).diff;
-  ok("preview diff adds 6 modules", diff.addedModules.length === 6, `${diff.addedModules.length}`);
-  ok("preview diff adds 6 cables", diff.addedCableCount === 6, `${diff.addedCableCount}`);
+  ok(`preview diff adds ${ADDS} modules`, diff.addedModules.length === ADDS, `${diff.addedModules.length}`);
+  ok(`preview diff adds ${CONNECTS} cables`, diff.addedCableCount === CONNECTS, `${diff.addedCableCount}`);
   const risk = (preview.preview as any).risk;
   ok("preview risk not destructive", (preview.confirmation as any).confirmationRequired === false, risk.level);
 
@@ -87,16 +93,17 @@ try {
   const built = sc(await call(client, "build_patch", { label: "Subtractive synth", operations: SYNTH_OPS, operationId: randomUUID() }));
   ok("build_patch committed", built.phase === "committed", String(built.phase));
   const commit = built.commit as any;
-  ok("commit maps all aliases", Object.keys(commit.aliasToModuleId).length === 6);
-  ok("commit reports 12 applied ops", commit.applied.length === 12, `${commit.applied.length}`);
+  ok("commit maps all aliases", Object.keys(commit.aliasToModuleId).length === ADDS);
+  ok(`commit reports ${SYNTH_OPS.length} applied ops`, commit.applied.length === SYNTH_OPS.length,
+     `${commit.applied.length}`);
   ok("commit new != old fingerprint", commit.newFingerprint !== commit.oldFingerprint);
 
   // Verify structure in the snapshot.
   const snap = sc(await call(client, "get_patch_snapshot", {}));
   const modules = snap.modules as Array<Record<string, unknown>>;
   const cables = snap.cables as Array<Record<string, unknown>>;
-  ok("snapshot has 7 modules (6 + Bridge)", modules.length === 7, `${modules.length}`);
-  ok("snapshot has 6 cables", cables.length === 6, `${cables.length}`);
+  ok(`snapshot has ${ADDS + 1} modules (${ADDS} + Bridge)`, modules.length === ADDS + 1, `${modules.length}`);
+  ok(`snapshot has ${CONNECTS} cables`, cables.length === CONNECTS, `${cables.length}`);
   const vcoId = commit.aliasToModuleId.vco as string;
   const audioId = commit.aliasToModuleId.audio as string;
   ok("VCA->Audio cable exists", cables.some((c) => c.inputModuleId === audioId && c.inputId === 0));

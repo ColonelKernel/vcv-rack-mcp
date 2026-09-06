@@ -17,7 +17,13 @@ import { randomUUID } from "node:crypto";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { listAdapters, hasAdapter } from "@rackmcp/adapters";
-import { getRecipe, resolveRecipe, expandRecipeOperations, type InstalledModel } from "@rackmcp/recipes";
+import {
+  getRecipe,
+  resolveRecipe,
+  expandRecipeOperations,
+  RECIPE_COUNT,
+  type InstalledModel,
+} from "@rackmcp/recipes";
 import { RackHarness } from "./harness.js";
 
 const REPO_ROOT = resolve(fileURLToPath(import.meta.url), "../../../..");
@@ -134,7 +140,9 @@ try {
 
   const recipesRes = await body("rack://recipes");
   const recipesList = recipesRes.recipes as Array<{ id: string }>;
-  ok("rack://recipes lists all recipes", Array.isArray(recipesList) && recipesList.length === 8, `${recipesList?.length}`);
+  ok("rack://recipes lists all recipes",
+    Array.isArray(recipesList) && recipesList.length === RECIPE_COUNT,
+    `${recipesList?.length}/${RECIPE_COUNT}`);
   const resolutions = recipesRes.resolutions as Record<string, { resolved: boolean }> | null;
   ok("rack://recipes includes live resolutions when connected",
     !!resolutions && resolutions["basic_mono_subtractive"]?.resolved === true);
