@@ -220,3 +220,209 @@ TEST_CASE("every flag it can emit is one the schema declares") {
         CHECK_FALSE(r.entries[i].reason.empty());
     }
 }
+
+// ---------------------------------------------------------------------------
+// Id parsing and reference resolution
+// ---------------------------------------------------------------------------
+
+static int64_t parsed(const std::string& text) {
+    int64_t out = -999;
+    return parseDecimalId(text, out) ? out : -1;
+}
+
+TEST_CASE("a decimal id is exactly what the schema says it is") {
+    CHECK(parsed("0") == 0);
+    CHECK(parsed("42") == 42);
+    CHECK(parsed("4360803558046751") == 4360803558046751LL);
+    // 19 digits, the schema's maximum, and inside int64.
+    CHECK(parsed("9223372036854775807") == 9223372036854775807LL);
+}
+
+TEST_CASE("an empty moduleId is not module zero") {
+    // This is the one that mattered. strtoll("") returns 0 and leaves endp on
+    // the terminator, so the old `*endp == '\0' && id >= 0` test accepted it
+    // and every operation carrying {"moduleId": ""} silently acted on module
+    // 0 -- a real module on most racks, and not the one anybody named.
+    int64_t out = -999;
+    CHECK_FALSE(parseDecimalId("", out));
+    CHECK(out == -999);  // and it does not write through on failure
+}
+
+TEST_CASE("the permissive spellings strtoll used to accept are refused") {
+    CHECK(parsed(" 42") == -1);   // leading whitespace
+    CHECK(parsed("42 ") == -1);   // trailing whitespace
+    CHECK(parsed("+5") == -1);    // explicit sign
+    CHECK(parsed("-1") == -1);    // negative
+    CHECK(parsed("042") == -1);   // leading zero
+    CHECK(parsed("00") == -1);
+    CHECK(parsed("42x") == -1);   // trailing garbage
+    CHECK(parsed("0x2a") == -1);  // hex
+    CHECK(parsed("1e5") == -1);   // exponent
+    CHECK(parsed("4 2") == -1);
+    CHECK(parsed("\t7") == -1);
+}
+
+TEST_CASE("an id too large for int64 is refused, not clamped") {
+    // strtoll saturates at INT64_MAX and reports success, so an absurd id
+    // became a plausible one. The schema's regex admits 19 digits and cannot
+    // express the numeric bound, so this is the only place it can be caught.
+    CHECK(parsed("9223372036854775808") == -1);
+    CHECK(parsed("9999999999999999999") == -1);
+    // 20 digits fails the shape before arithmetic is reached.
+    CHECK(parsed("12345678901234567890") == -1);
+}
+
+TEST_CASE("a module reference resolves by id") {
+    std::map<std::string, int64_t> aliases;
+    json_t* ref = json_pack("{s:s}", "moduleId", "77");
+    const ModuleRef r = resolveModuleRef(ref, aliases);
+    CHECK(r.ok);
+    CHECK_FALSE(r.isAlias);
+    CHECK(r.moduleId == 77);
+    json_decref(ref);
+}
+
+TEST_CASE("a module reference resolves by alias declared earlier in the plan") {
+    std::map<std::string, int64_t> aliases;
+    aliases["vco"] = -1000;  // provisional synthetic id
+    json_t* ref = json_pack("{s:s}", "alias", "vco");
+    const ModuleRef r = resolveModuleRef(ref, aliases);
+    CHECK(r.ok);
+    CHECK(r.isAlias);
+    CHECK(r.alias == "vco");
+    CHECK(r.moduleId == -1000);
+    json_decref(ref);
+}
+
+TEST_CASE("an unknown alias is reported as an alias, not as a bad reference") {
+    // The caller distinguishes these: an unknown alias means the plan referred
+    // to a module it never created, and the error should say which name.
+    std::map<std::string, int64_t> aliases;
+    json_t* ref = json_pack("{s:s}", "alias", "nope");
+    const ModuleRef r = resolveModuleRef(ref, aliases);
+    CHECK_FALSE(r.ok);
+    CHECK(r.isAlias);
+    CHECK(r.alias == "nope");
+    json_decref(ref);
+}
+
+TEST_CASE("a malformed moduleId does not fall through to the alias") {
+    // A ref carrying both keys is not legal input. Reading the alias after
+    // rejecting the id would let a malformed reference act on a module the
+    // caller never named.
+    std::map<std::string, int64_t> aliases;
+    aliases["vco"] = 5;
+    json_t* ref = json_pack("{s:s, s:s}", "moduleId", "", "alias", "vco");
+    const ModuleRef r = resolveModuleRef(ref, aliases);
+    CHECK_FALSE(r.ok);
+    CHECK_FALSE(r.isAlias);
+    CHECK(r.moduleId == -1);
+    json_decref(ref);
+}
+
+TEST_CASE("moduleId wins when both keys are present and both are valid") {
+    std::map<std::string, int64_t> aliases;
+    aliases["vco"] = 5;
+    json_t* ref = json_pack("{s:s, s:s}", "moduleId", "9", "alias", "vco");
+    const ModuleRef r = resolveModuleRef(ref, aliases);
+    CHECK(r.ok);
+    CHECK(r.moduleId == 9);
+    CHECK_FALSE(r.isAlias);
+    json_decref(ref);
+}
+
+TEST_CASE("a reference that is not an object, or names neither key, resolves to nothing") {
+    std::map<std::string, int64_t> aliases;
+    CHECK_FALSE(resolveModuleRef(NULL, aliases).ok);
+    json_t* arr = json_array();
+    CHECK_FALSE(resolveModuleRef(arr, aliases).ok);
+    json_decref(arr);
+    json_t* empty = json_object();
+    CHECK_FALSE(resolveModuleRef(empty, aliases).ok);
+    json_decref(empty);
+    // A numeric moduleId is not a string and is not accepted: ids cross this
+    // boundary as decimal strings precisely because they do not fit a double.
+    json_t* numeric = json_pack("{s:i}", "moduleId", 42);
+    CHECK_FALSE(resolveModuleRef(numeric, aliases).ok);
+    json_decref(numeric);
+}
+
+// ---------------------------------------------------------------------------
+// Cable accounting
+// ---------------------------------------------------------------------------
+
+/** vco:0 -> vcf:0, vcf:0 -> vca:1, adsr:0 -> vca:0 */
+static std::vector<PlanCable> patch() {
+    std::vector<PlanCable> c;
+    c.push_back(PlanCable::connected(100, 1, 0, 2, 0));
+    c.push_back(PlanCable::connected(101, 2, 0, 3, 1));
+    c.push_back(PlanCable::connected(102, 4, 0, 3, 0));
+    return c;
+}
+
+TEST_CASE("cables on a module count both ends") {
+    const std::vector<int64_t> none;
+    CHECK(cablesOnModule(patch(), none, 2) == std::vector<int64_t>({100, 101}));
+    CHECK(cablesOnModule(patch(), none, 1) == std::vector<int64_t>({100}));
+    CHECK(cablesOnModule(patch(), none, 3) == std::vector<int64_t>({101, 102}));
+    CHECK(cablesOnModule(patch(), none, 99).empty());
+}
+
+TEST_CASE("a cable an earlier operation removed is no longer attached") {
+    // Without this the plan double-counts: a disconnect followed by a module
+    // removal reports the same cable twice and the risk summary overstates.
+    std::vector<int64_t> removed;
+    removed.push_back(100);
+    CHECK(cablesOnModule(patch(), removed, 2) == std::vector<int64_t>({101}));
+    removed.push_back(101);
+    CHECK(cablesOnModule(patch(), removed, 2).empty());
+}
+
+TEST_CASE("cables on a port distinguish input from output") {
+    const std::vector<int64_t> none;
+    // Module 2 port 0 is an input on cable 100 and an output on cable 101.
+    CHECK(cablesOnPort(patch(), none, 2, "input", 0) == std::vector<int64_t>({100}));
+    CHECK(cablesOnPort(patch(), none, 2, "output", 0) == std::vector<int64_t>({101}));
+    CHECK(cablesOnPort(patch(), none, 3, "input", 1) == std::vector<int64_t>({101}));
+    CHECK(cablesOnPort(patch(), none, 3, "input", 0) == std::vector<int64_t>({102}));
+    CHECK(cablesOnPort(patch(), none, 3, "input", 7).empty());
+    // An unrecognised port type matches nothing rather than everything.
+    CHECK(cablesOnPort(patch(), none, 2, "sideways", 0).empty());
+}
+
+TEST_CASE("a detached cable end is not a connection") {
+    // The engine can hold a cable with an end unattached, and hasOutput/hasInput
+    // are what say so. The id beside a cleared flag must never be read: a
+    // version testing the id alone passes as long as the unset id happens to be
+    // the -1 sentinel, and starts reporting phantom connections the moment
+    // anything leaves a stale value there. So the flag is set false here with a
+    // perfectly plausible id beside it -- which is the state the check exists
+    // to survive.
+    std::vector<PlanCable> cables;
+    PlanCable dangling;
+    dangling.id = 200;
+    dangling.hasInput = true;
+    dangling.inputModuleId = 3;
+    dangling.inputId = 0;
+    dangling.hasOutput = false;
+    dangling.outputModuleId = 7;  // stale, and must be ignored
+    dangling.outputId = 0;
+    cables.push_back(dangling);
+
+    const std::vector<int64_t> none;
+    CHECK(cablesOnModule(cables, none, 3) == std::vector<int64_t>({200}));
+    CHECK(cablesOnModule(cables, none, 7).empty());
+    CHECK(cablesOnPort(cables, none, 7, "output", 0).empty());
+    CHECK(cablesOnPort(cables, none, 3, "input", 0) == std::vector<int64_t>({200}));
+}
+
+TEST_CASE("cable order is preserved, because a policy depends on it") {
+    // disconnect_port "top" takes the LAST match, so the order this returns is
+    // part of the contract rather than an implementation detail.
+    std::vector<PlanCable> stacked;
+    stacked.push_back(PlanCable::connected(10, 1, 0, 9, 0));
+    stacked.push_back(PlanCable::connected(11, 2, 0, 9, 0));
+    stacked.push_back(PlanCable::connected(12, 3, 0, 9, 0));
+    const std::vector<int64_t> none;
+    CHECK(cablesOnPort(stacked, none, 9, "input", 0) == std::vector<int64_t>({10, 11, 12}));
+}

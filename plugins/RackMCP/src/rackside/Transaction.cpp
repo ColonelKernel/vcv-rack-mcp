@@ -42,40 +42,13 @@ static bool jhasKey(json_t* o, const char* key) {
     return o && json_object_get(o, key) != NULL;
 }
 
-/** Resolves a module reference: {"moduleId":"N"} or {"alias":"name"}. */
-struct RefResult {
-    bool ok = false;
-    int64_t moduleId = -1;
-    std::string alias; // set when the ref is an unresolved alias
-    bool isAlias = false;
-};
-
+/**
+ * Resolves a module reference. The parsing and precedence live in core/plan.cpp
+ * so they can be tested; this alias keeps the 30-odd call sites unchanged.
+ */
+typedef ModuleRef RefResult;
 static RefResult resolveRef(json_t* ref, const std::map<std::string, int64_t>& aliases) {
-    RefResult r;
-    if (!json_is_object(ref))
-        return r;
-    json_t* mid = json_object_get(ref, "moduleId");
-    if (json_is_string(mid)) {
-        char* endp = NULL;
-        long long id = strtoll(json_string_value(mid), &endp, 10);
-        if (endp && *endp == '\0' && id >= 0) {
-            r.ok = true;
-            r.moduleId = (int64_t) id;
-        }
-        return r;
-    }
-    json_t* al = json_object_get(ref, "alias");
-    if (json_is_string(al)) {
-        r.isAlias = true;
-        r.alias = json_string_value(al);
-        auto it = aliases.find(r.alias);
-        if (it != aliases.end()) {
-            r.ok = true;
-            r.moduleId = it->second;
-        }
-        return r;
-    }
-    return r;
+    return resolveModuleRef(ref, aliases);
 }
 
 /**
@@ -221,48 +194,43 @@ engine::Module* liveModule(const PreviewState& st, int64_t moduleId) {
 }
 
 /** Live cables attached to a module that the plan has not already removed. */
-std::vector<int64_t> cablesOnModule(const PreviewState& st, int64_t moduleId) {
-    std::vector<int64_t> hits;
+/**
+ * The engine's cables as plain data.
+ *
+ * Read fresh per call rather than snapshotted once: these run during
+ * validation, and the shape of the patch is what they are asking about.
+ */
+static std::vector<PlanCable> livePlanCables() {
+    std::vector<PlanCable> out;
     for (int64_t cid : APP->engine->getCableIds()) {
         engine::Cable* c = APP->engine->getCable(cid);
-        if (!c || st.cableRemoved(cid))
+        if (!c)
             continue;
-        if ((c->inputModule && c->inputModule->id == moduleId) ||
-            (c->outputModule && c->outputModule->id == moduleId))
-            hits.push_back(cid);
+        PlanCable pc;
+        pc.id = cid;
+        if (c->outputModule) {
+            pc.hasOutput = true;
+            pc.outputModuleId = c->outputModule->id;
+            pc.outputId = c->outputId;
+        }
+        if (c->inputModule) {
+            pc.hasInput = true;
+            pc.inputModuleId = c->inputModule->id;
+            pc.inputId = c->inputId;
+        }
+        out.push_back(pc);
     }
-    return hits;
+    return out;
 }
 
-/** Mirrors Applier::applyDisconnectPort's match set, minus already-removed cables. */
+std::vector<int64_t> cablesOnModule(const PreviewState& st, int64_t moduleId) {
+    return rackmcp::cablesOnModule(livePlanCables(), st.removedCables, moduleId);
+}
 std::vector<int64_t> cablesOnPort(const PreviewState& st, int64_t moduleId,
                                   const std::string& portType, int portId) {
-    std::vector<int64_t> hits;
-    for (int64_t cid : APP->engine->getCableIds()) {
-        engine::Cable* c = APP->engine->getCable(cid);
-        if (!c || st.cableRemoved(cid))
-            continue;
-        bool hit = (portType == "input" && c->inputModule && c->inputModule->id == moduleId &&
-                    c->inputId == portId) ||
-                   (portType == "output" && c->outputModule && c->outputModule->id == moduleId &&
-                    c->outputId == portId);
-        if (hit)
-            hits.push_back(cid);
-    }
-    return hits;
+    return rackmcp::cablesOnPort(livePlanCables(), st.removedCables, moduleId, portType, portId);
 }
 
-/** Whether `box` is free of every module the plan leaves in place (except `self`). */
-/**
- * Whether `box` is clear of every panel except `self`.
- *
- * The judgement itself is layout::positionFree; this reads the rack for it.
- * Two details are easy to lose in the translation and both change behaviour:
- * `self` is exempt by widget IDENTITY, not by module id, and a widget whose
- * `module` is NULL is still an obstacle even though it can never be removed or
- * re-planned. Hence an index into the occupant list, and an occupant list that
- * keeps id-less entries.
- */
 bool positionFree(const PreviewState& st, app::ModuleWidget* self, math::Rect box) {
     std::vector<app::ModuleWidget*> mws = APP->scene->rack->getModules();
     std::vector<layout::Occupant> occupants;
