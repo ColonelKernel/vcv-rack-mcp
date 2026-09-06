@@ -104,6 +104,48 @@ inline const char* errorCodeToString(ErrorCode c) {
 	}
 }
 
+// Risk flags (packages/schemas/src/operations.ts RiskFlag).
+//
+// The plugin spelled these as string literals, so a flag renamed in the
+// schema stayed compilable and simply stopped matching the vocabulary the
+// client branches on. As an enum, the rename is a build error at the site
+// that emits it.
+enum class RiskFlag {
+	removes_bridge,
+	affects_audio_path,
+	randomize,
+	removes_modules,
+	removes_cables,
+	replaces_cables,
+	stacks_inputs,
+	possible_feedback,
+	adapter_uncertainty,
+	missing_modules,
+	large_transaction,
+	clears_patch,
+	replaces_patch,
+	COUNT_
+};
+
+inline const char* riskFlagToString(RiskFlag f) {
+	switch (f) {
+		case RiskFlag::removes_bridge: return "removes_bridge";
+		case RiskFlag::affects_audio_path: return "affects_audio_path";
+		case RiskFlag::randomize: return "randomize";
+		case RiskFlag::removes_modules: return "removes_modules";
+		case RiskFlag::removes_cables: return "removes_cables";
+		case RiskFlag::replaces_cables: return "replaces_cables";
+		case RiskFlag::stacks_inputs: return "stacks_inputs";
+		case RiskFlag::possible_feedback: return "possible_feedback";
+		case RiskFlag::adapter_uncertainty: return "adapter_uncertainty";
+		case RiskFlag::missing_modules: return "missing_modules";
+		case RiskFlag::large_transaction: return "large_transaction";
+		case RiskFlag::clears_patch: return "clears_patch";
+		case RiskFlag::replaces_patch: return "replaces_patch";
+		default: return "";
+	}
+}
+
 // Frame kinds and their required non-discriminator fields
 struct FieldSpec { const char* name; const char* jsonType; };
 struct FrameSpec { const char* kind; const FieldSpec* fields; size_t fieldCount; };

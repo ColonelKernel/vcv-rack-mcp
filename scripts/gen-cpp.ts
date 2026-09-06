@@ -15,6 +15,7 @@ import {
   BRIDGE_PROTOCOL_VERSION,
   BRIDGE_PROTOCOL_MIN_SUPPORTED,
   ERROR_CODES,
+  RiskFlag,
   LIMITS,
   OPERATION_TYPES,
 } from "../packages/schemas/dist/index.js";
@@ -159,6 +160,24 @@ P("inline const char* errorCodeToString(ErrorCode c) {");
 P("\tswitch (c) {");
 for (const c of ERROR_CODES) P(`\t\tcase ErrorCode::${c}: return "${c}";`);
 P('\t\tdefault: return "INTERNAL";');
+P("\t}");
+P("}");
+P("");
+P("// Risk flags (packages/schemas/src/operations.ts RiskFlag).");
+P("//");
+P("// The plugin spelled these as string literals, so a flag renamed in the");
+P("// schema stayed compilable and simply stopped matching the vocabulary the");
+P("// client branches on. As an enum, the rename is a build error at the site");
+P("// that emits it.");
+P("enum class RiskFlag {");
+for (const f of RiskFlag.options) P(`\t${f},`);
+P("\tCOUNT_");
+P("};");
+P("");
+P("inline const char* riskFlagToString(RiskFlag f) {");
+P("\tswitch (f) {");
+for (const f of RiskFlag.options) P(`\t\tcase RiskFlag::${f}: return "${f}";`);
+P('\t\tdefault: return "";');
 P("\t}");
 P("}");
 P("");

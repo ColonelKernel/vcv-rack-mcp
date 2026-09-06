@@ -22,7 +22,7 @@ has no implementation behind it and no stated reason for standing alone.
 | tool | 31 |
 | **total** | **457** |
 
-Scanned across 12 source roots and 139 files,
+Scanned across 12 source roots and 142 files,
 plus 24 documentation files and 111 distinct JSON keys
 emitted by the plugin.
 
@@ -61,9 +61,9 @@ present either way; the gate matches the jansson call shape instead.
 | --- | --- | --- |
 | `opaqueStateDisclosed` | `json_true()` | `plugins/RackMCP/src/rackside/Snapshot.cpp:195` |
 | `requiredTemporaryInstantiation` | `json_true()` | `plugins/RackMCP/src/rackside/Snapshot.cpp:437` |
-| `undoable` | `json_true()` | `plugins/RackMCP/src/rackside/Transaction.cpp:717` |
-| `undoEligible` | `json_true()` | `plugins/RackMCP/src/rackside/Transaction.cpp:1338` |
-| `undone` | `json_true()` | `plugins/RackMCP/src/rackside/Transaction.cpp:1393` |
+| `undoable` | `json_true()` | `plugins/RackMCP/src/rackside/Transaction.cpp:687` |
+| `undoEligible` | `json_true()` | `plugins/RackMCP/src/rackside/Transaction.cpp:1308` |
+| `undone` | `json_true()` | `plugins/RackMCP/src/rackside/Transaction.cpp:1363` |
 
 ## What these gates do not cover
 

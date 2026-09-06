@@ -65,6 +65,7 @@ set(RACKMCP_CORE_SOURCES
   ${RACKMCP_PLUGIN_SRC}/core/tutorial.cpp
   ${RACKMCP_PLUGIN_SRC}/core/activitylog.cpp
   ${RACKMCP_PLUGIN_SRC}/core/layout.cpp
+  ${RACKMCP_PLUGIN_SRC}/core/plan.cpp
 )
 if(JANSSON_FOUND)
   list(APPEND RACKMCP_CORE_SOURCES

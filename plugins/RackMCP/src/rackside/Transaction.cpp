@@ -17,6 +17,7 @@
 
 #include "core/canonical.hpp"
 #include "core/layout.hpp"
+#include "core/plan.hpp"
 #include "core/frames.hpp"
 #include "rackside/RackBridge.hpp"
 #include "rackside/Snapshot.hpp"
@@ -641,67 +642,36 @@ TxnOutcome txnPreview(json_t* request) {
                                                  p.second));
     json_object_set_new(diff, "stackedInputPorts", stacked);
 
-    // Risk. Flag and level strings are the schema's RiskFlag / RiskLevel
-    // vocabulary (packages/schemas/src/operations.ts); nothing else validates.
-    bool destructive = !st.removedModules.empty() || !st.removedCables.empty() ||
-                       !st.replacedInputs.empty() || st.removesBridge;
-    bool randomizes = false;
+    // Risk. The classification itself is core/plan.cpp, where it can be tested;
+    // this only gathers what validation found and serialises the answer.
+    PlanEffects effects;
+    effects.removesBridge = st.removesBridge;
+    effects.touchesAudio = st.touchesAudio;
+    effects.missingModule = st.missingModule;
+    effects.adapterUncertainty = st.adapterUncertainty;
+    effects.possibleFeedback = st.possibleFeedback;
+    effects.removedModules = st.removedModules.size();
+    effects.removedCables = st.removedCables.size();
+    effects.replacedInputs = st.replacedInputs.size();
+    effects.stackedInputs = st.stackedInputs.size();
+    effects.operationCount = json_array_size(operations);
     json_array_foreach(operations, idx, op) {
         if (std::string(jstr(op, "op")) == "randomize_module")
-            randomizes = true;
+            effects.randomizes = true;
     }
 
+    const PlanRisk planRisk = computeRisk(effects, gen::LIMIT_TXN_MAX_OPERATIONS);
     json_t* flags = json_array();
     json_t* reasons = json_array();
-    auto addFlag = [&](const char* flag, const std::string& reason) {
-        json_array_append_new(flags, json_string(flag));
-        json_array_append_new(reasons, json_string(reason.c_str()));
-    };
-    if (st.removesBridge)
-        addFlag("removes_bridge", "removes a RackMCP-Bridge module");
-    if (!st.removedModules.empty())
-        addFlag("removes_modules",
-                "removes " + std::to_string(st.removedModules.size()) + " module(s)");
-    if (!st.removedCables.empty())
-        addFlag("removes_cables",
-                "removes " + std::to_string(st.removedCables.size()) + " cable(s)");
-    if (!st.replacedInputs.empty())
-        addFlag("replaces_cables",
-                "replaces the cables on " + std::to_string(st.replacedInputs.size()) +
-                    " input port(s)");
-    if (!st.stackedInputs.empty())
-        addFlag("stacks_inputs",
-                "stacks " + std::to_string(st.stackedInputs.size()) + " input port(s)");
-    if (randomizes)
-        addFlag("randomize", "randomizes module parameters");
-    if (st.touchesAudio)
-        addFlag("affects_audio_path", "changes the audio-destination signal path");
-    if (st.missingModule)
-        addFlag("missing_modules", "a referenced model is not installed");
-    if (st.adapterUncertainty)
-        addFlag("adapter_uncertainty", "adds third-party modules without a verified adapter");
-    if (st.possibleFeedback)
-        addFlag("possible_feedback", "may create a feedback loop");
-    // A plan using more than half the per-transaction allowance is flagged so a
-    // client can offer to split it. The threshold is derived from the published
-    // limit rather than chosen separately, so raising the limit moves the flag
-    // with it; the limit itself is enforced by the tool input schema, and this
-    // says nothing about validity, only size.
-    const size_t opCount = json_array_size(operations);
-    if (opCount * 2 > (size_t) gen::LIMIT_TXN_MAX_OPERATIONS)
-        addFlag("large_transaction",
-                "applies " + std::to_string(opCount) + " operations in one transaction (limit " +
-                    std::to_string((long) gen::LIMIT_TXN_MAX_OPERATIONS) + ")");
-    // RiskLevel is low | destructive | high. Confirmation gating is unchanged:
-    // audio-path and adapter concerns are carried by the flags, not the level.
-    const char* level = st.removesBridge ? "high"
-                        : ((destructive || randomizes) ? "destructive" : "low");
-    bool confirmationRequired = destructive || randomizes || st.removesBridge;
+    for (size_t i = 0; i < planRisk.entries.size(); i++) {
+        json_array_append_new(flags, json_string(planRisk.entries[i].name()));
+        json_array_append_new(reasons, json_string(planRisk.entries[i].reason.c_str()));
+    }
     json_t* risk = json_object();
-    json_object_set_new(risk, "level", json_string(level));
+    json_object_set_new(risk, "level", json_string(planRisk.level.c_str()));
     json_object_set_new(risk, "flags", flags);
     json_object_set_new(risk, "reasons", reasons);
-    json_object_set_new(risk, "confirmationRequired", json_boolean(confirmationRequired));
+    json_object_set_new(risk, "confirmationRequired", json_boolean(planRisk.confirmationRequired));
 
     json_t* warningsJ = json_array();
     for (auto& w : st.warnings)
