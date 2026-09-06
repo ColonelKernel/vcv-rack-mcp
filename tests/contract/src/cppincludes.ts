@@ -1,6 +1,6 @@
 /**
- * Gate D -- every C++ standard type used in plugins/RackMCP/src/core is backed
- * by an explicit include of the header that declares it.
+ * Gate D -- every C++ standard type used in the Rack-free C++ is backed by an
+ * explicit include of the header that declares it.
  *
  * This exists because the failure mode is invisible on the machine that writes
  * the code. libc++ (macOS) pulls <cstdint> in transitively through <map> and
@@ -20,6 +20,24 @@ import { join } from "node:path";
 import { REPO_ROOT, stripComments } from "./sources.js";
 
 const CORE_DIR = join(REPO_ROOT, "plugins", "RackMCP", "src", "core");
+
+/**
+ * Directories scanned, repo-relative.
+ *
+ * core/ and tests/cpp/ are both compiled by the C++ core job on macOS, Linux
+ * and Windows, and both have already produced a libstdc++-only failure --
+ * core/layout.hpp with int64_t, tests/cpp/canonical.test.cpp with
+ * std::numeric_limits.
+ *
+ * rackside/ is deliberately NOT scanned. Every file there includes <rack.hpp>,
+ * which transitively provides essentially the whole standard library, so the
+ * rule would be satisfied by that one include and would assert nothing. Saying
+ * so here is better than a scan that looks like coverage and is not.
+ */
+const SCANNED_DIRS: ReadonlyArray<readonly string[]> = [
+  ["plugins", "RackMCP", "src", "core"],
+  ["tests", "cpp"],
+];
 
 /** Identifier patterns and the header that must be included to use them. */
 export const INCLUDE_RULES: ReadonlyArray<{
@@ -72,23 +90,31 @@ function coreIncludes(text: string): string[] {
  * keeps the rule explicable.
  */
 export function loadCoreUnits(): CoreUnit[] {
-  const names = readdirSync(CORE_DIR).filter((n) => n.endsWith(".hpp") || n.endsWith(".cpp"));
-  const raw = new Map<string, string>();
-  for (const n of names) raw.set(n, readFileSync(join(CORE_DIR, n), "utf8"));
+  // core/ headers are the shared pool: anything including "core/x.hpp" inherits
+  // the standard headers x.hpp declares, wherever it lives.
+  const coreHeaders = new Map<string, string>();
+  for (const n of readdirSync(CORE_DIR).filter((n) => n.endsWith(".hpp"))) {
+    coreHeaders.set(n, readFileSync(join(CORE_DIR, n), "utf8"));
+  }
 
-  return names.map((n) => {
-    const text = raw.get(n)!;
-    const includes = standardIncludes(text);
-    for (const dep of coreIncludes(text)) {
-      const depText = raw.get(dep);
-      if (depText) for (const h of standardIncludes(depText)) includes.add(h);
+  const units: CoreUnit[] = [];
+  for (const dir of SCANNED_DIRS) {
+    const abs = join(REPO_ROOT, ...dir);
+    for (const n of readdirSync(abs).filter((n) => n.endsWith(".hpp") || n.endsWith(".cpp"))) {
+      const text = readFileSync(join(abs, n), "utf8");
+      const includes = standardIncludes(text);
+      for (const dep of coreIncludes(text)) {
+        const depText = coreHeaders.get(dep);
+        if (depText) for (const h of standardIncludes(depText)) includes.add(h);
+      }
+      units.push({
+        path: [...dir, n].join("/"),
+        includes,
+        body: stripComments(text, false),
+      });
     }
-    return {
-      path: `plugins/RackMCP/src/core/${n}`,
-      includes,
-      body: stripComments(text, false),
-    };
-  });
+  }
+  return units;
 }
 
 export interface MissingInclude {

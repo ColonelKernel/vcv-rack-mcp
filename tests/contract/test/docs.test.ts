@@ -130,7 +130,7 @@ suite("core/ standard includes", () => {
     // and broke the ubuntu and windows jobs.
     expect(
       missingIncludes().map((m) => `${m.path} uses ${m.what} without <${m.header}>`),
-      "a core/ file relies on a standard header arriving transitively, which libc++ does and libstdc++ does not",
+      "a Rack-free C++ file relies on a standard header arriving transitively, which libc++ does and libstdc++ does not",
     ).toEqual([]);
   });
 
@@ -145,7 +145,7 @@ suite("core/ standard includes", () => {
       expect(rule, `no rule covers ${header}`).toBeDefined();
       expect(
         units.some((u) => rule!.pattern.test(u.body)),
-        `no core/ file uses ${rule!.what}, so that rule is vacuous`,
+        `nothing scanned uses ${rule!.what}, so that rule is vacuous`,
       ).toBe(true);
     }
   });

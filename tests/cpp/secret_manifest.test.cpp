@@ -2,6 +2,7 @@
 // beneath a directory whose name is NON-ASCII (UTF-8 for "tést-日本"), so the
 // Windows UTF-16 path handling is proven wherever this runs. Requires jansson
 // (manifest JSON), like the service tests.
+#include <cstddef>
 #include <doctest.h>
 #include <jansson.h>
 #include <cstdio>

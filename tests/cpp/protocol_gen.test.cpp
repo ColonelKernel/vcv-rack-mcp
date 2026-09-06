@@ -1,3 +1,4 @@
+#include <cstddef>
 #include <doctest.h>
 #include <cstring>
 #include "gen/rackmcp_protocol_gen.hpp"
