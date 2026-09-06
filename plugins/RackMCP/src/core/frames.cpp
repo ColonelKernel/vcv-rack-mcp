@@ -66,6 +66,22 @@ std::string buildWelcome(const WelcomeInfo& info) {
     return dumpAndFree(o, kAuthResultInternal);
 }
 
+int selectProtocolVersion(const json_t* versions, int minSupported, int maxSupported) {
+    if (!json_is_array(versions))
+        return 0;
+    int selected = 0;
+    size_t i;
+    json_t* v;
+    json_array_foreach((json_t*) versions, i, v) {
+        if (!json_is_integer(v))
+            continue;
+        const json_int_t offered = json_integer_value(v);
+        if (offered >= minSupported && offered <= maxSupported && (int) offered > selected)
+            selected = (int) offered;
+    }
+    return selected;
+}
+
 std::string buildAuthResult(bool ok, const char* errorCode, const char* message) {
     json_t* o;
     if (ok) {

@@ -6,6 +6,7 @@ import { createServer, type AddressInfo, type Server, type Socket } from "node:n
 import { encodeFrame, FrameDecoder } from "@rackmcp/protocol";
 import { ConnectionManager } from "../src/connection.js";
 import type { ServerConfig } from "../src/config.js";
+import { BRIDGE_PROTOCOL_VERSION } from "@rackmcp/schemas";
 
 /**
  * Drives the manager against loopback bridges and real discovery manifests:
@@ -46,6 +47,7 @@ async function startBridge(opts: { instanceId: string; authOk?: boolean }): Prom
         if (frame.kind === "hello") {
           send({
             kind: "welcome",
+            version: BRIDGE_PROTOCOL_VERSION,
             instanceId: opts.instanceId,
             sessionId: SESSION,
             bridgeVersion: "0.1.0",

@@ -60,6 +60,20 @@ std::string capResponseFrame(const std::string& frame, const std::string& id,
 std::string authMessage(const std::string& nonce, const std::string& instanceId,
                         const std::string& sessionId);
 
+/**
+ * Highest version in `versions` that lies within [minSupported, maxSupported],
+ * or 0 when the ranges do not overlap.
+ *
+ * Split out of the handshake so it can be tested across ranges that do not
+ * exist yet: while the floor and the current version are both 1, any test
+ * driven through a real socket cannot tell range-acceptance from an equality
+ * check, because every input that one accepts the other accepts too.
+ *
+ * Non-integer entries are ignored rather than rejected: a peer offering junk
+ * alongside a version we support is not a reason to refuse the version.
+ */
+int selectProtocolVersion(const json_t* versions, int minSupported, int maxSupported);
+
 /** Monotonic milliseconds for deadlines and lease expiry. */
 int64_t steadyNowMs();
 

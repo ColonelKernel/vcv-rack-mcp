@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { BRIDGE_PROTOCOL_VERSION } from "./limits.js";
+import { BRIDGE_PROTOCOL_MIN_SUPPORTED, BRIDGE_PROTOCOL_VERSION } from "./limits.js";
 import { RackMcpError } from "./errors.js";
 import { PatchOperation, RiskFlag, RiskLevel } from "./operations.js";
 import { DecimalId, HexHash, PatchEpoch, Scope, SmallIndex, Uuid } from "./refs.js";
@@ -31,8 +31,17 @@ export const HelloFrame = z
 export const WelcomeFrame = z
   .object({
     kind: z.literal("welcome"),
-    /** Negotiated protocol version. */
-    version: z.literal(BRIDGE_PROTOCOL_VERSION),
+    /**
+     * The version both sides settled on: the highest the client offered that
+     * the plugin still supports. A range rather than a literal so that raising
+     * BRIDGE_PROTOCOL_VERSION without raising the floor keeps older clients
+     * working, which is the entire point of having a floor.
+     */
+    version: z
+      .number()
+      .int()
+      .min(BRIDGE_PROTOCOL_MIN_SUPPORTED)
+      .max(BRIDGE_PROTOCOL_VERSION),
     instanceId: Uuid,
     sessionId: Uuid,
     bridgeVersion: z.string().max(64),

@@ -48,47 +48,6 @@ export const CENSUS_EXCEPTIONS: readonly CensusException[] = [
       "operation at all, not by a runtime check that might be missed.",
   },
   {
-    symbol: "large_transaction",
-    kind: "risk_flag",
-    disposition: "reserved",
-    reason:
-      "TODO: phase 2 — give it a producer in Transaction.cpp, thresholded on " +
-      "gen::LIMIT_TXN_MAX_OPERATIONS. A client is told this flag exists and can reasonably " +
-      "assume big plans are marked; today nothing marks them.",
-  },
-  {
-    symbol: "txnMaxOperations",
-    kind: "limit",
-    disposition: "reserved",
-    reason:
-      "TODO: phase 2 — substitute for the hardcoded .max(128) in tools.ts, so the published limit " +
-      "and the enforced limit cannot drift apart.",
-  },
-  {
-    symbol: "patchIoTimeoutMs",
-    kind: "limit",
-    disposition: "reserved",
-    reason:
-      "TODO: phase 2 — becomes a ServerConfig field, replacing hardcoded 60_000 literals. " +
-      "Published as configurable while nothing reads it.",
-  },
-  {
-    symbol: "probeMaxHz",
-    kind: "limit",
-    disposition: "reserved",
-    reason:
-      "TODO: phase 2 — interpolate into read_probe's description, which currently states the " +
-      "number in prose where it can drift from the constant.",
-  },
-  {
-    symbol: "probeInputsPerModule",
-    kind: "limit",
-    disposition: "reserved",
-    reason:
-      "TODO: phase 2 — deduplicate the three independent copies of the value (here, " +
-      "ProbeModule.hpp and telemetry.ts) behind gen::LIMIT_PROBE_INPUTS_PER_MODULE.",
-  },
-  {
     symbol: "smoothMs",
     kind: "schema_property",
     disposition: "reserved",

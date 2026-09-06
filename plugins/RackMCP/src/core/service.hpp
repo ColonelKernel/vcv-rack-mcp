@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "core/frames.hpp"
+#include "gen/rackmcp_protocol_gen.hpp"
 #include "core/lease.hpp"
 #include "core/queues.hpp"
 #include "core/tcp.hpp"
@@ -60,7 +61,7 @@ struct ServiceConfig {
     std::string bridgeVersion;
     std::string rackVersion;
     std::string rackEdition = "unknown";
-    size_t maxFrameBytes = 1024 * 1024;
+    size_t maxFrameBytes = (size_t) gen::LIMIT_BRIDGE_FRAME_BYTES;
     int maxConnections = 8;
     // Slots an unauthenticated peer may hold at once; the remainder stay
     // available to peers that completed the pairing handshake, so a local

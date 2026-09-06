@@ -527,7 +527,7 @@ Apply a previously previewed probe attachment. Signal telemetry is only availabl
 
 *Read probe* — read-only · idempotent
 
-Read the latest telemetry window from an attached Probe input: per-channel min/max, peak, RMS, DC, clipped and non-finite counts, edge count, window and sample rate. Rate limited to 20 Hz.
+Read the latest telemetry window from an attached Probe input: per-channel min/max, peak, RMS, DC, clipped and non-finite counts, edge count, window and sample rate. A new window is published every 50 ms (20 Hz); reading faster is allowed and simply returns the current window again.
 
 **Input**
 

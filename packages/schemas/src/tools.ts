@@ -9,6 +9,7 @@ import {
   TxnPreviewResult,
   TxnRisk,
 } from "./bridge.js";
+import { LIMITS } from "./limits.js";
 import { PatchOperation } from "./operations.js";
 import { DecimalId, HexHash, PatchEpoch, PortRef, SmallIndex, Uuid } from "./refs.js";
 import { ModuleSnapshot, ParamSnapshot, PatchSnapshot } from "./snapshot.js";
@@ -223,7 +224,7 @@ export const ValidatePatchOutput = ValidationReport;
 export const PreviewPatchTransactionInput = z
   .object({
     label: z.string().min(1).max(128),
-    operations: z.array(PatchOperation).min(1).max(128),
+    operations: z.array(PatchOperation).min(1).max(LIMITS.txnMaxOperations),
     /** Reject the preview when the live fingerprint differs. */
     expectedFingerprint: HexHash.optional(),
     ...ExpectedEpoch,
@@ -263,7 +264,7 @@ export const UndoLastMcpTransactionOutput = z
 export const BuildPatchInput = z
   .object({
     label: z.string().min(1).max(128),
-    operations: z.array(PatchOperation).min(1).max(128),
+    operations: z.array(PatchOperation).min(1).max(LIMITS.txnMaxOperations),
     /** Commit automatically when no confirmation is required. */
     autoCommit: z.boolean().default(true),
     operationId: Uuid,
@@ -755,7 +756,7 @@ export const TOOLS: readonly ToolSpec[] = [
     name: "read_probe",
     title: "Read probe",
     description:
-      "Read the latest telemetry window from an attached Probe input: per-channel min/max, peak, RMS, DC, clipped and non-finite counts, edge count, window and sample rate. Rate limited to 20 Hz.",
+      `Read the latest telemetry window from an attached Probe input: per-channel min/max, peak, RMS, DC, clipped and non-finite counts, edge count, window and sample rate. A new window is published every ${LIMITS.probeWindowMs} ms (${LIMITS.probeMaxHz} Hz); reading faster is allowed and simply returns the current window again.`,
     input: ReadProbeInput,
     output: ReadProbeOutput,
     annotations: RO,

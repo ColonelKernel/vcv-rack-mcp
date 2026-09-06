@@ -8714,7 +8714,7 @@
     },
     "read_probe": {
       "title": "Read probe",
-      "description": "Read the latest telemetry window from an attached Probe input: per-channel min/max, peak, RMS, DC, clipped and non-finite counts, edge count, window and sample rate. Rate limited to 20 Hz.",
+      "description": "Read the latest telemetry window from an attached Probe input: per-channel min/max, peak, RMS, DC, clipped and non-finite counts, edge count, window and sample rate. A new window is published every 50 ms (20 Hz); reading faster is allowed and simply returns the current window again.",
       "annotations": {
         "readOnlyHint": true,
         "destructiveHint": false,

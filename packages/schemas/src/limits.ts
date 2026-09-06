@@ -19,7 +19,11 @@ export const LIMITS = {
   txnMaxAddedModules: 32,
   /** Maximum simultaneously attached probe channels per instance. */
   maxActiveProbes: 16,
-  /** Maximum probe reporting rate (Hz). */
+  /**
+   * Rate at which the probe telemetry window is republished (Hz). Derived from
+   * probeWindowMs below, not chosen independently: a "max rate" that disagreed
+   * with how often a new window exists would be describing nothing.
+   */
   probeMaxHz: 20,
   /** Maximum parameter changes per second per client. */
   paramChangesPerSecond: 30,
@@ -29,6 +33,8 @@ export const LIMITS = {
   commandTimeoutMs: 5 * 1000,
   /** Default patch load/save timeout (ms); configurable. */
   patchIoTimeoutMs: 60 * 1000,
+  /** Default transaction commit timeout (ms); configurable. */
+  txnCommitTimeoutMs: 30 * 1000,
   /** Minimum retention of mutation results keyed by operation ID (ms). */
   idempotencyCacheMs: 10 * 60 * 1000,
   /** JSON boundary limits enforced before any processing. */

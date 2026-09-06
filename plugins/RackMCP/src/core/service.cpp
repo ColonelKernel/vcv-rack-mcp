@@ -261,16 +261,16 @@ bool BridgeServer::handleFrame(Session& session, const std::string& frame) {
             keep = false;
         }
         else {
-            bool versionOk = false;
-            json_t* versions = json_object_get(root, "versions");
-            if (json_is_array(versions)) {
-                size_t i;
-                json_t* v;
-                json_array_foreach(versions, i, v) {
-                    if (json_is_integer(v) && json_integer_value(v) == gen::BRIDGE_PROTOCOL_VERSION)
-                        versionOk = true;
-                }
-            }
+            // Pick the highest version both sides can speak. The floor exists so
+            // that dropping support for an old version is a deliberate edit to
+            // BRIDGE_PROTOCOL_MIN_SUPPORTED rather than a silent consequence of
+            // bumping the current version; with the two equal, this accepts
+            // exactly what an equality check would.
+            const int selected =
+                selectProtocolVersion(json_object_get(root, "versions"),
+                                      (int) gen::BRIDGE_PROTOCOL_MIN_SUPPORTED,
+                                      (int) gen::BRIDGE_PROTOCOL_VERSION);
+            const bool versionOk = selected != 0;
             if (!versionOk) {
                 enqueueOutbound(session, buildAuthResult(false, "PROTOCOL_VERSION_MISMATCH",
                                                          "no mutually supported bridge protocol version"));
@@ -286,7 +286,7 @@ bool BridgeServer::handleFrame(Session& session, const std::string& frame) {
                 }
                 else {
                 WelcomeInfo info;
-                info.version = gen::BRIDGE_PROTOCOL_VERSION;
+                info.version = selected;
                 info.instanceId = config_.instanceId;
                 info.sessionId = config_.sessionId;
                 info.bridgeVersion = config_.bridgeVersion;

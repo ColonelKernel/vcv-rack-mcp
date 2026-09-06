@@ -1,4 +1,5 @@
 import { homedir, platform } from "node:os";
+import { LIMITS } from "@rackmcp/schemas";
 import { join } from "node:path";
 
 /**
@@ -23,6 +24,15 @@ export interface ServerConfig {
   auditMaxAgeDays: number;
   /** Default request deadline forwarded to the bridge. */
   requestDeadlineMs: number;
+  /**
+   * Deadlines for the two operations that can legitimately take much longer
+   * than a normal bridge request: patch file I/O, and applying a transaction.
+   * Both are published in LIMITS and were previously hardcoded at the six call
+   * sites, so the documented limit and the enforced one could drift apart
+   * silently.
+   */
+  patchIoTimeoutMs: number;
+  txnCommitTimeoutMs: number;
 }
 
 /** Parses a non-negative numeric env var, falling back on anything unusable. */
@@ -63,6 +73,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     auditDir: join(rackmcpDir, "audit"),
     auditMaxBytes: numeric(env.RACKMCP_AUDIT_MAX_BYTES, 8 * 1024 * 1024),
     auditMaxAgeDays: numeric(env.RACKMCP_AUDIT_MAX_AGE_DAYS, 30),
-    requestDeadlineMs: numeric(env.RACKMCP_REQUEST_DEADLINE_MS, 5000),
+    requestDeadlineMs: numeric(env.RACKMCP_REQUEST_DEADLINE_MS, LIMITS.commandTimeoutMs),
+    patchIoTimeoutMs: numeric(env.RACKMCP_PATCH_IO_TIMEOUT_MS, LIMITS.patchIoTimeoutMs),
+    txnCommitTimeoutMs: numeric(env.RACKMCP_TXN_COMMIT_TIMEOUT_MS, LIMITS.txnCommitTimeoutMs),
   };
 }

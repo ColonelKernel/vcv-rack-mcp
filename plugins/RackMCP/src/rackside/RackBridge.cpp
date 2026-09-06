@@ -152,10 +152,14 @@ UiStateCache RackBridge::uiState() {
 
 void RackBridge::heartbeatLoop() {
     // Heartbeat thread: filesystem + cached state only; never touches Rack APIs.
+    // Sleep the published interval in short slices so a shutdown does not wait
+    // out a whole beat. The slice count is derived, not written down twice.
+    const int sliceMs = 100;
+    const int slices = (int) (gen::LIMIT_BRIDGE_HEARTBEAT_INTERVAL_MS / sliceMs);
     while (!stopHeartbeat_.load()) {
         writeManifestNow();
-        for (int i = 0; i < 20 && !stopHeartbeat_.load(); i++)
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        for (int i = 0; i < slices && !stopHeartbeat_.load(); i++)
+            std::this_thread::sleep_for(std::chrono::milliseconds(sliceMs));
     }
 }
 

@@ -155,12 +155,16 @@ export function loadSources(): readonly SourceFile[] {
  * not credited to a mention of `probeMaxHzDefault`, and so a snake_case wire
  * value is not credited to a longer identifier that contains it.
  */
-export function rootsMentioning(...symbols: string[]): Set<string> {
+export function rootsMentioning(
+  symbols: readonly string[],
+  options: { readonly ignoreFile?: string } = {},
+): Set<string> {
   const hit = new Set<string>();
   const patterns = symbols.map(
     (s) => new RegExp(`(?<![A-Za-z0-9_$])${escapeRegExp(s)}(?![A-Za-z0-9_$])`),
   );
   for (const file of loadSources()) {
+    if (file.path === options.ignoreFile) continue;
     if (hit.has(file.root.id)) continue;
     if (patterns.some((p) => p.test(file.code))) hit.add(file.root.id);
   }

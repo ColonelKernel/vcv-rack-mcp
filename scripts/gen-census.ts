@@ -8,7 +8,7 @@
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { CENSUS_EXCEPTIONS, runCensus } from "../tests/contract/src/census.js";
+import { CENSUS_EXCEPTIONS, describe, runCensus } from "../tests/contract/src/census.js";
 import { declaredSymbols } from "../tests/contract/src/declared.js";
 import { alwaysConstantKeys, keyProducers } from "../tests/contract/src/producers.js";
 import { loadDocs } from "../tests/contract/src/docs.js";
@@ -131,7 +131,12 @@ P(
 );
 
 const orphans = results.filter((r) => !r.implemented && !r.exception);
-if (orphans.length) throw new Error(`census is red: ${orphans.length} undisclosed orphans`);
+if (orphans.length) {
+  throw new Error(
+    `census is red; refusing to write a document claiming otherwise.\n` +
+      orphans.map((o) => `  ${describe(o)}`).join("\n"),
+  );
+}
 
 writeFileSync(join(root, "docs/architecture/contract-census.md"), out.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd() + "\n");
 console.error(

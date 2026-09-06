@@ -21,6 +21,7 @@ static const int64_t LIMIT_PARAM_CHANGES_PER_SECOND = 30;
 static const int64_t LIMIT_CONFIRMATION_LIFETIME_MS = 300000;
 static const int64_t LIMIT_COMMAND_TIMEOUT_MS = 5000;
 static const int64_t LIMIT_PATCH_IO_TIMEOUT_MS = 60000;
+static const int64_t LIMIT_TXN_COMMIT_TIMEOUT_MS = 30000;
 static const int64_t LIMIT_IDEMPOTENCY_CACHE_MS = 600000;
 static const int64_t LIMIT_JSON_MAX_DEPTH = 64;
 static const int64_t LIMIT_JSON_MAX_STRING_BYTES = 262144;
@@ -153,7 +154,7 @@ static const FieldSpec FRAME_FIELDS_welcome[] = {
 	{"rackEdition", "string"},
 	{"rackVersion", "string"},
 	{"sessionId", "string"},
-	{"version", "number"},
+	{"version", "integer"},
 	{nullptr, nullptr}
 };
 static const FrameSpec FRAME_SPECS[] = {

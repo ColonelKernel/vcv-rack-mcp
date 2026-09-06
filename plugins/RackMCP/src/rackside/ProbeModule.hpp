@@ -7,6 +7,7 @@
 
 #include "core/queues.hpp"
 #include "core/telemetry.hpp"
+#include "gen/rackmcp_protocol_gen.hpp"
 #include <cstdint>
 
 namespace rackmcp {
@@ -19,6 +20,16 @@ struct ProbeModule : rack::engine::Module {
     enum LightId { ENUMS(PROBE_LIGHT, 8 * 2), LIGHTS_LEN };
 
     static const int NUM_PROBE_INPUTS = 8;
+
+    // The port count is published to clients as LIMITS.probeInputsPerModule and
+    // is written out longhand above, because Rack port ids must be an explicit
+    // enum. These tie the two together: adding a PROBEn_INPUT without changing
+    // the limit, or vice versa, stops the plugin compiling rather than shipping
+    // a module whose advertised and actual input counts disagree.
+    static_assert(NUM_PROBE_INPUTS == (int) gen::LIMIT_PROBE_INPUTS_PER_MODULE,
+                  "probe input count disagrees with LIMITS.probeInputsPerModule");
+    static_assert((int) INPUTS_LEN == NUM_PROBE_INPUTS,
+                  "InputId enum has a different number of ports than NUM_PROBE_INPUTS");
 
     ProbeModule();
     void process(const ProcessArgs& args) override;

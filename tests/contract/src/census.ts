@@ -19,13 +19,22 @@ function findException(d: DeclaredSymbol): CensusException | undefined {
 
 export function runCensus(): readonly CensusResult[] {
   return declaredSymbols().map((declared) => {
-    const roots = rootsMentioning(declared.symbol, ...declared.aliases);
+    const roots = rootsMentioning(
+      [declared.symbol, ...declared.aliases],
+      declared.declaredIn ? { ignoreFile: declared.declaredIn } : {},
+    );
     const kinds = kindsOf(roots);
     return {
       declared,
       roots: [...roots].sort(),
       kinds: [...kinds].sort(),
-      implemented: kinds.has("producer") || kinds.has("consumer"),
+      // A symbol with its own declaring file counts a hit anywhere else,
+      // including elsewhere in the declaration root: for a limit, being
+      // substituted into a schema IS the implementation.
+      implemented:
+        kinds.has("producer") ||
+        kinds.has("consumer") ||
+        (declared.declaredIn !== undefined && kinds.has("declaration")),
       exception: findException(declared),
     };
   });

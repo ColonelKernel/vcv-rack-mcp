@@ -130,3 +130,42 @@ TEST_CASE("ewmaStepUs converges toward a changed steady state") {
     CHECK(v <= 507);
     CHECK(v >= 500);
 }
+
+TEST_CASE("protocol version selection picks the highest mutually supported version") {
+    // Driven with synthetic ranges on purpose. With the floor and the current
+    // version both 1, a test that went through the real handshake could not
+    // distinguish this from an equality check: every offer one accepts, the
+    // other accepts too. These ranges are the ones that will exist later.
+    struct Case {
+        const char* json;
+        int min;
+        int max;
+        int expected;
+    };
+    const Case cases[] = {
+        {"[1]", 1, 1, 1},                 // today
+        {"[1, 2, 3]", 1, 3, 3},           // client and plugin fully overlap
+        {"[1, 2, 3]", 2, 2, 2},           // plugin dropped v1 and has not reached v3
+        {"[3, 1, 2]", 1, 3, 3},           // order of the offer does not matter
+        {"[1]", 2, 3, 0},                 // client too old: no overlap
+        {"[4, 5]", 1, 3, 0},              // client too new: no overlap
+        {"[]", 1, 3, 0},                  // offered nothing
+        {"[\"1\", null, 2]", 1, 3, 2},    // junk entries ignored, not fatal
+        {"[1.5]", 1, 3, 0},               // a non-integer is not a version
+    };
+    for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
+        json_error_t err;
+        json_t* offered = json_loads(cases[i].json, 0, &err);
+        REQUIRE(offered != NULL);
+        CAPTURE(cases[i].json);
+        CAPTURE(cases[i].min);
+        CAPTURE(cases[i].max);
+        CHECK(selectProtocolVersion(offered, cases[i].min, cases[i].max) == cases[i].expected);
+        json_decref(offered);
+    }
+
+    CHECK(selectProtocolVersion(NULL, 1, 3) == 0);
+    json_t* notAnArray = json_integer(1);
+    CHECK(selectProtocolVersion(notAnArray, 1, 3) == 0);
+    json_decref(notAnArray);
+}

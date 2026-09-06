@@ -64,6 +64,8 @@ export class TransactionManager {
   constructor(
     private readonly conn: ConnectionManager,
     private readonly limiter: RateLimiter = new RateLimiter(),
+    /** Applying a plan can outlast a normal bridge request; see ServerConfig. */
+    private readonly commitTimeoutMs: number = LIMITS.txnCommitTimeoutMs,
   ) {}
 
   private mintToken(binding: TokenBinding): string {
@@ -259,7 +261,7 @@ export class TransactionManager {
         planHash: args.planHash,
         expectedFingerprint: args.expectedFingerprint,
       },
-      { operationId: args.operationId, deadlineMs: 30_000 },
+      { operationId: args.operationId, deadlineMs: this.commitTimeoutMs },
     );
     this.plans.delete(args.planHash);
     return result;

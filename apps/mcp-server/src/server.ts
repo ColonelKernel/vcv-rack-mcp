@@ -22,7 +22,7 @@ export function createServer(config: ServerConfig): {
   conn: ConnectionManager;
 } {
   const conn = new ConnectionManager(config);
-  const txns = new TransactionManager(conn);
+  const txns = new TransactionManager(conn, undefined, config.txnCommitTimeoutMs);
   const audit = new AuditLog(config.auditDir, {
     maxBytes: config.auditMaxBytes,
     maxAgeDays: config.auditMaxAgeDays,

@@ -94,7 +94,7 @@ export const createCheckpoint: ToolHandler = async (args, ctx) => {
   const res = await ctx.conn.request<PatchFileResult>(
     "patchfile.saveCopy",
     { scope: scopeFor(instance), path, operationId: args.operationId },
-    { operationId: args.operationId as string, deadlineMs: 60_000 },
+    { operationId: args.operationId as string, deadlineMs: config.patchIoTimeoutMs },
   );
   return {
     checkpointPath: path,
@@ -115,7 +115,7 @@ export const savePatch: ToolHandler = async (args, ctx) => {
   const res = await ctx.conn.request<PatchFileResult>(
     "patchfile.save",
     { scope: scopeFor(instance), path: path ?? "", operationId: args.operationId },
-    { operationId: args.operationId as string, deadlineMs: 60_000 },
+    { operationId: args.operationId as string, deadlineMs: config.patchIoTimeoutMs },
   );
   // The plugin reports where it actually saved. That matters when no path was
   // requested: "save" then means "save where this patch already lives", which
@@ -267,7 +267,7 @@ async function commitLoadOrClear(
     await ctx.conn.request<PatchFileResult>(
       "patchfile.saveCopy",
       { scope: scopeFor(instance), path: recoveryPath, operationId: randomUUID() },
-      { operationId: randomUUID(), deadlineMs: 60_000 },
+      { operationId: randomUUID(), deadlineMs: config.patchIoTimeoutMs },
     );
   } catch (err) {
     const cause = toErrorPayload(err);
@@ -289,13 +289,13 @@ async function commitLoadOrClear(
     res = await ctx.conn.request<PatchFileResult>(
       "patchfile.load",
       { scope: scopeFor(instance), path: resolved.absolute, setPath: true, operationId },
-      { operationId, deadlineMs: 60_000 },
+      { operationId, deadlineMs: config.patchIoTimeoutMs },
     );
   } else {
     res = await ctx.conn.request<PatchFileResult>(
       "patchfile.clear",
       { scope: scopeFor(instance), operationId },
-      { operationId, deadlineMs: 60_000 },
+      { operationId, deadlineMs: config.patchIoTimeoutMs },
     );
   }
   return {

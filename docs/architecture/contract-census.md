@@ -13,13 +13,13 @@ has no implementation behind it and no stated reason for standing alone.
 | --- | ---: |
 | bridge_method | 19 |
 | error_code | 30 |
-| limit | 20 |
+| limit | 21 |
 | operation_type | 11 |
 | resource | 6 |
 | risk_flag | 13 |
 | schema_property | 310 |
 | tool | 29 |
-| **total** | **438** |
+| **total** | **439** |
 
 Scanned across 12 source roots and 123 files,
 plus 24 documentation files and 110 distinct JSON keys
@@ -27,20 +27,15 @@ emitted by the plugin.
 
 ## Outstanding debts
 
-11 published symbols are declared ahead of their implementation.
+6 published symbols are declared ahead of their implementation.
 
 | Symbol | Kind | Owed |
 | --- | --- | --- |
 | `copyCables` | schema_property | phase 4 — implement duplicate_module, whose operation this field belongs to. The operation is currently refused outright, so the field cannot be reached. |
-| `large_transaction` | risk_flag | phase 2 — give it a producer in Transaction.cpp, thresholded on gen::LIMIT_TXN_MAX_OPERATIONS. A client is told this flag exists and can reasonably assume big plans are marked; today nothing marks them. |
 | `packages/test-client` | doc_referent | phase 3 — build it. README.md and the spec both list a scriptable MCP test client as a shipped package; the directory is empty and untracked, so a reader who goes looking finds nothing. The code exists, duplicated across ten files in tests/integration/src. |
-| `patchIoTimeoutMs` | limit | phase 2 — becomes a ServerConfig field, replacing hardcoded 60_000 literals. Published as configurable while nothing reads it. |
-| `probeInputsPerModule` | limit | phase 2 — deduplicate the three independent copies of the value (here, ProbeModule.hpp and telemetry.ts) behind gen::LIMIT_PROBE_INPUTS_PER_MODULE. |
-| `probeMaxHz` | limit | phase 2 — interpolate into read_probe's description, which currently states the number in prose where it can drift from the constant. |
 | `requiredTemporaryInstantiation` | constant_field | phase 6 — delete. Metadata can only be produced by instantiating the model once, so this is true in every response, including cache hits which replay the stored payload verbatim. The field that actually varies, and that a client should read, is cached. |
 | `smoothMs` | schema_property | phase 4 — implement parameter ramping. This is the worst kind of dead field: it is accepted by the schema and silently ignored, so a client asking for a smooth change gets a jump and no error. |
 | `tests/fuzz` | doc_referent | phase 8 — populate it. It is listed in pnpm-workspace.yaml and in the spec's monorepo layout, but is an empty untracked directory: the fast-check properties live in packages/schemas/test and the libFuzzer targets in tests/cpp. |
-| `txnMaxOperations` | limit | phase 2 — substitute for the hardcoded .max(128) in tools.ts, so the published limit and the enforced limit cannot drift apart. |
 | `undoEligible` | constant_field | phase 6 — delete. It is a second copy of the same always-true claim as undoable, on the commit result rather than the preview result. |
 
 ## Settled dispositions
@@ -65,9 +60,9 @@ present either way; the gate matches the jansson call shape instead.
 | --- | --- | --- |
 | `opaqueStateDisclosed` | `json_true()` | `plugins/RackMCP/src/rackside/Snapshot.cpp:195` |
 | `requiredTemporaryInstantiation` | `json_true()` | `plugins/RackMCP/src/rackside/Snapshot.cpp:437` |
-| `undoable` | `json_true()` | `plugins/RackMCP/src/rackside/Transaction.cpp:644` |
-| `undoEligible` | `json_true()` | `plugins/RackMCP/src/rackside/Transaction.cpp:1265` |
-| `undone` | `json_true()` | `plugins/RackMCP/src/rackside/Transaction.cpp:1320` |
+| `undoable` | `json_true()` | `plugins/RackMCP/src/rackside/Transaction.cpp:654` |
+| `undoEligible` | `json_true()` | `plugins/RackMCP/src/rackside/Transaction.cpp:1275` |
+| `undone` | `json_true()` | `plugins/RackMCP/src/rackside/Transaction.cpp:1330` |
 
 ## What these gates do not cover
 

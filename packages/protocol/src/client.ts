@@ -1,6 +1,7 @@
 import { createHmac, randomBytes } from "node:crypto";
 import { createConnection, type Socket } from "node:net";
 import {
+  BRIDGE_PROTOCOL_MIN_SUPPORTED,
   BRIDGE_PROTOCOL_VERSION,
   LIMITS,
   RackMcpError,
@@ -48,6 +49,31 @@ interface HandshakeWaiter {
  * Bridge protocol client: framing, hello/welcome/auth handshake, request
  * multiplexing with per-request deadlines, ping heartbeats, and event hooks.
  */
+/**
+ * Every bridge protocol version this client can speak, oldest first.
+ *
+ * The plugin picks the highest of these it still supports, so a client and a
+ * plugin from different releases interoperate as long as their ranges overlap.
+ * Today the range is a single version and this is a one-element array.
+ */
+export const SUPPORTED_PROTOCOL_VERSIONS: readonly number[] = protocolVersionRange(
+  BRIDGE_PROTOCOL_MIN_SUPPORTED,
+  BRIDGE_PROTOCOL_VERSION,
+);
+
+/**
+ * The inclusive range `[min, max]`, oldest first, or empty when max < min.
+ *
+ * Separate from the constant above so it can be tested across ranges that do
+ * not exist yet: while the floor and the current version are both 1, asserting
+ * on SUPPORTED_PROTOCOL_VERSIONS cannot tell this apart from a hardcoded
+ * one-element array.
+ */
+export function protocolVersionRange(min: number, max: number): readonly number[] {
+  if (max < min) return [];
+  return Array.from({ length: max - min + 1 }, (_, i) => min + i);
+}
+
 export class BridgeClient {
   private socket: Socket | null = null;
   private decoder = new FrameDecoder();
@@ -94,7 +120,7 @@ export class BridgeClient {
     const welcome = await this.exchangeHandshake(
       {
         kind: "hello",
-        versions: [BRIDGE_PROTOCOL_VERSION],
+        versions: SUPPORTED_PROTOCOL_VERSIONS,
         client: { name: this.options.clientName, version: this.options.clientVersion },
       },
       timeoutMs,
@@ -120,6 +146,18 @@ export class BridgeClient {
       patchEpoch: welcome.patchEpoch as number,
       nonce: welcome.nonce as string,
     };
+    const negotiated = welcome.version as number;
+    if (!SUPPORTED_PROTOCOL_VERSIONS.includes(negotiated)) {
+      // The plugin answered with a version outside what we offered. Refuse
+      // rather than speak a dialect neither side has agreed on.
+      this.close();
+      throw new BridgeRequestError({
+        code: "PROTOCOL_VERSION_MISMATCH",
+        message: `bridge selected protocol version ${negotiated}, which this client did not offer`,
+        retrySafe: false,
+        mutationMayHaveOccurred: false,
+      });
+    }
     return this.welcomeData;
   }
 

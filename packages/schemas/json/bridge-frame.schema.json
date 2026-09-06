@@ -54,8 +54,9 @@
           "const": "welcome"
         },
         "version": {
-          "type": "number",
-          "const": 1
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1
         },
         "instanceId": {
           "type": "string",

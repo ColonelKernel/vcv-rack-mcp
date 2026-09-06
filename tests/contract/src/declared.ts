@@ -29,6 +29,20 @@ export interface DeclaredSymbol {
    * plugin, which is the opposite of the truth.
    */
   readonly aliases: readonly string[];
+  /**
+   * The one file that declares this symbol, when a mention anywhere else — even
+   * elsewhere in `packages/schemas` — is a genuine use.
+   *
+   * `LIMITS.txnMaxOperations` is the case this exists for. Substituting it into
+   * the tool input schema is exactly what "the limit has a reader" should mean:
+   * the published number and the enforced number become one expression. But
+   * tools.ts lives in the declaration root, so without this the census would
+   * demand the reader be moved somewhere worse to satisfy the gate.
+   *
+   * Field names get no such treatment: a property named in two schema modules
+   * is still only declared.
+   */
+  readonly declaredIn?: string;
 }
 
 export type DeclaredKind =
@@ -46,8 +60,15 @@ function collect(
   kind: DeclaredKind,
   origin: string,
   aliasesOf: (symbol: string) => string[] = () => [],
+  declaredIn?: string,
 ): DeclaredSymbol[] {
-  return values.map((symbol) => ({ symbol, kind, origin, aliases: aliasesOf(symbol) }));
+  return values.map((symbol) => ({
+    symbol,
+    kind,
+    origin,
+    aliases: aliasesOf(symbol),
+    ...(declaredIn ? { declaredIn } : {}),
+  }));
 }
 
 /**
@@ -124,9 +145,13 @@ export function declaredSymbols(): readonly DeclaredSymbol[] {
       "bridge_method",
       "packages/schemas/src/bridge.ts BRIDGE_METHOD_NAMES",
     ),
-    ...collect(Object.keys(LIMITS), "limit", "packages/schemas/src/limits.ts LIMITS", (k) => [
-      generatedLimitName(k),
-    ]),
+    ...collect(
+      Object.keys(LIMITS),
+      "limit",
+      "packages/schemas/src/limits.ts LIMITS",
+      (k) => [generatedLimitName(k)],
+      "packages/schemas/src/limits.ts",
+    ),
     ...collect(TOOL_NAMES, "tool", "packages/schemas/src/tools.ts TOOLS"),
     ...collect(RESOURCE_URIS, "resource", "packages/schemas/src/resources.ts RESOURCES"),
     ...schemaPropertyNames(),

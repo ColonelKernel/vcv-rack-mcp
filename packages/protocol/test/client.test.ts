@@ -1,7 +1,12 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { createServer, type AddressInfo, type Server, type Socket } from "node:net";
-import { LIMITS } from "@rackmcp/schemas";
-import { BridgeClient, BridgeRequestError } from "../src/client.js";
+import { BRIDGE_PROTOCOL_MIN_SUPPORTED, BRIDGE_PROTOCOL_VERSION, LIMITS } from "@rackmcp/schemas";
+import {
+  BridgeClient,
+  BridgeRequestError,
+  protocolVersionRange,
+  SUPPORTED_PROTOCOL_VERSIONS,
+} from "../src/client.js";
 import { encodeFrame, FrameDecoder } from "../src/framing.js";
 
 /**
@@ -17,6 +22,7 @@ type FrameHandler = (
 
 const WELCOME: Record<string, unknown> = {
   kind: "welcome",
+  version: BRIDGE_PROTOCOL_VERSION,
   instanceId: "11111111-1111-4111-8111-111111111111",
   sessionId: "22222222-2222-4222-8222-222222222222",
   bridgeVersion: "0.1.0",
@@ -170,5 +176,45 @@ describe("BridgeClient request", () => {
     } finally {
       process.off("unhandledRejection", onUnhandled);
     }
+  });
+});
+
+describe("BridgeClient protocol negotiation", () => {
+  it("builds the inclusive range between two versions", () => {
+    expect(protocolVersionRange(1, 1)).toEqual([1]);
+    expect(protocolVersionRange(1, 3)).toEqual([1, 2, 3]);
+    expect(protocolVersionRange(2, 4)).toEqual([2, 3, 4]);
+    expect(protocolVersionRange(3, 2), "an empty range offers nothing").toEqual([]);
+  });
+
+  it("offers every version between the floor and the current one", () => {
+    expect(SUPPORTED_PROTOCOL_VERSIONS[0]).toBe(BRIDGE_PROTOCOL_MIN_SUPPORTED);
+    expect(SUPPORTED_PROTOCOL_VERSIONS.at(-1)).toBe(BRIDGE_PROTOCOL_VERSION);
+    expect(SUPPORTED_PROTOCOL_VERSIONS).toHaveLength(
+      BRIDGE_PROTOCOL_VERSION - BRIDGE_PROTOCOL_MIN_SUPPORTED + 1,
+    );
+  });
+
+  it("sends the whole supported range in the hello frame", async () => {
+    let offered: unknown;
+    const bridge = await startBridge((_socket, frame, send) => {
+      if (frame.kind === "hello") {
+        offered = frame.versions;
+        send(WELCOME);
+      } else if (frame.kind === "auth") send({ kind: "authResult", ok: true });
+    });
+    const client = newClient();
+    await client.connect(bridge.port);
+    client.close();
+    expect(offered).toEqual([...SUPPORTED_PROTOCOL_VERSIONS]);
+  });
+
+  it("refuses a version it never offered, rather than speaking an unagreed dialect", async () => {
+    const bridge = await startBridge((_socket, frame, send) => {
+      if (frame.kind === "hello") send({ ...WELCOME, version: BRIDGE_PROTOCOL_VERSION + 1 });
+      else if (frame.kind === "auth") send({ kind: "authResult", ok: true });
+    });
+    const client = newClient();
+    await expect(client.connect(bridge.port)).rejects.toThrow(/PROTOCOL_VERSION_MISMATCH/);
   });
 });

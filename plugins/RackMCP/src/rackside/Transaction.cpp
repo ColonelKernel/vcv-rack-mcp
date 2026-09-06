@@ -619,6 +619,16 @@ TxnOutcome txnPreview(json_t* request) {
         addFlag("adapter_uncertainty", "adds third-party modules without a verified adapter");
     if (st.possibleFeedback)
         addFlag("possible_feedback", "may create a feedback loop");
+    // A plan using more than half the per-transaction allowance is flagged so a
+    // client can offer to split it. The threshold is derived from the published
+    // limit rather than chosen separately, so raising the limit moves the flag
+    // with it; the limit itself is enforced by the tool input schema, and this
+    // says nothing about validity, only size.
+    const size_t opCount = json_array_size(operations);
+    if (opCount * 2 > (size_t) gen::LIMIT_TXN_MAX_OPERATIONS)
+        addFlag("large_transaction",
+                "applies " + std::to_string(opCount) + " operations in one transaction (limit " +
+                    std::to_string((long) gen::LIMIT_TXN_MAX_OPERATIONS) + ")");
     // RiskLevel is low | destructive | high. Confirmation gating is unchanged:
     // audio-path and adapter concerns are carried by the flags, not the level.
     const char* level = st.removesBridge ? "high"
