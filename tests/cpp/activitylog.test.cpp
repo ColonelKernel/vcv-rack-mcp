@@ -1,5 +1,7 @@
 #include <doctest.h>
+#include <cstdlib>
 #include <string>
+#include <vector>
 #include "core/activitylog.hpp"
 
 using namespace rackmcp;
@@ -131,3 +133,99 @@ TEST_CASE("the clock is a well-formed hh:mm:ss") {
         if (i != 2 && i != 5)
             CHECK(now[i] >= '0');
 }
+
+// ---------------------------------------------------------------------------
+// chat.poll payload
+//
+// A note can only be created by typing into the Rack panel, and Rack draws its
+// UI in OpenGL with no accessibility tree, so no script can produce one — the
+// captured fixture is necessarily the empty case. These are the only tests that
+// ever see a non-empty poll. They matter more than they look: json_pack returns
+// NULL on a bad format string, and a NULL payload becomes a well-formed
+// response frame with no result at all, which nothing else here would notice.
+
+#if RACKMCP_HAVE_JANSSON
+
+static ChatEntry note(unsigned long long seq, const std::string& text, const std::string& clock) {
+    ChatEntry e;
+    e.seq = seq;
+    e.fromUser = true;
+    e.text = text;
+    e.clock = clock;
+    return e;
+}
+
+TEST_CASE("a poll carrying notes has the shape the schema declares") {
+    std::vector<ChatEntry> notes;
+    notes.push_back(note(7, "make the filter darker", "14:03:11"));
+    notes.push_back(note(8, "actually, brighter", "14:03:29"));
+
+    json_t* payload = buildChatPollPayload(notes, 8, 2);
+    REQUIRE(payload != NULL);
+    CHECK(json_object_size(payload) == 3);
+
+    json_t* arr = json_object_get(payload, "notes");
+    REQUIRE(json_is_array(arr));
+    REQUIRE(json_array_size(arr) == 2);
+    CHECK(json_integer_value(json_object_get(payload, "lastSeq")) == 8);
+    CHECK(json_integer_value(json_object_get(payload, "dropped")) == 2);
+
+    json_t* first = json_array_get(arr, 0);
+    // Exactly three keys: an extra one fails the strict() parse on the far side.
+    CHECK(json_object_size(first) == 3);
+    CHECK(json_integer_value(json_object_get(first, "seq")) == 7);
+    CHECK(std::string(json_string_value(json_object_get(first, "text"))) ==
+          "make the filter darker");
+    CHECK(std::string(json_string_value(json_object_get(first, "clock"))) == "14:03:11");
+    CHECK(json_integer_value(json_object_get(json_array_get(arr, 1), "seq")) == 8);
+
+    // The array must be owned by the payload alone, or the poll leaks a note
+    // list per call for as long as Rack is open.
+    CHECK(arr->refcount == 1);
+    json_decref(payload);
+}
+
+TEST_CASE("note text survives the characters a person actually types") {
+    // Typed text is the only attacker-adjacent string the plugin ever emits, and
+    // it reaches the server as JSON. Round-trip through the encoder rather than
+    // trusting the in-memory object, so a quoting bug cannot hide.
+    std::vector<ChatEntry> notes;
+    notes.push_back(note(1, "say \"hello\"\\n\tnow \xC3\xA9\xC3\xA8 \xE2\x86\x92", "00:00:01"));
+
+    json_t* payload = buildChatPollPayload(notes, 1, 0);
+    REQUIRE(payload != NULL);
+    char* dumped = json_dumps(payload, JSON_COMPACT);
+    REQUIRE(dumped != NULL);
+
+    json_error_t err;
+    json_t* reparsed = json_loads(dumped, 0, &err);
+    REQUIRE(reparsed != NULL);
+    json_t* text = json_object_get(json_array_get(json_object_get(reparsed, "notes"), 0), "text");
+    CHECK(std::string(json_string_value(text)) ==
+          "say \"hello\"\\n\tnow \xC3\xA9\xC3\xA8 \xE2\x86\x92");
+
+    free(dumped);
+    json_decref(reparsed);
+    json_decref(payload);
+}
+
+TEST_CASE("an empty poll matches the fixture captured from a live Rack") {
+    // tests/fixtures/bridge/chat.poll.json came off a real bridge and is
+    // strict-parsed by packages/schemas. Comparing against the bytes rather
+    // than a hand-written copy is what makes this a drift check: if the
+    // producer gains, loses or renames a key, the two stop agreeing here
+    // without anyone having to remember to update a second expectation.
+    const std::string path = std::string(RACKMCP_TEST_FIXTURES) + "/bridge/chat.poll.json";
+    json_error_t err;
+    json_t* fixture = json_load_file(path.c_str(), 0, &err);
+    REQUIRE_MESSAGE(fixture != NULL, "could not read ", path, ": ", err.text);
+
+    json_t* produced = buildChatPollPayload(std::vector<ChatEntry>(), 0, 0);
+    REQUIRE(produced != NULL);
+    CHECK(json_equal(fixture, produced));
+
+    json_decref(fixture);
+    json_decref(produced);
+}
+
+#endif  // RACKMCP_HAVE_JANSSON

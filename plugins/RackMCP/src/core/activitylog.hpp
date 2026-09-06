@@ -7,6 +7,9 @@
 // newest entry instead of the oldest looks fine on a quiet rack — so they are
 // testable without a running Rack.
 #include <cstddef>
+#if RACKMCP_HAVE_JANSSON
+#include <jansson.h>
+#endif
 #include <mutex>
 #include <string>
 #include <vector>
@@ -145,5 +148,19 @@ std::string clampChatText(const std::string& text);
 
 /** hh:mm:ss in local time, for the panel's left column. */
 std::string clockNow();
+
+/**
+ * Builds the `chat.poll` result payload. Caller owns the returned reference.
+ *
+ * Split out of the handler so the non-empty case can be tested: a note can only
+ * be created by typing into the panel, and Rack draws its UI in OpenGL with no
+ * accessibility tree, so no script can produce one. Without this the only shape
+ * ever exercised would be the empty array — and a wrong json_pack format string
+ * returns NULL, which every other test would happily pass over.
+ */
+#if RACKMCP_HAVE_JANSSON
+json_t* buildChatPollPayload(const std::vector<ChatEntry>& notes, unsigned long long lastSeq,
+                             unsigned long long dropped);
+#endif
 
 } // namespace rackmcp

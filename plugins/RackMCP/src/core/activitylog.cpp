@@ -17,6 +17,30 @@ std::string clampChatText(const std::string& text) {
     return text.substr(0, cut);
 }
 
+#if RACKMCP_HAVE_JANSSON
+json_t* buildChatPollPayload(const std::vector<ChatEntry>& notes, unsigned long long lastSeq,
+                             unsigned long long dropped) {
+    json_t* arr = json_array();
+    for (size_t i = 0; i < notes.size(); i++) {
+        json_t* n = json_pack("{s:I, s:s, s:s}",
+                              "seq", (json_int_t) notes[i].seq,
+                              "text", notes[i].text.c_str(),
+                              "clock", notes[i].clock.c_str());
+        // A note that cannot be packed is dropped rather than poisoning the
+        // whole poll: one bad entry must not cost the client every other note.
+        if (n)
+            json_array_append_new(arr, n);
+    }
+    json_t* payload = json_pack("{s:o, s:I, s:I}",
+                                "notes", arr,
+                                "lastSeq", (json_int_t) lastSeq,
+                                "dropped", (json_int_t) dropped);
+    if (!payload)
+        json_decref(arr);
+    return payload;
+}
+#endif
+
 std::string clockNow() {
     std::time_t now = std::time(NULL);
     std::tm tm;

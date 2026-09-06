@@ -40,6 +40,9 @@ export interface RackHarnessOptions {
  * touched. The RackMCP plugin is installed from the local build.
  */
 export class RackHarness {
+  /** Extra RackMCP model slugs to place in the synthetic patch. */
+  private extraModels: string[] = [];
+
   readonly userDir: string;
   /** PID from the discovery manifest (Rack is spawned via LaunchServices). */
   rackPid: number | null = null;
@@ -95,6 +98,16 @@ export class RackHarness {
     }
   }
 
+  /**
+   * Places additional RackMCP modules on the rack before launch. They go into
+   * the seeded patch because Rack's module browser cannot be driven from a
+   * script — it is drawn in OpenGL with no accessibility tree.
+   */
+  withModules(...models: string[]): this {
+    this.extraModels = models;
+    return this;
+  }
+
   /** Seeds the autosave with a minimal patch containing one Bridge module. */
   private seedAutosave(): void {
     const autosaveDir = join(this.userDir, "autosave");
@@ -109,6 +122,19 @@ export class RackHarness {
         pos: [0, 0],
       },
     ];
+    // Extra RackMCP modules a scenario needs on screen. Placed in the patch
+    // rather than added through the module browser, which cannot be driven
+    // reliably from a script.
+    for (let i = 0; i < this.extraModels.length; i++) {
+      modules.push({
+        id: 2 + i,
+        plugin: "RackMCP",
+        model: this.extraModels[i],
+        version: PLUGIN_VERSION,
+        params: [],
+        pos: [8 + i * 16, 0],
+      });
+    }
     const patch = { version: "2.6.6", zoom: 1.0, modules, cables: [] };
     writeFileSync(join(autosaveDir, "patch.json"), JSON.stringify(patch, null, 2));
   }

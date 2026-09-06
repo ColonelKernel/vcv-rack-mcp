@@ -3,6 +3,9 @@
 RACK_DIR ?= ../../vendor/Rack-SDK
 
 FLAGS += -Isrc
+# The Rack SDK always supplies jansson. tests/cpp can build core/ without it,
+# so the sources guard on this macro; the plugin must therefore set it.
+FLAGS += -DRACKMCP_HAVE_JANSSON=1
 CFLAGS +=
 CXXFLAGS +=
 LDFLAGS +=

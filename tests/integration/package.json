@@ -21,7 +21,9 @@
     "screenshot:hold": "tsx src/screenshot-hold.ts",
     "quit": "tsx src/quit-smoke.ts",
     "capture:switches": "tsx src/capture-switch-positions.ts",
-    "verify:switches": "tsx src/capture-switch-positions.ts --verify"
+    "verify:switches": "tsx src/capture-switch-positions.ts --verify",
+    "chat": "tsx src/chat-smoke.ts",
+    "chat:hold": "tsx src/chat-smoke.ts --hold=150"
   },
   "dependencies": {
     "@rackmcp/adapters": "workspace:*",

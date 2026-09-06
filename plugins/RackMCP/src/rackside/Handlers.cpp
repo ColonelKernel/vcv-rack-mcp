@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <jansson.h>
 
+#include "core/activitylog.hpp"
 #include "core/canonical.hpp"
 #include "core/frames.hpp"
 #include "gen/rackmcp_protocol_gen.hpp"
@@ -93,19 +94,8 @@ static std::string handleChatPoll(const BridgeCommand& cmd) {
         if (json_is_integer(v) && json_integer_value(v) > 0)
             sinceSeq = json_integer_value(v);
     }
-    std::vector<ChatEntry> notes = bridge.pollUserNotes((unsigned long long) sinceSeq);
-    json_t* arr = json_array();
-    for (size_t i = 0; i < notes.size(); i++) {
-        json_t* n = json_pack("{s:I, s:s, s:s}",
-                              "seq", (json_int_t) notes[i].seq,
-                              "text", notes[i].text.c_str(),
-                              "clock", notes[i].clock.c_str());
-        json_array_append_new(arr, n);
-    }
-    json_t* payload = json_pack("{s:o, s:I, s:I}",
-                                "notes", arr,
-                                "lastSeq", (json_int_t) bridge.userNotesLastSeq(),
-                                "dropped", (json_int_t) bridge.userNotesDropped());
+    json_t* payload = buildChatPollPayload(bridge.pollUserNotes((unsigned long long) sinceSeq),
+                                           bridge.userNotesLastSeq(), bridge.userNotesDropped());
     return buildResOk(cmd.requestId, payload);
 }
 

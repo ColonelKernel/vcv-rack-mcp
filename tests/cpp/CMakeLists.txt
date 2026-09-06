@@ -105,6 +105,9 @@ target_link_libraries(rackmcp_tests PRIVATE rackmcp_core)
 # Scratch directory for tests that touch the filesystem (secret / manifest).
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/scratch)
 target_compile_definitions(rackmcp_tests PRIVATE RACKMCP_TEST_SCRATCH="${CMAKE_CURRENT_BINARY_DIR}/scratch")
+# Live-captured bridge fixtures, so a C++ producer can be checked against the
+# exact bytes a real Rack emitted rather than against a second hand-written copy.
+target_compile_definitions(rackmcp_tests PRIVATE RACKMCP_TEST_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/../fixtures")
 add_test(NAME rackmcp_tests COMMAND rackmcp_tests)
 
 # Optional libFuzzer target for the frame decoder (clang only).

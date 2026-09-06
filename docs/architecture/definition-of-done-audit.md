@@ -225,3 +225,15 @@ are deliberate and recorded here rather than papered over.
   the wire data itself reflects real Rack state.
 - `format:check` (Prettier) has repository-wide style debt predating this phase;
   it is a formatting cleanup, not a correctness issue.
+- **The RackMCP-Chat panel's keystroke path is verified by hand, not in CI.**
+  Rack renders its whole UI in OpenGL and publishes no accessibility tree, so a
+  script cannot type into the input field: System Events' `click at` reports
+  success and hits nothing. Everything downstream of the keystroke is covered
+  automatically — `buildChatPollPayload` lives in Rack-free `core/` with unit
+  tests for shape, escaping and refcount, and the empty poll is checked against
+  a fixture captured from a live bridge — but that a keypress in the panel
+  becomes a note on the wire is established by running
+  `pnpm --filter @rackmcp/integration run chat:hold`, typing into the panel
+  during the hold window, and reading the assertions that follow. Recorded here
+  rather than left implicit, because the alternative is a green suite that
+  quietly never exercised the feature's only entry point.
