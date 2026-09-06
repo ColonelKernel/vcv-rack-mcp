@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { Recipe } from "@rackmcp/schemas";
 import { getAdapter, listAdapters } from "@rackmcp/adapters";
@@ -108,6 +110,157 @@ describe("recipe operations wire only verified ports/params", () => {
             expect(op.normalized).toBeLessThanOrEqual(1);
           }
         }
+      }
+    });
+  }
+});
+
+/**
+ * Ground-truth parameter ranges captured by `inspect_model` from VCV Rack 2.6.6
+ * (Core) and Fundamental 2.6.4 -- the same fixture the adapter pack is checked
+ * against. Recipes set parameters by NORMALIZED value, so the raw value a
+ * recipe actually produces is invisible in the source and can only be judged
+ * against the real [minValue, maxValue] of the parameter.
+ */
+interface GtParam {
+  paramId: number;
+  name: string;
+  minValue: number;
+  maxValue: number;
+  defaultValue: number;
+}
+interface GtModel {
+  pluginSlug: string;
+  modelSlug: string;
+  params: GtParam[];
+}
+const GROUND_TRUTH: GtModel[] = JSON.parse(
+  readFileSync(
+    fileURLToPath(new URL("../../adapters/test/fixtures/model-metadata.json", import.meta.url)),
+    "utf8",
+  ),
+);
+const gtByModel = new Map<string, GtModel>(
+  GROUND_TRUTH.map((m) => [`${m.pluginSlug} ${m.modelSlug}`, m]),
+);
+
+/** Rack maps a normalized [0..1] value linearly onto [minValue, maxValue]. */
+function rawFromNormalized(gt: GtParam, normalized: number): number {
+  return gt.minValue + normalized * (gt.maxValue - gt.minValue);
+}
+
+describe("recipe parameter targets land inside the adapter's own safe range", () => {
+  /**
+   * A recipe is the one place in this system that both authors a patch and is
+   * then judged by validate_patch, which reports any live parameter outside its
+   * adapter's `safeRange` (see analysis.ts). A recipe whose own normalized
+   * target decodes to a raw value outside that range therefore builds a patch
+   * that the very next validate_patch flags -- the tool contradicting itself in
+   * front of the user.
+   *
+   * Normalized-to-raw is the step that hides this: `0.2` looks unremarkable
+   * next to a `safeRange` of [-4, 6] until you know the parameter's real range
+   * is [-8, 10] and 0.2 means -4.4.
+   */
+  for (const id of EXPECTED_IDS) {
+    it(`${id}: every normalized target decodes inside safeRange`, () => {
+      const recipe = getRecipe(id);
+      const models = aliasModels(recipe);
+      const unjudged: string[] = [];
+      for (const op of recipe!.operations) {
+        if (op.op !== "set_parameter" || typeof op.normalized !== "number") continue;
+        const alias = "alias" in op.module ? op.module.alias : undefined;
+        const m = models.get(alias!)!;
+        const label = `${id} ${alias} (${m.pluginSlug}/${m.modelSlug}) param ${op.paramId}`;
+
+        const gtModel = gtByModel.get(`${m.pluginSlug} ${m.modelSlug}`);
+        expect(gtModel, `${label}: model present in ground truth`).toBeDefined();
+        const gtParam = gtModel!.params.find((p) => p.paramId === op.paramId);
+        expect(gtParam, `${label}: param present in ground truth`).toBeDefined();
+
+        const raw = rawFromNormalized(gtParam!, op.normalized);
+        // Sanity: a normalized value can never leave the hard range.
+        expect(raw, `${label} raw >= min`).toBeGreaterThanOrEqual(gtParam!.minValue);
+        expect(raw, `${label} raw <= max`).toBeLessThanOrEqual(gtParam!.maxValue);
+
+        const safe = getAdapter(m.pluginSlug, m.modelSlug)!.params.find(
+          (p) => p.paramId === op.paramId,
+        )?.safeRange;
+        if (!safe) {
+          // No declared safe range, so there is nothing here to contradict --
+          // but say so rather than let the pass rate imply full coverage. The
+          // zero-depth defect above lived in exactly one of these skipped ops.
+          unjudged.push(`${label} "${gtParam!.name}"`);
+          continue;
+        }
+        expect(
+          raw,
+          `${label}: normalized ${op.normalized} decodes to raw ${raw} (${gtParam!.name}, hard range [${gtParam!.minValue}, ${gtParam!.maxValue}]), below the adapter safeRange [${safe[0]}, ${safe[1]}]`,
+        ).toBeGreaterThanOrEqual(safe[0]);
+        expect(
+          raw,
+          `${label}: normalized ${op.normalized} decodes to raw ${raw} (${gtParam!.name}, hard range [${gtParam!.minValue}, ${gtParam!.maxValue}]), above the adapter safeRange [${safe[0]}, ${safe[1]}]`,
+        ).toBeLessThanOrEqual(safe[1]);
+      }
+      if (unjudged.length > 0) {
+        console.info(`  ${id}: ${unjudged.length} target(s) had no safeRange to judge: ${unjudged.join(", ")}`);
+      }
+    });
+  }
+});
+
+describe("recipe modulation depths are not silently zero", () => {
+  /**
+   * `lfo_filter_modulation` cabled its LFO into the VCF's cutoff CV input and
+   * then set the attenuverter that scales that input to normalized 0.5 --
+   * which, on a BIPOLAR [-1, 1] attenuverter, is raw 0.0, the adapter's own
+   * documented "no external cutoff modulation" position. The recipe whose
+   * entire purpose is sweeping the cutoff built a patch with a static filter,
+   * while its description and notes both promised a sweep.
+   *
+   * Nothing caught it. The parameter existed, the normalized value was in
+   * [0,1], and the safeRange gate skipped the op because VCF paramId 3
+   * declares no safeRange. The tell is structural: a recipe that wires a cable
+   * into a module and then zeroes that module's modulation-depth control has
+   * built something that cannot do what it says.
+   */
+  const NEUTRALIZING_ROLES = /(attenuverter|attenuator|_amount|depth)/i;
+
+  for (const id of EXPECTED_IDS) {
+    it(`${id}: no modulation depth is left at its neutral point`, () => {
+      const recipe = getRecipe(id);
+      const models = aliasModels(recipe);
+      // Only modules this recipe actually patches something into: a depth
+      // control left at zero on a module with no incoming cable is inert
+      // either way, and pinning it is a legitimate "leave this alone".
+      const cabledInto = new Set(
+        recipe!.operations
+          .filter((o) => o.op === "connect")
+          .map((o) => ("alias" in o.input.module ? o.input.module.alias : undefined))
+          .filter((a): a is string => a !== undefined),
+      );
+
+      for (const op of recipe!.operations) {
+        if (op.op !== "set_parameter" || typeof op.normalized !== "number") continue;
+        const alias = "alias" in op.module ? op.module.alias : undefined;
+        if (!alias || !cabledInto.has(alias)) continue;
+        const m = models.get(alias)!;
+        const role = getAdapter(m.pluginSlug, m.modelSlug)?.params.find(
+          (p) => p.paramId === op.paramId,
+        )?.role;
+        if (!role || !NEUTRALIZING_ROLES.test(role)) continue;
+
+        const gt = gtByModel.get(`${m.pluginSlug} ${m.modelSlug}`)!.params.find(
+          (p) => p.paramId === op.paramId,
+        )!;
+        const raw = rawFromNormalized(gt, op.normalized);
+        expect(
+          Math.abs(raw),
+          `${id} ${alias} (${m.pluginSlug}/${m.modelSlug}) p${op.paramId} "${gt.name}" role ` +
+            `"${role}": normalized ${op.normalized} decodes to raw ${raw} on range ` +
+            `[${gt.minValue}, ${gt.maxValue}] -- that is the neutral position, so the cable ` +
+            `this recipe patches into ${alias} delivers nothing`,
+        ).toBeGreaterThan(1e-6);
       }
     });
   }

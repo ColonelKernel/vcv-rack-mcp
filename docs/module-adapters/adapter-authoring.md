@@ -67,8 +67,88 @@ is `.strict()` — unknown fields are rejected.
 | `paramId` | integer 0–65535 | Must match a real parameter index. |
 | `role` | string (≤64) | Stable semantic key, e.g. `"frequency"`, `"cutoff"`, `"level"`. Roles **may repeat** across params (per-channel/per-step roles). |
 | `description` | string (≤1024), optional | |
-| `safeInitial` | number, optional | Value to use when initializing a fresh patch. |
-| `safeRange` | `[number, number]`, optional | Values outside are flagged by validation. Must be ordered `lo <= hi`. |
+| `safeInitial` | number, optional | Value to use when initializing a fresh patch. Must lie inside the parameter's real `[minValue, maxValue]` and inside its own `safeRange`. |
+| `safeRange` | `[number, number]`, optional | Values outside are flagged by validation. Must be ordered `lo <= hi` and contained in the real `[minValue, maxValue]`. |
+
+#### Switch positions must be named with their default
+
+`packages/adapters/test/adapters.test.ts` cross-checks these against captured
+`inspect_model` ground truth, so all three bounds above are enforced, not
+advisory.
+
+One more rule is enforced there, against a second fixture:
+`tests/fixtures/adapters/switch-positions.json`. `model-metadata.json` inspects
+a *freshly instantiated* module, so it only ever records what the **default**
+position displays as — it says Fundamental LFO paramId 0 `Offset` shows
+`Unipolar`, and nothing about position 0. The switch fixture walks every snapped
+two-position parameter through **both** positions in a live Rack and records
+what Rack renders for each:
+
+```bash
+pnpm --filter @rackmcp/integration run capture:switches   # rewrite the fixture
+pnpm --filter @rackmcp/integration run verify:switches    # check it still holds
+```
+
+For a switch that names at least one position, the `description` must contain a
+clause per named position and one for the default:
+
+```
+<value> = "<displayValue>"        for each named position
+default is <defaultValue>
+```
+
+for example:
+
+```
+"Offset toggle. Snapped two-position switch: 0 = \"Bipolar\", waveform outputs
+ swing approx. +/-5 V; 1 = \"Unipolar\", approx. 0..10 V. Ground-truth default
+ is 1, so a freshly added LFO modulates positive-only unless this is switched
+ to 0."
+```
+
+The rest of the description stays free prose; those clauses are the part a test
+can check. Switches Rack names nothing for (a momentary push button, a mute
+toggle) are exempt from the clause — there is no name to get backwards — but
+they are still captured, because proving a switch is unnamed takes the same
+measurement as reading its name.
+
+And on a model that has any named switch, the words **“by default”** and
+**“(default)”** are rejected everywhere in the adapter — summary, port
+descriptions, connection recipes, and the params table alike. State the default
+in the clause above, where the measured fixture checks it; everywhere else,
+point at the controlling parameter instead:
+
+```
+"Sine waveform output. Unipolar (approx. 0..10 V) at the default Offset
+ position (paramId 0 = 1, \"Unipolar\"); set Offset to 0 for bipolar approx.
+ +/-5 V."
+```
+
+That rule is not decoration. The original LFO defect was not in a param
+description at all — it was in the four `outputs[].description` texts and in the
+module `summary`, which no clause rule reads:
+
+```
+"Sine waveform output. Bipolar modulation signal by default (approx. +/-5 V);
+ the Offset switch can shift it unipolar."     <- wrong, and outside the clause
+```
+
+RackMCP's own modules are exempt from the capture, and therefore from the
+coverage requirement: `Bridge` paramId 0 is “Reset pairing secret”, and the
+capture talks to Rack over that very bridge.
+
+This exists because three adapters shipped descriptions asserting the *opposite*
+default: the LFO's outputs were called bipolar "by default" against a
+ground-truth `Unipolar`, VCA-1's response curve "exponential (default)" against
+`Linear`, and the Scope's trigger "on by default" against `Disabled`. Every
+id-and-count test passed the whole time. Merely mentioning the position name is
+not sufficient — the wrong descriptions mentioned it too, as the value the
+switch is *not* set to.
+
+Sibling modules are not a safe guide either, which is why this is measured
+rather than reasoned about: Fundamental VCO's `Sync mode` is `Soft`/`Hard` for
+0/1, and the Wavetable VCO's (modelSlug `VCO2`) `Sync` is `Hard`/`Soft` for the
+same values.
 
 ### Ports — `AdapterPortSemantics` (both `inputs` and `outputs`)
 
@@ -112,7 +192,7 @@ compact but complete adapter.
     { "paramId": 0, "role": "level", "safeInitial": 1,
       "description": "Manual gain/attenuation; scales the CV input's effect. 1 passes unity gain, 0 fully mutes." },
     { "paramId": 1, "role": "response_mode", "safeInitial": 1,
-      "description": "Amplitude response curve: exponential (default) or linear. Discrete two-position switch." }
+      "description": "Amplitude response curve. Snapped two-position switch: 0 = \"Exponential\", a natural, perceptually smooth taper; 1 = \"Linear\", direct proportional gain. Ground-truth default is 1, so set this to 0 if an envelope should taper exponentially." }
   ],
   "inputs": [
     { "portId": 0, "role": "cv_unipolar", "key": "gain_cv", "polyphony": "poly_from_input",

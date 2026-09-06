@@ -19,7 +19,9 @@
     "recipes": "tsx src/recipes-smoke.ts",
     "demo": "tsx src/demo.ts",
     "screenshot:hold": "tsx src/screenshot-hold.ts",
-    "quit": "tsx src/quit-smoke.ts"
+    "quit": "tsx src/quit-smoke.ts",
+    "capture:switches": "tsx src/capture-switch-positions.ts",
+    "verify:switches": "tsx src/capture-switch-positions.ts --verify"
   },
   "dependencies": {
     "@rackmcp/adapters": "workspace:*",

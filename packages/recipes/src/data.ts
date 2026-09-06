@@ -275,7 +275,7 @@ const R6_lfoMod: Recipe = {
     "A slow LFO sweeps the filter cutoff of a running voice, producing an evolving, breathing timbre. The oscillator feeds the filter, the LFO modulates cutoff through the filter's CV input, and the amplifier passes the result to the output. The modulation depth is set by the filter's cutoff CV attenuverter.",
   roles: [
     need("source", "Oscillator tone source.", "Fundamental", "VCO", ["audio"]),
-    need("lfo", "Low-frequency modulation source.", "Fundamental", "LFO", ["cv_bipolar"]),
+    need("lfo", "Low-frequency modulation source.", "Fundamental", "LFO", ["cv_unipolar"]),
     need("filter", "Low-pass filter whose cutoff is modulated.", "Fundamental", "VCF", ["audio"]),
     need("amplifier", "Output VCA.", "Fundamental", "VCA-1", ["audio"]),
     need("audio_output", "Audio sink.", "Core", "AudioInterface2", ["audio"]),
@@ -286,9 +286,18 @@ const R6_lfoMod: Recipe = {
     addRole("filter", "vcf"),
     addRole("amplifier", "vca"),
     addRole("audio_output", "audio"),
-    setNorm("lfo", LFO.freq, 0.2),
+    // Frequency is normalized over the hard range [-8, 10], so 0.25 is raw
+    // -3.5 (~0.09 Hz, an ~11 s sweep). The previous 0.2 was raw -4.4, below
+    // the LFO adapter's own safeRange of [-4, 6] -- this recipe would have
+    // built a patch that the next validate_patch flagged.
+    setNorm("lfo", LFO.freq, 0.25),
     setNorm("vcf", VCF.cutoffParam, 0.5),
-    setNorm("vcf", VCF.cutoffDepth, 0.5),
+    // cutoffDepth is a BIPOLAR attenuverter over [-1, 1], so the innocuous
+    // looking 0.5 was raw 0.0 -- the adapter's own "no external cutoff
+    // modulation" position. This recipe exists to sweep the cutoff and was
+    // wiring the LFO into an input scaled to nothing. 0.75 is raw +0.5, a
+    // clearly audible sweep that still leaves headroom on the knob.
+    setNorm("vcf", VCF.cutoffDepth, 0.75),
     setNorm("vca", VCA.level, 0.8),
     connect("vco", VCO.sawOut, "vcf", VCF.audioIn),
     connect("lfo", LFO.sineOut, "vcf", VCF.cutoffCv),

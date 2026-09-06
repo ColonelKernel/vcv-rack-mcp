@@ -375,7 +375,7 @@ export const ADAPTER_DOCS: ReadonlyArray<ModuleAdapter> = [
       {
         "paramId": 1,
         "role": "sync_mode",
-        "description": "Sync behavior selector for the Sync input (hard vs soft sync). Binary switch, default 1.",
+        "description": "Sync behavior selector for the Sync input. Snapped two-position switch: 0 = \"Soft\" sync, 1 = \"Hard\" sync. Ground-truth default is 1.",
         "safeInitial": 1
       },
       {
@@ -415,7 +415,7 @@ export const ADAPTER_DOCS: ReadonlyArray<ModuleAdapter> = [
       {
         "paramId": 7,
         "role": "fm_mode",
-        "description": "FM mode selector (exponential vs linear/through-zero FM). Binary switch, default 0.",
+        "description": "Frequency-modulation mode for the Frequency modulation CV input. Snapped two-position switch: 0 = \"1V/octave\", the CV is exponential and tracks pitch; 1 = \"Linear\", the CV modulates frequency linearly. Ground-truth default is 0. (Fundamental's Wavetable VCO -- modelSlug VCO2 -- names its own FM mode position 1 \"Through-zero linear\"; this VCO does not, so do not carry through-zero behaviour across from it.)",
         "safeInitial": 0
       }
     ],
@@ -661,7 +661,7 @@ export const ADAPTER_DOCS: ReadonlyArray<ModuleAdapter> = [
       {
         "paramId": 1,
         "role": "response_mode",
-        "description": "Selects the VCA's amplitude response curve for the CV/Level: exponential (default) for a natural, perceptually smooth taper, or linear for direct proportional gain. Discrete two-position switch.",
+        "description": "Selects the VCA's amplitude response curve for the CV/Level. Snapped two-position switch: 0 = \"Exponential\", a natural, perceptually smooth taper; 1 = \"Linear\", direct proportional gain. Ground-truth default is 1, so set this to 0 if an envelope should taper exponentially.",
         "safeInitial": 1
       }
     ],
@@ -1018,19 +1018,19 @@ export const ADAPTER_DOCS: ReadonlyArray<ModuleAdapter> = [
     "modelSlug": "LFO",
     "pluginVersionRange": ">=2.6.0 <3.0.0",
     "displayName": "LFO",
-    "summary": "Low-frequency oscillator from VCV Fundamental. Simultaneously outputs sine, triangle, sawtooth, and square waveforms intended as modulation sources in a subtractive-synth patch — sweeping filter cutoff, adding pitch vibrato, or driving VCA level for tremolo. Frequency and pulse width each have a dedicated CV input and a bipolar attenuverter, plus Clock and Reset inputs for sync and Offset/Invert switches that shape output polarity.",
+    "summary": "Low-frequency oscillator from VCV Fundamental. Simultaneously outputs sine, triangle, sawtooth, and square waveforms intended as modulation sources in a subtractive-synth patch — sweeping filter cutoff, adding pitch vibrato, or driving VCA level for tremolo. Frequency and pulse width each have a dedicated CV input and a bipolar attenuverter, plus Clock and Reset inputs for sync and Offset/Invert switches that shape output polarity. The Offset switch defaults to Unipolar, so the four waveform outputs swing approx. 0..10 V until it is switched.",
     "polyphony": "poly_from_input",
     "params": [
       {
         "paramId": 0,
         "role": "offset",
-        "description": "Offset toggle (0..1). Shifts the waveform outputs between bipolar (approx. +/-5 V) and a unipolar positive offset (approx. 0..10 V). Ground-truth default 1.",
+        "description": "Offset toggle. Snapped two-position switch: 0 = \"Bipolar\", waveform outputs swing approx. +/-5 V; 1 = \"Unipolar\", approx. 0..10 V. Ground-truth default is 1, so a freshly added LFO modulates positive-only unless this is switched to 0.",
         "safeInitial": 1
       },
       {
         "paramId": 1,
         "role": "invert",
-        "description": "Invert toggle (0..1). Flips the polarity of the waveform outputs. Ground-truth default 0.",
+        "description": "Invert toggle. Snapped two-position switch flipping the polarity of the waveform outputs; Rack renders no name for either position. Ground-truth default is 0.",
         "safeInitial": 0
       },
       {
@@ -1112,30 +1112,30 @@ export const ADAPTER_DOCS: ReadonlyArray<ModuleAdapter> = [
     "outputs": [
       {
         "portId": 0,
-        "role": "cv_bipolar",
+        "role": "cv_unipolar",
         "key": "sine_out",
-        "description": "Sine waveform output. Bipolar modulation signal by default (approx. +/-5 V); the Offset switch can shift it unipolar.",
+        "description": "Sine waveform output. Unipolar (approx. 0..10 V) at the default Offset position (paramId 0 = 1, \"Unipolar\"); set Offset to 0 for bipolar approx. +/-5 V.",
         "polyphony": "poly_from_input"
       },
       {
         "portId": 1,
-        "role": "cv_bipolar",
+        "role": "cv_unipolar",
         "key": "triangle_out",
-        "description": "Triangle waveform output. Bipolar modulation signal by default; the Offset switch can shift it unipolar.",
+        "description": "Triangle waveform output. Unipolar (approx. 0..10 V) at the default Offset position; set Offset (paramId 0) to 0 for bipolar approx. +/-5 V.",
         "polyphony": "poly_from_input"
       },
       {
         "portId": 2,
-        "role": "cv_bipolar",
+        "role": "cv_unipolar",
         "key": "sawtooth_out",
-        "description": "Sawtooth (ramp) waveform output. Bipolar modulation signal by default; the Offset switch can shift it unipolar.",
+        "description": "Sawtooth (ramp) waveform output. Unipolar (approx. 0..10 V) at the default Offset position; set Offset (paramId 0) to 0 for bipolar approx. +/-5 V.",
         "polyphony": "poly_from_input"
       },
       {
         "portId": 3,
-        "role": "cv_bipolar",
+        "role": "cv_unipolar",
         "key": "square_out",
-        "description": "Square/pulse waveform output whose duty cycle is set by Pulse width (paramId 5). Bipolar by default; can also serve as a gate/clock-like on-off source.",
+        "description": "Square/pulse waveform output whose duty cycle is set by Pulse width (paramId 5). Unipolar (approx. 0..10 V) at the default Offset position, which is also what makes it usable directly as a gate/clock-like source; set Offset (paramId 0) to 0 for bipolar.",
         "polyphony": "poly_from_input"
       }
     ],
@@ -1169,7 +1169,7 @@ export const ADAPTER_DOCS: ReadonlyArray<ModuleAdapter> = [
     ],
     "provenance": [
       "inspect_model on VCV Rack 2.6.6 (Core) / Fundamental 2.6.4; parameter and port ids, names, and ranges verified against live metadata.",
-      "Signal roles and semantics inferred from Fundamental LFO parameter/port names and standard VCV Fundamental LFO behavior. Unnamed paramId 4 and placeholder-named input portId 1 ('#2') are left as role 'unknown' pending source verification; waveform outputs classified cv_bipolar as an LFO modulation source (Offset switch can make them unipolar).",
+      "Signal roles and semantics inferred from Fundamental LFO parameter/port names and standard VCV Fundamental LFO behavior. Unnamed paramId 4 and placeholder-named input portId 1 ('#2') are left as role 'unknown' pending source verification. Waveform outputs were originally classified cv_bipolar on the assumption that an LFO modulation source is bipolar by default; captured ground truth contradicts that (paramId 0 'Offset' has defaultValue 1, displayValue 'Unipolar'), so they are classified cv_unipolar, matching the module as it arrives in a patch. Both roles are in the same coarse signal family, so this changes advice, not validation outcomes.",
       "Adversarial verification pass: every paramId (0-6), input portId (0-4), and output portId (0-3) confirmed present in ground truth with matching ids; all safeInitial values equal ground-truth defaults and lie within [min,max]; safeRange for Frequency [-4,6] and Pulse width [0.1,0.9] confirmed within bounds and musically sensible. Reset->trigger and Clock->clock role assignments match port names. No real ports dropped. Draft found correct; returned unchanged."
     ]
   },
@@ -2190,7 +2190,7 @@ export const ADAPTER_DOCS: ReadonlyArray<ModuleAdapter> = [
         "paramId": 5,
         "role": "mode",
         "safeInitial": 0,
-        "description": "Display mode toggle: switches between the normal time-domain waveform view and the alternate view (Ch 1 vs Ch 2 X/Y / Lissajous plot)."
+        "description": "Display mode toggle. Snapped two-position switch: 0 = \"1 & 2\", both channels plotted against time; 1 = \"1 x 2\", Ch 1 against Ch 2 as an X/Y (Lissajous) plot. Ground-truth default is 0. Display-only; does not affect the pass-through outputs."
       },
       {
         "paramId": 6,
@@ -2206,7 +2206,7 @@ export const ADAPTER_DOCS: ReadonlyArray<ModuleAdapter> = [
         "paramId": 7,
         "role": "trigger_enable",
         "safeInitial": 1,
-        "description": "Enables/disables internal triggering (on by default). When enabled the display waits for a threshold crossing to stabilize the waveform; when disabled it free-runs."
+        "description": "Internal triggering. Snapped two-position switch: 0 = \"Enabled\", the display waits for a threshold crossing to stabilize the waveform; 1 = \"Disabled\", it free-runs. Ground-truth default is 1, so a freshly added Scope free-runs and the Trigger threshold (paramId 6) has no effect until this is switched."
       }
     ],
     "inputs": [

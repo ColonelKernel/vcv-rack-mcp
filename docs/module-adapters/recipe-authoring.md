@@ -238,6 +238,25 @@ When resolved on a Rack that has both preferred models installed, the first
   `$role` placeholder.
 - **Prefer normalized parameter targets** (`normalized` in `[0,1]`) over raw
   `value`, so a setting is portable across models whose raw units differ.
+- **Check what a normalized target decodes to.** Normalized maps linearly onto
+  the parameter's real `[minValue, maxValue]`, and the unit test rejects any
+  target that lands outside the adapter's declared `safeRange`. A recipe is the
+  one thing here that both writes a patch and is then judged by
+  `validate_patch`, which flags parameters outside `safeRange` — so a recipe
+  that strays builds a patch its own next validation complains about. This is
+  easy to miss because the raw value never appears in the source: the LFO
+  filter-modulation recipe asked for `0.2`, which on a `[-8, 10]` frequency
+  parameter is raw `-4.4`, below the LFO adapter's `safeRange` of `[-4, 6]`.
+- **Never leave a modulation depth at its neutral point.** The unit test rejects
+  a `set_parameter` on a module the recipe cables *into* when the adapter role
+  is an attenuverter/attenuator/amount/depth and the target decodes to raw `0`.
+  The same normalized-to-raw blind spot produces a worse failure here than an
+  out-of-range value: the same filter-modulation recipe set the VCF's bipolar
+  `[-1, 1]` cutoff attenuverter to `0.5`, i.e. raw `0.0` — the adapter's own
+  documented “no external cutoff modulation” position — so the recipe whose
+  entire purpose is sweeping the cutoff wired an LFO into an input scaled to
+  nothing, and its description and notes both promised a sweep that could not
+  happen. On a bipolar parameter, the *middle* of the normalized range is off.
 - **Give every preferred model a verified adapter.** The unit test asserts that
   each role's `preferred` model has an adapter and that every wired port and
   parameter exists on it — an unverified port id fails the build.
