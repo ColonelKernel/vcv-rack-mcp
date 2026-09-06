@@ -7,6 +7,7 @@ void init(rack::plugin::Plugin* p) {
     pluginInstance = p;
     p->addModel(modelBridge);
     p->addModel(modelProbe);
+    p->addModel(modelTutorial);
     rackmcp::RackBridge::instance().start();
 }
 

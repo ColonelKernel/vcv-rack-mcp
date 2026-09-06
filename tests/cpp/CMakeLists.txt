@@ -62,6 +62,7 @@ set(RACKMCP_CORE_SOURCES
   ${RACKMCP_PLUGIN_SRC}/core/tcp.cpp
   ${RACKMCP_PLUGIN_SRC}/core/lease.cpp
   ${RACKMCP_PLUGIN_SRC}/core/secret.cpp
+  ${RACKMCP_PLUGIN_SRC}/core/tutorial.cpp
 )
 if(JANSSON_FOUND)
   list(APPEND RACKMCP_CORE_SOURCES

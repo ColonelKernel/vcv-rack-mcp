@@ -21,8 +21,8 @@ has no implementation behind it and no stated reason for standing alone.
 | tool | 29 |
 | **total** | **439** |
 
-Scanned across 12 source roots and 125 files,
-plus 24 documentation files and 110 distinct JSON keys
+Scanned across 12 source roots and 129 files,
+plus 24 documentation files and 111 distinct JSON keys
 emitted by the plugin.
 
 ## Outstanding debts
@@ -52,7 +52,7 @@ it is published anyway.
 
 ## Always-constant fields
 
-5 of the 110 JSON keys the plugin emits can
+5 of the 111 JSON keys the plugin emits can
 only ever carry one value. A token scan cannot see this, because the key literal is
 present either way; the gate matches the jansson call shape instead.
 

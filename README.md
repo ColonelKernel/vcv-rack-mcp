@@ -70,7 +70,7 @@ bridge. The **MCP Bridge** panel on the left shows the connection state
 | Path | What | License |
 | --- | --- | --- |
 | `apps/mcp-server` | Stdio MCP server (TypeScript, MCP SDK 1.30.0) | MIT |
-| `plugins/RackMCP` | Rack 2 plugin: Bridge + Probe modules, loopback bridge service (C++11) | GPL-3.0-or-later |
+| `plugins/RackMCP` | Rack 2 plugin: Bridge, Probe and Tutorial modules, loopback bridge service (C++11) | GPL-3.0-or-later |
 | `packages/schemas` | Canonical Zod schemas → JSON Schema + C++ codegen | MIT |
 | `packages/protocol` | Bridge framing + client (TypeScript side) | MIT |
 | `packages/adapters` | 22 versioned module adapters (Core + Fundamental + RackMCP) | MIT |

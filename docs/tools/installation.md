@@ -216,6 +216,27 @@ user directory. The full code list is in the [tool reference](./tool-reference.m
 
 ## Next steps
 
+Add a **RackMCP-Tutorial** module to your rack. It walks the nine checkpoints
+between here and a patch you can hear, and each one is checked against the live
+rack rather than ticked off by hand:
+
+| # | Checkpoint | What it verifies |
+| --- | --- | --- |
+| 1 | `bridge_running` | The plugin's loopback listener is up |
+| 2 | `bridge_module` | A Bridge module is in the patch and the command pump attached |
+| 3 | `host_connected` | A client completed the pairing handshake |
+| 4 | `patch_read` | The assistant has run at least one bridge method |
+| 5 | `lease_acquired` | The writer lease is held |
+| 6 | `transaction_committed` | A transaction has been applied |
+| 7 | `modules_added` | Three or more non-RackMCP modules, two or more cables |
+| 8 | `audio_path` | A cable reaches an audio destination |
+| 9 | `patch_saved` | The patch is saved and has a filename |
+
+The panel is not a copy of this guide: it never prints a command, and it can say
+things a document cannot — that a client is failing the handshake because its
+pairing secret is stale, or which host is currently holding the writer lease.
+The commands stay here; the live state stays there.
+
 - [MCP host configuration examples](./configuration-examples.md)
 - [Pairing and multi-instance guide](../security/pairing-and-multi-instance.md)
 - [Tool reference](./tool-reference.md)
