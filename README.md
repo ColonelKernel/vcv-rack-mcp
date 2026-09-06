@@ -91,6 +91,7 @@ GPL-3.0-or-later while the server and packages are MIT.
 - [Threading and real-time-safety model](docs/architecture/threading-model.md)
 - [Local bridge protocol](docs/architecture/bridge-protocol.md)
 - [Definition-of-done audit](docs/architecture/definition-of-done-audit.md)
+- [Contract census](docs/architecture/contract-census.md) (generated)
 - [Normative specification](docs/spec/rack-mcp-spec.md)
 
 **Security**

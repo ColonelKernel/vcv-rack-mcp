@@ -127,8 +127,10 @@ jansson-based plugin; validator tables give equivalent boundary safety.
 ## Consequences
 
 - The integration suite must run against the real Rack 2.6.6 GUI; CI covers
-  build + unit layers, and the live suite runs on developer machines
-  (documented in `docs/architecture/testing.md`).
+  build + unit layers, and the live suite runs on developer machines from
+  `tests/integration/` (each scenario is a script in that package's
+  `package.json`; see the verification section of
+  [the definition-of-done audit](./definition-of-done-audit.md)).
 - Because fingerprints hash `patch::Manager::toJson()`, any Rack change to
   serialization across versions changes fingerprints; fingerprints are scoped
   per session and never persisted across Rack versions.
