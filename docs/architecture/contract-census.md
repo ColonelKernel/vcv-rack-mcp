@@ -15,13 +15,14 @@ has no implementation behind it and no stated reason for standing alone.
 | error_code | 30 |
 | limit | 21 |
 | operation_type | 11 |
+| prompt | 5 |
 | resource | 6 |
 | risk_flag | 13 |
 | schema_property | 319 |
 | tool | 31 |
-| **total** | **452** |
+| **total** | **457** |
 
-Scanned across 12 source roots and 135 files,
+Scanned across 12 source roots and 136 files,
 plus 24 documentation files and 111 distinct JSON keys
 emitted by the plugin.
 
@@ -79,8 +80,12 @@ Stated so the census is not read as a stronger claim than it is.
 - **Client-side consumption.** The consumer of an error code or a risk flag is the LLM
   client, outside this repo. The census cannot require a consumer for these, only a producer —
   so a flag that is emitted and universally ignored still passes.
-- **Producer drift.** Whether the plugin still emits what the frozen fixtures record is a
-  different gate (`tests/integration` capture `--verify`), and it needs a live Rack.
+- **Producer drift.** Whether the plugin still emits what the frozen fixtures record is
+  mostly a different gate (`tests/integration` capture `--verify`), and mostly needs a live
+  Rack. The exception is a producer extracted into Rack-free `core/`, which `tests/cpp` can
+  compare against the captured bytes directly -- `buildChatPollPayload` against
+  `tests/fixtures/bridge/chat.poll.json` is the one that does. Extraction is what buys the
+  static check; the census itself still cannot make it.
 - **Non-macOS runtime behaviour.** Everything here is static analysis. It says nothing about
   what the plugin does when it runs, on any platform.
 

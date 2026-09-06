@@ -5,6 +5,7 @@ import {
   ERROR_CODES,
   LIMITS,
   OPERATION_TYPES,
+  PROMPT_NAMES,
   RESOURCE_URIS,
   RiskFlag,
   TOOL_NAMES,
@@ -53,6 +54,7 @@ export type DeclaredKind =
   | "limit"
   | "tool"
   | "resource"
+  | "prompt"
   | "schema_property";
 
 function collect(
@@ -154,6 +156,7 @@ export function declaredSymbols(): readonly DeclaredSymbol[] {
     ),
     ...collect(TOOL_NAMES, "tool", "packages/schemas/src/tools.ts TOOLS"),
     ...collect(RESOURCE_URIS, "resource", "packages/schemas/src/resources.ts RESOURCES"),
+    ...collect(PROMPT_NAMES, "prompt", "packages/schemas/src/prompts.ts PROMPTS"),
     ...schemaPropertyNames(),
   ];
   const seen = new Set<string>();
