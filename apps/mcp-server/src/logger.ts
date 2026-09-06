@@ -8,10 +8,6 @@ const LEVELS: Record<LogLevel, number> = { debug: 10, info: 20, warn: 30, error:
 
 let threshold = LEVELS[(process.env.RACKMCP_LOG_LEVEL as LogLevel) ?? "info"] ?? LEVELS.info;
 
-export function setLogLevel(level: LogLevel): void {
-  threshold = LEVELS[level];
-}
-
 function emit(level: LogLevel, msg: string, fields?: Record<string, unknown>): void {
   if (LEVELS[level] < threshold) return;
   const record = {

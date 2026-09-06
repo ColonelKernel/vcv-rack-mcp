@@ -45,7 +45,6 @@ interface RoleReq {
   role: string;
   description: string;
   preferred: { pluginSlug: string; modelSlug: string };
-  adapterVerifiedAlternatives: Array<{ pluginSlug: string; modelSlug: string }>;
   signalRoles: SignalRole[];
 }
 
@@ -61,7 +60,6 @@ function need(
     role,
     description,
     preferred: { pluginSlug, modelSlug },
-    adapterVerifiedAlternatives: [],
     signalRoles,
   };
 }

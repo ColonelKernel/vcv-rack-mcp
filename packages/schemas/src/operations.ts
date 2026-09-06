@@ -195,7 +195,6 @@ export const RiskFlag = z.enum([
   "possible_feedback",
   "adapter_uncertainty",
   "missing_modules",
-  "not_undoable",
   "large_transaction",
   /** Whole-patch operations: everything currently loaded goes away. */
   "clears_patch",

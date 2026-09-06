@@ -4060,7 +4060,6 @@
                         "possible_feedback",
                         "adapter_uncertainty",
                         "missing_modules",
-                        "not_undoable",
                         "large_transaction",
                         "clears_patch",
                         "replaces_patch"
@@ -6090,7 +6089,6 @@
                         "possible_feedback",
                         "adapter_uncertainty",
                         "missing_modules",
-                        "not_undoable",
                         "large_transaction",
                         "clears_patch",
                         "replaces_patch"
@@ -6582,16 +6580,6 @@
                   }
                 ]
               },
-              "targetBridgeModulePresent": {
-                "anyOf": [
-                  {
-                    "type": "boolean"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
               "willInsertBridgeModule": {
                 "type": "boolean"
               },
@@ -6622,7 +6610,6 @@
                         "possible_feedback",
                         "adapter_uncertainty",
                         "missing_modules",
-                        "not_undoable",
                         "large_transaction",
                         "clears_patch",
                         "replaces_patch"
@@ -6665,7 +6652,6 @@
               "currentPatchSaved",
               "willCreateRecoveryCheckpoint",
               "recoveryCheckpointImpossibleReason",
-              "targetBridgeModulePresent",
               "willInsertBridgeModule",
               "risk",
               "warnings"
@@ -6865,16 +6851,6 @@
                   }
                 ]
               },
-              "targetBridgeModulePresent": {
-                "anyOf": [
-                  {
-                    "type": "boolean"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
               "willInsertBridgeModule": {
                 "type": "boolean"
               },
@@ -6905,7 +6881,6 @@
                         "possible_feedback",
                         "adapter_uncertainty",
                         "missing_modules",
-                        "not_undoable",
                         "large_transaction",
                         "clears_patch",
                         "replaces_patch"
@@ -6948,7 +6923,6 @@
               "currentPatchSaved",
               "willCreateRecoveryCheckpoint",
               "recoveryCheckpointImpossibleReason",
-              "targetBridgeModulePresent",
               "willInsertBridgeModule",
               "risk",
               "warnings"
@@ -7175,16 +7149,6 @@
                   }
                 ]
               },
-              "targetBridgeModulePresent": {
-                "anyOf": [
-                  {
-                    "type": "boolean"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
               "willInsertBridgeModule": {
                 "type": "boolean"
               },
@@ -7215,7 +7179,6 @@
                         "possible_feedback",
                         "adapter_uncertainty",
                         "missing_modules",
-                        "not_undoable",
                         "large_transaction",
                         "clears_patch",
                         "replaces_patch"
@@ -7258,7 +7221,6 @@
               "currentPatchSaved",
               "willCreateRecoveryCheckpoint",
               "recoveryCheckpointImpossibleReason",
-              "targetBridgeModulePresent",
               "willInsertBridgeModule",
               "risk",
               "warnings"
@@ -8485,7 +8447,6 @@
                         "possible_feedback",
                         "adapter_uncertainty",
                         "missing_modules",
-                        "not_undoable",
                         "large_transaction",
                         "clears_patch",
                         "replaces_patch"

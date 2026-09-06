@@ -78,9 +78,9 @@ The plugin builds against Rack SDK 2.6.6, fetched into `vendor/Rack-SDK`.
 
 `scripts/fetch-rack-sdk.sh` downloads
 `https://vcvrack.com/downloads/Rack-SDK-2.6.6-mac-arm64.zip` and verifies it against
-the pinned SHA-256 before unzipping. **mac-arm64 is the only platform with a pinned
-checksum** — the script accepts `mac-x64`, `lin-x64`, and `win-x64` too, but those
-print a warning and record the actual hash instead of verifying it.
+the pinned SHA-256 before unzipping. All four platforms — `mac-arm64`, `mac-x64`,
+`lin-x64` and `win-x64` — are pinned, and a mismatch stops the script before
+anything is unpacked.
 
 ## 5. Build and test everything
 

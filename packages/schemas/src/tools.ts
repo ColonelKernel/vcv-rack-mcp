@@ -360,7 +360,6 @@ export const LoadPreviewInfo = z
      * Whether the target patch already contains a RackMCP-Bridge module
      * (null when that cannot be determined without loading, e.g. clear).
      */
-    targetBridgeModulePresent: z.boolean().nullable(),
     /**
      * Disclosure required by the spec: the commit will insert a Bridge module
      * so the resulting patch can reconnect after restart.

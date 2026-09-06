@@ -62,8 +62,6 @@ export const ADAPTER_DOCS: ReadonlyArray<ModuleAdapter> = [
       }
     ],
     "polyphony": "monophonic",
-    "opaqueStateFields": [],
-    "validationRules": [],
     "connectionRecipes": [
       {
         "name": "Live input into processing",
@@ -208,8 +206,6 @@ export const ADAPTER_DOCS: ReadonlyArray<ModuleAdapter> = [
       }
     ],
     "polyphony": "monophonic",
-    "opaqueStateFields": [],
-    "validationRules": [],
     "connectionRecipes": [
       {
         "name": "Device input into mixer/processing",
@@ -325,8 +321,6 @@ export const ADAPTER_DOCS: ReadonlyArray<ModuleAdapter> = [
       }
     ],
     "polyphony": "polyphonic",
-    "opaqueStateFields": [],
-    "validationRules": [],
     "connectionRecipes": [
       {
         "name": "Pitch to VCO",
@@ -480,8 +474,6 @@ export const ADAPTER_DOCS: ReadonlyArray<ModuleAdapter> = [
       }
     ],
     "polyphony": "poly_from_input",
-    "opaqueStateFields": [],
-    "validationRules": [],
     "connectionRecipes": [
       {
         "name": "Sawtooth into filter",
@@ -616,8 +608,6 @@ export const ADAPTER_DOCS: ReadonlyArray<ModuleAdapter> = [
       }
     ],
     "polyphony": "poly_from_input",
-    "opaqueStateFields": [],
-    "validationRules": [],
     "connectionRecipes": [
       {
         "name": "Low-pass output into a VCA",
@@ -691,8 +681,6 @@ export const ADAPTER_DOCS: ReadonlyArray<ModuleAdapter> = [
       }
     ],
     "polyphony": "poly_from_input",
-    "opaqueStateFields": [],
-    "validationRules": [],
     "connectionRecipes": [
       {
         "name": "VCA to output or mixer",
@@ -803,8 +791,6 @@ export const ADAPTER_DOCS: ReadonlyArray<ModuleAdapter> = [
       }
     ],
     "polyphony": "poly_from_input",
-    "opaqueStateFields": [],
-    "validationRules": [],
     "connectionRecipes": [
       {
         "name": "VCA channel 1 to mixer/output",
@@ -984,8 +970,6 @@ export const ADAPTER_DOCS: ReadonlyArray<ModuleAdapter> = [
         "polyphony": "poly_from_input"
       }
     ],
-    "opaqueStateFields": [],
-    "validationRules": [],
     "connectionRecipes": [
       {
         "name": "Amplitude envelope into VCA",
@@ -1139,8 +1123,6 @@ export const ADAPTER_DOCS: ReadonlyArray<ModuleAdapter> = [
         "polyphony": "poly_from_input"
       }
     ],
-    "opaqueStateFields": [],
-    "validationRules": [],
     "connectionRecipes": [
       {
         "name": "LFO to filter cutoff (wah/sweep)",
@@ -1335,8 +1317,6 @@ export const ADAPTER_DOCS: ReadonlyArray<ModuleAdapter> = [
         "polyphony": "poly_from_input"
       }
     ],
-    "opaqueStateFields": [],
-    "validationRules": [],
     "connectionRecipes": [
       {
         "name": "Mix to audio output",
@@ -1430,8 +1410,6 @@ export const ADAPTER_DOCS: ReadonlyArray<ModuleAdapter> = [
       }
     ],
     "polyphony": "poly_from_input",
-    "opaqueStateFields": [],
-    "validationRules": [],
     "connectionRecipes": [
       {
         "name": "Mix into audio output",
@@ -1496,8 +1474,6 @@ export const ADAPTER_DOCS: ReadonlyArray<ModuleAdapter> = [
         "polyphony": "monophonic"
       }
     ],
-    "opaqueStateFields": [],
-    "validationRules": [],
     "connectionRecipes": [
       {
         "name": "Summed voices to audio input",
@@ -1649,8 +1625,6 @@ export const ADAPTER_DOCS: ReadonlyArray<ModuleAdapter> = [
       }
     ],
     "polyphony": "polyphonic",
-    "opaqueStateFields": [],
-    "validationRules": [],
     "connectionRecipes": [
       {
         "name": "Poly voice into polyphonic audio input",
@@ -1808,8 +1782,6 @@ export const ADAPTER_DOCS: ReadonlyArray<ModuleAdapter> = [
       }
     ],
     "polyphony": "poly_from_input",
-    "opaqueStateFields": [],
-    "validationRules": [],
     "connectionRecipes": [
       {
         "name": "Poly pitch bus to per-voice VCO",
@@ -1878,8 +1850,6 @@ export const ADAPTER_DOCS: ReadonlyArray<ModuleAdapter> = [
         "polyphony": "poly_from_input"
       }
     ],
-    "opaqueStateFields": [],
-    "validationRules": [],
     "connectionRecipes": [
       {
         "name": "Octave to VCO pitch",
@@ -2104,8 +2074,6 @@ export const ADAPTER_DOCS: ReadonlyArray<ModuleAdapter> = [
       }
     ],
     "polyphony": "poly_from_input",
-    "opaqueStateFields": [],
-    "validationRules": [],
     "connectionRecipes": [
       {
         "name": "Attenuvert modulation into a CV destination",
@@ -2249,8 +2217,6 @@ export const ADAPTER_DOCS: ReadonlyArray<ModuleAdapter> = [
       }
     ],
     "polyphony": "poly_from_input",
-    "opaqueStateFields": [],
-    "validationRules": [],
     "connectionRecipes": [
       {
         "name": "Monitor signal without breaking the chain",
@@ -2332,8 +2298,6 @@ export const ADAPTER_DOCS: ReadonlyArray<ModuleAdapter> = [
       }
     ],
     "polyphony": "monophonic",
-    "opaqueStateFields": [],
-    "validationRules": [],
     "connectionRecipes": [
       {
         "name": "White noise into a filter",
@@ -2493,8 +2457,6 @@ export const ADAPTER_DOCS: ReadonlyArray<ModuleAdapter> = [
       }
     ],
     "polyphony": "poly_from_input",
-    "opaqueStateFields": [],
-    "validationRules": [],
     "connectionRecipes": [
       {
         "name": "Delay Mix into mixer/output",
@@ -2916,8 +2878,6 @@ export const ADAPTER_DOCS: ReadonlyArray<ModuleAdapter> = [
         "description": "Reset pass-through output for chaining reset to another sequencer/SEQ 3."
       }
     ],
-    "opaqueStateFields": [],
-    "validationRules": [],
     "connectionRecipes": [
       {
         "name": "CV 1 to VCO pitch",
@@ -2972,8 +2932,6 @@ export const ADAPTER_DOCS: ReadonlyArray<ModuleAdapter> = [
     "inputs": [],
     "outputs": [],
     "polyphony": "monophonic",
-    "opaqueStateFields": [],
-    "validationRules": [],
     "connectionRecipes": [],
     "provenance": [
       "inspect_model on VCV Rack 2.6.6 (Core) / Fundamental 2.6.4; single param id/name verified.",
@@ -3049,8 +3007,6 @@ export const ADAPTER_DOCS: ReadonlyArray<ModuleAdapter> = [
     ],
     "outputs": [],
     "polyphony": "poly_from_input",
-    "opaqueStateFields": [],
-    "validationRules": [],
     "connectionRecipes": [],
     "provenance": [
       "inspect_model on VCV Rack 2.6.6 (Core) / Fundamental 2.6.4; port and parameter ids/names verified: 8 inputs 'Probe 1'..'Probe 8' (portId 0-7), zero params, zero outputs.",

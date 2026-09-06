@@ -148,7 +148,6 @@ async function buildLoadPreview(
 
   let exists = false;
   let sizeBytes: number | null = null;
-  let targetBridgeModulePresent: boolean | null = null;
   if (kind === "load" && targetPath) {
     const resolved = resolvePatchPath(config, targetPath, { mustExist: true });
     exists = resolved.exists;
@@ -162,7 +161,6 @@ async function buildLoadPreview(
     currentPatchSaved: currentSaved,
     willCreateRecoveryCheckpoint: true,
     recoveryCheckpointImpossibleReason: null,
-    targetBridgeModulePresent,
     // A load/clear always yields a Bridge module (the plugin reinserts one if
     // the resulting patch lacks it) so it can reconnect after restart. For a
     // load the target's contents are unknown here, so the insertion is
@@ -351,7 +349,6 @@ export const restoreCheckpoint: ToolHandler = async (args, ctx) => {
         currentPatchSaved: status.saved === true,
         willCreateRecoveryCheckpoint: true,
         recoveryCheckpointImpossibleReason: null,
-        targetBridgeModulePresent: null,
         willInsertBridgeModule: true,
         risk: {
           level: "high" as const,

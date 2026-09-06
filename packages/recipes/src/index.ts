@@ -1,6 +1,5 @@
 import { Recipe, RecipeResolution } from "@rackmcp/schemas";
 import type { PatchOperation } from "@rackmcp/schemas";
-import { hasAdapter } from "@rackmcp/adapters";
 import { RECIPE_DOCS } from "./data.js";
 
 /**
@@ -57,9 +56,12 @@ function installedHas(installed: ReadonlyArray<InstalledModel>, m: InstalledMode
 /**
  * Resolve a recipe's roles against the installed models. A role resolves to its
  * preferred model when installed; otherwise the role is unresolved and any
- * installed, adapter-verified alternatives are listed (compatibility must be
- * proven by an adapter — an installed alternative with no adapter is not
- * offered). Never substitutes an unknown module.
+ * the role is reported unresolved along with the model that would satisfy it.
+ *
+ * Substitution is deliberately not offered. Expansion rewrites add_module
+ * slugs but leaves every connect and set_parameter operation with the port and
+ * parameter ids chosen for the preferred model, so swapping in a different
+ * model would produce a patch that builds without error and is wired wrong.
  */
 export function resolveRecipe(
   recipe: Recipe,
@@ -73,13 +75,10 @@ export function resolveRecipe(
       assignments[role.role] = { ...role.preferred };
       continue;
     }
-    const installedAlternatives = role.adapterVerifiedAlternatives.filter(
-      (alt) => installedHas(installed, alt) && hasAdapter(alt.pluginSlug, alt.modelSlug),
-    );
     unresolvedRoles.push({
       role: role.role,
       description: role.description,
-      installedAlternatives,
+      preferred: { ...role.preferred },
     });
   }
 

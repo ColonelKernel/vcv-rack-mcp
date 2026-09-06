@@ -25,7 +25,7 @@ and the exact supported operating modes.
 ### Execution model
 
 Four components (spec section 3): a stdio **MCP server** (TypeScript,
-`@modelcontextprotocol/server@2.0.0`, Node >= 20), a **Rack plugin**
+`@modelcontextprotocol/sdk` 1.30.0, Node >= 20), a **Rack plugin**
 (`RackMCP`, C++11, Rack SDK 2.6.6) containing the Bridge and Probe modules and
 a plugin-global bridge service, a versioned **loopback TCP bridge protocol**
 (127.0.0.1 only, 4-byte big-endian length-prefixed JSON, 1 MiB frames), and a

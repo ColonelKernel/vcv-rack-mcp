@@ -367,7 +367,7 @@ Save the current patch to its current path or a policy-checked .vcv path. Warns 
 
 **Output**
 
-- `path`: string _(max length 4096)_
+- `path`: string _(min length 1, max length 4096)_
 - `fingerprint`: string
 - `saved`: true
 - `bridgeModulePresent`: boolean

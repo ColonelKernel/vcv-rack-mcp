@@ -68,13 +68,20 @@ safe range for a model it has not verified.
 
 ### Opaque module state is never mutated without an adapter
 
-This is the load-bearing safety rule and the reason there is deliberately **no
-`set_module_data` tool** in the MCP surface. Opaque state is mutated only when a
-matching adapter has a verified `opaqueStateFields` entry describing exactly that
-field; otherwise the operation is refused (`OPAQUE_STATE_UNSUPPORTED`). Because
-adapters ship `opaqueStateFields` empty until a field is verified, "no adapter"
-and "adapter without this field verified" both resolve to the same safe refusal.
-There is no general-purpose escape hatch that writes arbitrary module blobs.
+This is the load-bearing safety rule, and it is enforced structurally: there is
+deliberately **no `set_module_data` tool**, and no operation in `OPERATION_TYPES`
+writes opaque state. The rule holds because there is nothing to call, not because
+a check might catch it.
+
+Adapters previously published an `opaqueStateFields` array, empty in all of them,
+which read as the gate that decides whether a write is allowed. That was
+misleading in the more dangerous direction: it implied a mechanism existed and
+was simply unpopulated, when in fact no write path exists at all. The field is
+gone. `OPAQUE_STATE_UNSUPPORTED` stays in `ERROR_CODES` — see the census entry
+for it — as the name of a boundary a client can rely on never being crossed.
+
+If an opaque-write operation is ever added, this ADR must be revisited first and
+the per-field verification list re-added with it.
 
 ### Recipes resolve roles against installed models, with no silent substitution
 

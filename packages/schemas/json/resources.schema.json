@@ -1865,47 +1865,6 @@
                             "unknown"
                           ]
                         },
-                        "opaqueStateFields": {
-                          "default": [],
-                          "maxItems": 64,
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "key": {
-                                "type": "string",
-                                "maxLength": 128
-                              },
-                              "type": {
-                                "type": "string",
-                                "enum": [
-                                  "boolean",
-                                  "integer",
-                                  "number",
-                                  "string"
-                                ]
-                              },
-                              "description": {
-                                "type": "string",
-                                "maxLength": 1024
-                              }
-                            },
-                            "required": [
-                              "key",
-                              "type",
-                              "description"
-                            ],
-                            "additionalProperties": false
-                          }
-                        },
-                        "validationRules": {
-                          "default": [],
-                          "type": "array",
-                          "items": {
-                            "type": "string",
-                            "maxLength": 128
-                          }
-                        },
                         "connectionRecipes": {
                           "default": [],
                           "maxItems": 64,
@@ -1968,8 +1927,6 @@
                         "inputs",
                         "outputs",
                         "polyphony",
-                        "opaqueStateFields",
-                        "validationRules",
                         "connectionRecipes",
                         "provenance"
                       ],
@@ -2119,31 +2076,6 @@
                                 ],
                                 "additionalProperties": false
                               },
-                              "adapterVerifiedAlternatives": {
-                                "default": [],
-                                "maxItems": 32,
-                                "type": "array",
-                                "items": {
-                                  "type": "object",
-                                  "properties": {
-                                    "pluginSlug": {
-                                      "type": "string",
-                                      "minLength": 1,
-                                      "maxLength": 255
-                                    },
-                                    "modelSlug": {
-                                      "type": "string",
-                                      "minLength": 1,
-                                      "maxLength": 255
-                                    }
-                                  },
-                                  "required": [
-                                    "pluginSlug",
-                                    "modelSlug"
-                                  ],
-                                  "additionalProperties": false
-                                }
-                              },
                               "signalRoles": {
                                 "default": [],
                                 "type": "array",
@@ -2166,7 +2098,6 @@
                               "role",
                               "description",
                               "preferred",
-                              "adapterVerifiedAlternatives",
                               "signalRoles"
                             ],
                             "additionalProperties": false
@@ -2989,35 +2920,31 @@
                                     "type": "string",
                                     "maxLength": 1024
                                   },
-                                  "installedAlternatives": {
-                                    "maxItems": 32,
-                                    "type": "array",
-                                    "items": {
-                                      "type": "object",
-                                      "properties": {
-                                        "pluginSlug": {
-                                          "type": "string",
-                                          "minLength": 1,
-                                          "maxLength": 255
-                                        },
-                                        "modelSlug": {
-                                          "type": "string",
-                                          "minLength": 1,
-                                          "maxLength": 255
-                                        }
+                                  "preferred": {
+                                    "type": "object",
+                                    "properties": {
+                                      "pluginSlug": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 255
                                       },
-                                      "required": [
-                                        "pluginSlug",
-                                        "modelSlug"
-                                      ],
-                                      "additionalProperties": false
-                                    }
+                                      "modelSlug": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 255
+                                      }
+                                    },
+                                    "required": [
+                                      "pluginSlug",
+                                      "modelSlug"
+                                    ],
+                                    "additionalProperties": false
                                   }
                                 },
                                 "required": [
                                   "role",
                                   "description",
-                                  "installedAlternatives"
+                                  "preferred"
                                 ],
                                 "additionalProperties": false
                               }

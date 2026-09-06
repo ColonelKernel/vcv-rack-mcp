@@ -62,12 +62,11 @@ The plugin builds against the pinned SDK, not against your Rack installation.
 ./scripts/fetch-rack-sdk.sh mac-arm64   # or: mac-x64 | lin-x64 | win-x64
 ```
 
-The script downloads `Rack-SDK-2.6.6-<platform>.zip` from `vcvrack.com`. Only the
-`mac-arm64` archive has a pinned SHA-256 that the script verifies with `shasum -a
-256 -c`; for `mac-x64`, `lin-x64`, and `win-x64` the checksum is currently empty,
-so the script prints a `WARNING: no pinned sha256` line and records the actual hash
-to stderr instead of failing. If `vendor/Rack-SDK` already exists the script is a
-no-op, so delete that directory to re-fetch.
+The script downloads `Rack-SDK-2.6.6-<platform>.zip` from `vcvrack.com`. All four
+platform archives carry a pinned SHA-256, and a mismatch exits non-zero before
+anything is unzipped. The unpinned-checksum warning path in the script is dead
+code kept for a platform that does not currently exist. If `vendor/Rack-SDK`
+already exists the script is a no-op, so delete that directory to re-fetch.
 
 On success it prints `Rack SDK 2.6.6 (<platform>) ready at vendor/Rack-SDK`.
 

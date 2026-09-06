@@ -183,47 +183,6 @@
         "unknown"
       ]
     },
-    "opaqueStateFields": {
-      "default": [],
-      "maxItems": 64,
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "key": {
-            "type": "string",
-            "maxLength": 128
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "boolean",
-              "integer",
-              "number",
-              "string"
-            ]
-          },
-          "description": {
-            "type": "string",
-            "maxLength": 1024
-          }
-        },
-        "required": [
-          "key",
-          "type",
-          "description"
-        ],
-        "additionalProperties": false
-      }
-    },
-    "validationRules": {
-      "default": [],
-      "type": "array",
-      "items": {
-        "type": "string",
-        "maxLength": 128
-      }
-    },
     "connectionRecipes": {
       "default": [],
       "maxItems": 64,

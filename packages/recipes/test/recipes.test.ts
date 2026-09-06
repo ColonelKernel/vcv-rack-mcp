@@ -307,27 +307,42 @@ describe("recipe resolution and expansion", () => {
     expect(() => expandRecipeOperations(recipe, resolution)).toThrow(/not fully resolved/);
   });
 
-  it("only offers adapter-verified installed alternatives, never a silent substitute", () => {
-    // A recipe whose preferred is missing but which lists an adapter-verified
-    // alternative should surface that alternative only when it is installed.
-    const base = getRecipe("basic_mono_subtractive")!;
-    const withAlt = Recipe.parse({
-      ...base,
-      id: "test_alt_recipe",
-      roles: base.roles.map((r) =>
-        r.role === "amplifier"
-          ? { ...r, preferred: { pluginSlug: "Fundamental", modelSlug: "VCA-1" }, adapterVerifiedAlternatives: [{ pluginSlug: "Fundamental", modelSlug: "VCA" }] }
-          : r,
-      ),
-    });
-    // Install the alternative (Fundamental/VCA) but not the preferred VCA-1.
-    const installed = withAlt.roles.map((r) =>
-      r.role === "amplifier" ? { pluginSlug: "Fundamental", modelSlug: "VCA" } : { ...r.preferred },
-    );
-    const resolution = resolveRecipe(withAlt, installed);
+  it("reports what to install for an unresolved role, and substitutes nothing", () => {
+    const recipe = getRecipe("basic_mono_subtractive")!;
+    const amplifier = recipe.roles.find((r) => r.role === "amplifier")!;
+    // Everything installed except the amplifier's preferred model.
+    const installed = recipe.roles
+      .filter((r) => r.role !== "amplifier")
+      .map((r) => ({ ...r.preferred }));
+
+    const resolution = resolveRecipe(recipe, installed);
+    expect(resolution.resolved).toBe(false);
     const amp = resolution.unresolvedRoles.find((u) => u.role === "amplifier");
-    expect(amp, "amplifier is unresolved (preferred missing)").toBeDefined();
-    expect(amp!.installedAlternatives).toContainEqual({ pluginSlug: "Fundamental", modelSlug: "VCA" });
+    expect(amp, "amplifier is unresolved because its preferred model is missing").toBeDefined();
+    expect(
+      amp!.preferred,
+      "an unresolved role names the model to install, so the client can say what is needed",
+    ).toEqual(amplifier.preferred);
+    expect(resolution.assignments["amplifier"]).toBeUndefined();
+  });
+
+  it("expansion rewrites only add_module, which is why alternatives are not offered", () => {
+    // This is the reason resolveRecipe reports a missing model instead of
+    // swapping in a compatible one. Substitution would change which module is
+    // added while leaving every cable and parameter pointing at the port and
+    // parameter ids chosen for the preferred model — a patch that builds
+    // without error and is wired wrong.
+    const recipe = getRecipe("basic_mono_subtractive")!;
+    const installed = recipe.roles.map((r) => ({ ...r.preferred }));
+    const expanded = expandRecipeOperations(recipe, resolveRecipe(recipe, installed));
+
+    const templateNonAdds = recipe.operations.filter((op) => op.op !== "add_module");
+    const expandedNonAdds = expanded.filter((op) => op.op !== "add_module");
+    expect(expandedNonAdds.length).toBeGreaterThan(0);
+    expect(
+      expandedNonAdds,
+      "every non-add operation survives expansion byte-identical, port ids included",
+    ).toEqual(templateNonAdds);
   });
 });
 

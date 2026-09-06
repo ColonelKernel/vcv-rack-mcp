@@ -55,31 +55,6 @@
             ],
             "additionalProperties": false
           },
-          "adapterVerifiedAlternatives": {
-            "default": [],
-            "maxItems": 32,
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "pluginSlug": {
-                  "type": "string",
-                  "minLength": 1,
-                  "maxLength": 255
-                },
-                "modelSlug": {
-                  "type": "string",
-                  "minLength": 1,
-                  "maxLength": 255
-                }
-              },
-              "required": [
-                "pluginSlug",
-                "modelSlug"
-              ],
-              "additionalProperties": false
-            }
-          },
           "signalRoles": {
             "default": [],
             "type": "array",

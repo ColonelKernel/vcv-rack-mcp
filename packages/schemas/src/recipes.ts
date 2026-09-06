@@ -12,11 +12,6 @@ export const RecipeRoleRequirement = z
     description: z.string().max(1024),
     /** Preferred concrete model. */
     preferred: z.object({ pluginSlug: Slug, modelSlug: Slug }).strict(),
-    /** Alternatives usable only when an adapter proves compatibility. */
-    adapterVerifiedAlternatives: z
-      .array(z.object({ pluginSlug: Slug, modelSlug: Slug }).strict())
-      .max(32)
-      .default([]),
     signalRoles: z.array(SignalRole).default([]),
   })
   .strict();
@@ -49,10 +44,11 @@ export const RecipeResolution = z
         .object({
           role: z.string().max(64),
           description: z.string().max(1024),
-          /** Installed, adapter-verified alternatives, if any. */
-          installedAlternatives: z
-            .array(z.object({ pluginSlug: Slug, modelSlug: Slug }).strict())
-            .max(32),
+          /**
+           * The model that would satisfy this role. Reported so the client can
+           * say what to install rather than only that something is missing.
+           */
+          preferred: z.object({ pluginSlug: Slug, modelSlug: Slug }).strict(),
         })
         .strict(),
     ),

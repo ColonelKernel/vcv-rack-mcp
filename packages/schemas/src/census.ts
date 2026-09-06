@@ -48,15 +48,6 @@ export const CENSUS_EXCEPTIONS: readonly CensusException[] = [
       "operation at all, not by a runtime check that might be missed.",
   },
   {
-    symbol: "not_undoable",
-    kind: "risk_flag",
-    disposition: "reserved",
-    reason:
-      "TODO: phase 1 — delete. Every transaction is applied as one history::ComplexAction, so no " +
-      "plan can ever be un-undoable and no producer can exist. Publishing the flag implies a " +
-      "category of operation that this design cannot produce.",
-  },
-  {
     symbol: "large_transaction",
     kind: "risk_flag",
     disposition: "reserved",

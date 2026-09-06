@@ -371,7 +371,10 @@ The external-replacement poll is deliberately conservative — it over-bumps in
 ambiguous cases — and two blind spots are by design: File > Revert with no edits
 since the load (nothing observable changed), and a GUI replacement immediately
 followed by a user edit inside the same poll window, which reads as ordinary
-editing. `patchClear`'s own failure path still returns without bumping.
+editing. `patchClear`'s own failure path *does* bump: `Manager::clear()` tears
+the patch down before it can fail, so a throw still leaves the rack changed and
+every client reference into the old patch must stop validating
+(`plugins/RackMCP/src/rackside/PatchFiles.cpp`).
 
 `patchEpoch` still starts at `1`, but if the poll arms its first watermark
 before Rack settles on its autosave patch it may bump once shortly after

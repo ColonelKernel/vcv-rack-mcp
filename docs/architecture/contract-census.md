@@ -16,10 +16,10 @@ has no implementation behind it and no stated reason for standing alone.
 | limit | 20 |
 | operation_type | 11 |
 | resource | 6 |
-| risk_flag | 14 |
-| schema_property | 315 |
+| risk_flag | 13 |
+| schema_property | 310 |
 | tool | 29 |
-| **total** | **444** |
+| **total** | **438** |
 
 Scanned across 12 source roots and 123 files,
 plus 24 documentation files and 110 distinct JSON keys
@@ -27,13 +27,12 @@ emitted by the plugin.
 
 ## Outstanding debts
 
-12 published symbols are declared ahead of their implementation.
+11 published symbols are declared ahead of their implementation.
 
 | Symbol | Kind | Owed |
 | --- | --- | --- |
 | `copyCables` | schema_property | phase 4 — implement duplicate_module, whose operation this field belongs to. The operation is currently refused outright, so the field cannot be reached. |
 | `large_transaction` | risk_flag | phase 2 — give it a producer in Transaction.cpp, thresholded on gen::LIMIT_TXN_MAX_OPERATIONS. A client is told this flag exists and can reasonably assume big plans are marked; today nothing marks them. |
-| `not_undoable` | risk_flag | phase 1 — delete. Every transaction is applied as one history::ComplexAction, so no plan can ever be un-undoable and no producer can exist. Publishing the flag implies a category of operation that this design cannot produce. |
 | `packages/test-client` | doc_referent | phase 3 — build it. README.md and the spec both list a scriptable MCP test client as a shipped package; the directory is empty and untracked, so a reader who goes looking finds nothing. The code exists, duplicated across ten files in tests/integration/src. |
 | `patchIoTimeoutMs` | limit | phase 2 — becomes a ServerConfig field, replacing hardcoded 60_000 literals. Published as configurable while nothing reads it. |
 | `probeInputsPerModule` | limit | phase 2 — deduplicate the three independent copies of the value (here, ProbeModule.hpp and telemetry.ts) behind gen::LIMIT_PROBE_INPUTS_PER_MODULE. |

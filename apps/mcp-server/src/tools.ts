@@ -17,17 +17,6 @@ export interface ToolContext {
 
 export type ToolHandler = (args: Record<string, unknown>, ctx: ToolContext) => Promise<unknown>;
 
-/** Bridge methods not yet implemented in the current plugin phase. */
-function pending(tool: string): ToolHandler {
-  return async () => {
-    throw new ToolError(
-      "UNSUPPORTED_OPERATION",
-      `${tool} is not yet available in this build (its plugin-side handler ships in a later phase)`,
-      false,
-    );
-  };
-}
-
 // ---------------------------------------------------------------------------
 // Connection and discovery
 // ---------------------------------------------------------------------------
@@ -272,7 +261,7 @@ const HANDLERS: Record<string, ToolHandler> = {
   inspect_parameter: inspectParameter,
   describe_patch: describePatch,
   validate_patch: validatePatch,
-  // Mutation, files, telemetry: plugin handlers ship in later phases.
+  // Mutation, files, telemetry.
   preview_patch_transaction: previewPatchTransaction,
   commit_patch_transaction: commitPatchTransaction,
   undo_last_mcp_transaction: undoLastMcpTransaction,

@@ -74,20 +74,6 @@ export const ModuleAdapter = z
     inputs: z.array(AdapterPortSemantics).max(256),
     outputs: z.array(AdapterPortSemantics).max(256),
     polyphony: PolyphonyBehavior.default("unknown"),
-    /** Verified context-menu / opaque-state fields. Empty unless verified. */
-    opaqueStateFields: z
-      .array(
-        z
-          .object({
-            key: z.string().max(128),
-            type: z.enum(["boolean", "integer", "number", "string"]),
-            description: z.string().max(1024),
-          })
-          .strict(),
-      )
-      .max(64)
-      .default([]),
-    validationRules: z.array(z.string().max(128)).default([]),
     connectionRecipes: z.array(AdapterConnectionRecipe).max(64).default([]),
     /** Where these semantics were verified (manual URL, source inspection...). */
     provenance: z.array(z.string().max(1024)).min(1),
