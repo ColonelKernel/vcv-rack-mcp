@@ -207,6 +207,36 @@ std::string checkOperationFields(json_t* op);
  *         integer, or does not fit an `int`.
  */
 bool readIntField(json_t* obj, const char* key, int& out, std::string& err);
+
+/** Which of the three parameter targets a `set_parameter` spec names. */
+enum class ParamTargetKind { None, Value, Normalized, Display };
+
+/** A parsed parameter target, or the reason the spec is not one. */
+struct ParamTarget {
+    ParamTargetKind kind;
+    double number;       // Value: raw; Normalized: 0..1
+    std::string display; // Display only
+    std::string error;   // non-empty when the spec is malformed; kind is None
+    ParamTarget() : kind(ParamTargetKind::None), number(0.0) {}
+};
+
+/**
+ * Reads the parameter target exactly as the schema declares it: "exactly one
+ * of raw `value`, `normalized` [0..1], or a supported `display` string"
+ * (`packages/schemas/src/operations.ts`, enforced there by `exactlyOneTarget`).
+ *
+ * The plugin selected a branch with `jhasKey`, which is true for a JSON null,
+ * and then read it with `json_number_value`, which returns 0.0 for a null and
+ * for a string. So `{"value": null}` set the parameter to 0 -- and
+ * `{"value": null, "normalized": 0.8}` set it to 0 while discarding the real
+ * target, because the `value` branch had already won. A spec naming no target
+ * at all left the value untouched and reported success.
+ *
+ * Bounds are not checked here: `normalized` outside 0..1 extrapolates past the
+ * parameter's range, which is a question about the parameter, not about the
+ * shape of the request, and `ParamQuantity` clamps.
+ */
+ParamTarget readParamTarget(json_t* spec);
 #endif
 
 /** A resolved module reference: a live id, or a transaction-local alias. */

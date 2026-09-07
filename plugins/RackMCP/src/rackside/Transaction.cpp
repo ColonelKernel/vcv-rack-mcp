@@ -980,16 +980,33 @@ private:
         // Engine::getParamValue is the immediate, possibly mid-ramp value.
         h->oldValue = pq ? pq->getValue() : APP->engine->getParamValue(module, paramId);
         float newValue = h->oldValue;
-        if (jhasKey(spec, "value")) {
-            newValue = (float) json_number_value(json_object_get(spec, "value"));
+        const ParamTarget target = readParamTarget(spec);
+        if (!target.error.empty()) {
+            delete h;
+            throw std::string("set_parameter: " + target.error);
         }
-        else if (jhasKey(spec, "normalized") && pq) {
-            float n = (float) json_number_value(json_object_get(spec, "normalized"));
-            newValue = pq->minValue + n * (pq->maxValue - pq->minValue);
+        if (target.kind == ParamTargetKind::Value) {
+            newValue = (float) target.number;
         }
-        else if (jhasKey(spec, "display") && pq) {
-            pq->setDisplayValueString(jstr(spec, "display"));
-            newValue = pq->getValue();
+        else {
+            // Both remaining forms are expressed in terms of the parameter's
+            // own range, so neither is meaningful without a ParamQuantity.
+            // Falling through as before left the value untouched and reported
+            // the operation as applied.
+            if (!pq) {
+                delete h;
+                throw std::string("set_parameter: param " + std::to_string(paramId) +
+                                  " on module " + std::to_string(moduleId) +
+                                  " has no quantity, so \"normalized\" and \"display\" cannot be "
+                                  "interpreted; use \"value\"");
+            }
+            if (target.kind == ParamTargetKind::Normalized) {
+                newValue = pq->minValue + (float) target.number * (pq->maxValue - pq->minValue);
+            }
+            else {
+                pq->setDisplayValueString(target.display);
+                newValue = pq->getValue();
+            }
         }
         if (pq) {
             // setValue() only sets the Engine's smoothing target when the param

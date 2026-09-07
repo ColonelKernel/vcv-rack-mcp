@@ -113,6 +113,51 @@ bool typeMatches(const char* declared, json_t* v) {
 
 } // namespace
 
+ParamTarget readParamTarget(json_t* spec) {
+    ParamTarget out;
+    if (!json_is_object(spec)) {
+        out.error = "parameter target is not a JSON object";
+        return out;
+    }
+    json_t* v = json_object_get(spec, "value");
+    json_t* n = json_object_get(spec, "normalized");
+    json_t* d = json_object_get(spec, "display");
+    const int named = (v ? 1 : 0) + (n ? 1 : 0) + (d ? 1 : 0);
+    if (named != 1) {
+        out.error = named == 0
+                        ? "exactly one of \"value\", \"normalized\" or \"display\" is required, "
+                          "and none was given"
+                        : "exactly one of \"value\", \"normalized\" or \"display\" is required, "
+                          "and " + std::to_string(named) + " were given";
+        return out;
+    }
+    if (v) {
+        if (!json_is_number(v)) {
+            out.error = std::string("\"value\" must be a number, not ") + actualTypeName(v);
+            return out;
+        }
+        out.kind = ParamTargetKind::Value;
+        out.number = json_number_value(v);
+        return out;
+    }
+    if (n) {
+        if (!json_is_number(n)) {
+            out.error = std::string("\"normalized\" must be a number, not ") + actualTypeName(n);
+            return out;
+        }
+        out.kind = ParamTargetKind::Normalized;
+        out.number = json_number_value(n);
+        return out;
+    }
+    if (!json_is_string(d)) {
+        out.error = std::string("\"display\" must be a string, not ") + actualTypeName(d);
+        return out;
+    }
+    out.kind = ParamTargetKind::Display;
+    out.display = json_string_value(d);
+    return out;
+}
+
 bool readIntField(json_t* obj, const char* key, int& out, std::string& err) {
     json_t* v = json_object_get(obj, key);
     if (!v) {

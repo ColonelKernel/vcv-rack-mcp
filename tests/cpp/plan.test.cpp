@@ -781,3 +781,92 @@ TEST_CASE("readIntField accepts the exact edges of int") {
     json_decref(j);
 }
 #endif
+
+#if RACKMCP_HAVE_JANSSON
+// ---------------------------------------------------------------------------
+// readParamTarget
+//
+// The schema declares "exactly one of raw value, normalized [0..1], or a
+// supported display string". The plugin selected a branch with jhasKey, which
+// is true for a JSON null, then read it with json_number_value, which returns
+// 0.0 for a null and for a string.
+// ---------------------------------------------------------------------------
+
+TEST_CASE("each of the three targets is read as itself") {
+    json_t* j = op("{\"value\":2.5}");
+    ParamTarget t = readParamTarget(j);
+    CHECK(t.error == "");
+    CHECK(t.kind == ParamTargetKind::Value);
+    CHECK(t.number == doctest::Approx(2.5));
+    json_decref(j);
+
+    j = op("{\"normalized\":0.75}");
+    t = readParamTarget(j);
+    CHECK(t.kind == ParamTargetKind::Normalized);
+    CHECK(t.number == doctest::Approx(0.75));
+    json_decref(j);
+
+    j = op("{\"display\":\"440 Hz\"}");
+    t = readParamTarget(j);
+    CHECK(t.kind == ParamTargetKind::Display);
+    CHECK(t.display == "440 Hz");
+    json_decref(j);
+}
+
+TEST_CASE("an integer is a number, because JSON says so and jansson does not") {
+    // json_is_number covers JSON_INTEGER as well as JSON_REAL. A check written
+    // as json_is_real would refuse `{"value": 1}`, which is legal and common.
+    json_t* j = op("{\"value\":1}");
+    ParamTarget t = readParamTarget(j);
+    CHECK(t.error == "");
+    CHECK(t.number == doctest::Approx(1.0));
+    json_decref(j);
+}
+
+TEST_CASE("value:null does not silently mean zero") {
+    // The defect. json_number_value(null) is 0.0, and 0 is a legal setting for
+    // most parameters, so this landed as a real change reported as success.
+    json_t* j = op("{\"value\":null}");
+    ParamTarget t = readParamTarget(j);
+    CHECK(t.kind == ParamTargetKind::None);
+    CHECK(t.error.find("value") != std::string::npos);
+    CHECK(t.error.find("null") != std::string::npos);
+    json_decref(j);
+}
+
+TEST_CASE("a null target does not shadow the real one beside it") {
+    // The sharpest form: the value branch won on presence alone, so the 0.8 the
+    // caller actually asked for was discarded and the parameter went to 0.
+    json_t* j = op("{\"value\":null,\"normalized\":0.8}");
+    ParamTarget t = readParamTarget(j);
+    CHECK(t.kind == ParamTargetKind::None);
+    CHECK(t.error.find("exactly one") != std::string::npos);
+    CHECK(t.error.find("2") != std::string::npos);
+    json_decref(j);
+}
+
+TEST_CASE("a numeric string is not a number") {
+    CHECK(readParamTarget(op("{\"value\":\"2.5\"}")).kind == ParamTargetKind::None);
+    CHECK(readParamTarget(op("{\"normalized\":\"0.5\"}")).kind == ParamTargetKind::None);
+    CHECK(readParamTarget(op("{\"display\":880}")).kind == ParamTargetKind::None);
+}
+
+TEST_CASE("naming no target is refused, not treated as a no-op") {
+    // It used to leave newValue at oldValue and push a history entry recording
+    // a change from a value to itself, then report the operation as applied.
+    ParamTarget t = readParamTarget(op("{\"paramId\":3}"));
+    CHECK(t.kind == ParamTargetKind::None);
+    CHECK(t.error.find("none was given") != std::string::npos);
+}
+
+TEST_CASE("naming all three is refused") {
+    ParamTarget t = readParamTarget(op("{\"value\":1,\"normalized\":0.5,\"display\":\"x\"}"));
+    CHECK(t.kind == ParamTargetKind::None);
+    CHECK(t.error.find("3 were given") != std::string::npos);
+}
+
+TEST_CASE("a spec that is not an object is reported, not dereferenced") {
+    CHECK(readParamTarget(op("[]")).error != "");
+    CHECK(readParamTarget(NULL).error != "");
+}
+#endif
