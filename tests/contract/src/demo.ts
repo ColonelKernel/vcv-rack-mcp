@@ -18,8 +18,23 @@ import { REPO_ROOT } from "./sources.js";
  */
 const START = "<summary>Transcript (text)</summary>";
 
+/**
+ * Line endings normalised before anything else looks at the text.
+ *
+ * The repo has no `.gitattributes`, so a Windows checkout gets CRLF and every
+ * `"...\n"` search here misses. That is not hypothetical: this gate reported
+ * "README.md's transcript section has no ```text block" in the
+ * `TypeScript (windows-latest)` job on its first run, having passed on macOS
+ * and Linux. Normalising is the right fix for a comparison of *content*
+ * regardless of what the repo later decides about `.gitattributes`.
+ */
+const lf = (text: string): string => text.replace(/\r\n/g, "\n");
+
 /** The transcript exactly as the README carries it, or throws saying why not. */
-export function readmeTranscript(readme = readFileSync(join(REPO_ROOT, "README.md"), "utf8")): string {
+export function readmeTranscript(
+  readme: string = readFileSync(join(REPO_ROOT, "README.md"), "utf8"),
+): string {
+  readme = lf(readme);
   const summary = readme.indexOf(START);
   if (summary < 0) throw new Error(`README.md has no "${START}" section`);
   const open = readme.indexOf("```text\n", summary);
@@ -31,7 +46,7 @@ export function readmeTranscript(readme = readFileSync(join(REPO_ROOT, "README.m
 }
 
 export function committedSvg(): string {
-  return readFileSync(join(REPO_ROOT, "docs", "assets", "demo.svg"), "utf8");
+  return lf(readFileSync(join(REPO_ROOT, "docs", "assets", "demo.svg"), "utf8"));
 }
 
 /**

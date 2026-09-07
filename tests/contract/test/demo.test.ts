@@ -1,5 +1,8 @@
 import { describe as suite, expect, test } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { committedSvg, firstDifference, readmeTranscript } from "../src/demo.js";
+import { REPO_ROOT } from "../src/sources.js";
 import { renderDemoSvg } from "../../../scripts/gen-demo-svg.js";
 
 suite("demo transcript", () => {
@@ -20,6 +23,15 @@ suite("demo transcript", () => {
     expect(t.split("\n").length).toBeGreaterThan(10);
     expect(t).toContain("list_rack_instances");
     expect(t).toContain("models installed");
+  });
+
+  test("a CRLF checkout is read the same as an LF one", () => {
+    // The repo ships no .gitattributes, so a Windows clone gets CRLF and every
+    // "\n"-anchored search in the extractor misses. This gate failed exactly
+    // that way on windows-latest the first time it ran.
+    const lf = readFileSync(join(REPO_ROOT, "README.md"), "utf8").replace(/\r\n/g, "\n");
+    const crlf = lf.replace(/\n/g, "\r\n");
+    expect(readmeTranscript(crlf)).toBe(readmeTranscript(lf));
   });
 
   test("a malformed README is reported rather than silently accepted", () => {
