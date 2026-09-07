@@ -170,20 +170,32 @@ struct PreviewState {
     }
 };
 
+/**
+ * A live module as plain data.
+ *
+ * Every slug comparison below goes through this rather than chasing
+ * `m->model->plugin->slug` at the point of use: the two-pointer guard was
+ * written out three times in this file with no test on any copy, and the
+ * predicates it feeds decide a risk flag the client is shown and the refusal
+ * that stops a transaction severing its own control channel. A module with no
+ * model becomes two empty slugs, which is what preserves the guard.
+ */
+WorldModule toWorldModule(int64_t id, engine::Module* m) {
+    if (m && m->model && m->model->plugin)
+        return WorldModule(id, m->model->plugin->slug, m->model->slug);
+    return WorldModule(id, "", "");
+}
+
 int bridgeModuleCountLive() {
     int n = 0;
-    for (int64_t id : APP->engine->getModuleIds()) {
-        engine::Module* m = APP->engine->getModule(id);
-        if (m && m->model && m->model->plugin && m->model->plugin->slug == "RackMCP" &&
-            m->model->slug == "Bridge")
+    for (int64_t id : APP->engine->getModuleIds())
+        if (rackmcp::isBridgeModule(toWorldModule(id, APP->engine->getModule(id))))
             n++;
-    }
     return n;
 }
 
 bool isAudioModule(engine::Module* m) {
-    return m && m->model && m->model->plugin && m->model->plugin->slug == "Core" &&
-           m->model->slug.rfind("Audio", 0) == 0;
+    return m && rackmcp::isAudioModule(toWorldModule(m->id, m));
 }
 
 /** A live module, treating one an earlier plan operation removes as gone. */
@@ -295,8 +307,7 @@ bool validateOne(json_t* op, PreviewState& st, ValidationError& err) {
                 err = {"MODULE_NOT_FOUND", "no module with id " + std::to_string(r.moduleId)};
                 return false;
             }
-            bool isBridge = m->model && m->model->plugin && m->model->plugin->slug == "RackMCP" &&
-                            m->model->slug == "Bridge";
+            bool isBridge = rackmcp::isBridgeModule(toWorldModule(r.moduleId, m));
             if (isBridge && !jbool(op, "allowLastBridge", false) && bridgeModuleCountLive() <= 1) {
                 err = {"UNSUPPORTED_OPERATION",
                        "refusing to remove the last RackMCP-Bridge module (set allowLastBridge)"};

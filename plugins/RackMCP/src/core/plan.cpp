@@ -4,6 +4,15 @@
 
 namespace rackmcp {
 
+bool isAudioModule(const WorldModule& module) {
+    return module.pluginSlug == "Core" && module.modelSlug.rfind("Audio", 0) == 0;
+}
+
+bool isBridgeModule(const WorldModule& module) {
+    return module.pluginSlug == "RackMCP" && module.modelSlug == "Bridge";
+}
+
+
 namespace {
 std::string count(size_t n) {
     // to_string on size_t is ambiguous on some 32-bit targets; go through

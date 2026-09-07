@@ -45,6 +45,45 @@ namespace rackmcp {
  */
 bool parseDecimalId(const std::string& text, int64_t& out);
 
+/**
+ * One live module, as plain data.
+ *
+ * The first piece of `PlanWorld` -- the Rack-free snapshot `validatePlan` will
+ * eventually read instead of calling into the engine. It carries only what a
+ * caller has been shown to need; a field nothing reads is a claim that a check
+ * exists, which is the failure this repo's census gate is built around.
+ *
+ * A module with no model reads as two empty slugs, which is what makes the
+ * predicates below agree with the pointer-chasing versions they replace: the
+ * live code guards `m->model && m->model->plugin` before every comparison, and
+ * an empty slug matches neither "Core" nor "RackMCP".
+ */
+struct WorldModule {
+    int64_t id;
+    std::string pluginSlug;
+    std::string modelSlug;
+    WorldModule() : id(-1) {}
+    WorldModule(int64_t id_, const std::string& plugin, const std::string& model)
+        : id(id_), pluginSlug(plugin), modelSlug(model) {}
+};
+
+/**
+ * A Core audio interface -- the modules whose removal or rewiring can produce
+ * a bang in someone's headphones, which is why `touchesAudio` exists.
+ *
+ * Prefix match on purpose: Core ships `Audio-2`, `Audio-8` and `Audio-16`, and
+ * the live code has always matched them with `rfind("Audio", 0) == 0`.
+ */
+bool isAudioModule(const WorldModule& module);
+
+/**
+ * The RackMCP-Bridge module, whose removal severs the control channel the
+ * request arrived on. Written out twice in Transaction.cpp -- once in
+ * `bridgeModuleCountLive` and once inline in the remove_module branch -- with
+ * no test on either copy.
+ */
+bool isBridgeModule(const WorldModule& module);
+
 /** A resolved module reference: a live id, or a transaction-local alias. */
 struct ModuleRef {
     bool ok;

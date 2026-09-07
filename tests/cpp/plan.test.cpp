@@ -426,3 +426,53 @@ TEST_CASE("cable order is preserved, because a policy depends on it") {
     const std::vector<int64_t> none;
     CHECK(cablesOnPort(stacked, none, 9, "input", 0) == std::vector<int64_t>({10, 11, 12}));
 }
+
+// ---------------------------------------------------------------------------
+// WorldModule predicates
+//
+// These replace three hand-written copies of the same slug comparisons in
+// Transaction.cpp, none of which had a test. They decide `touchesAudio` (a
+// risk flag the client is shown) and the last-bridge refusal (the rule that
+// stops a transaction severing the channel it arrived on).
+// ---------------------------------------------------------------------------
+
+TEST_CASE("isAudioModule matches every Core audio interface by prefix") {
+    // Core ships Audio-2, Audio-8 and Audio-16; the live code has always used a
+    // prefix match, so a new Audio-N is covered without an edit.
+    CHECK(isAudioModule(WorldModule(1, "Core", "Audio-2")));
+    CHECK(isAudioModule(WorldModule(2, "Core", "Audio-8")));
+    CHECK(isAudioModule(WorldModule(3, "Core", "Audio-16")));
+    CHECK(isAudioModule(WorldModule(4, "Core", "Audio")));
+}
+
+TEST_CASE("isAudioModule is anchored, so Audio elsewhere in the slug misses") {
+    // rfind(s, 0) is a prefix test, not a substring search. If this were a
+    // substring search, "MIDIAudio" would raise the audio risk flag on a module
+    // that touches no interface.
+    CHECK_FALSE(isAudioModule(WorldModule(1, "Core", "MIDIAudio")));
+    CHECK_FALSE(isAudioModule(WorldModule(2, "Core", "audio-2")));
+    CHECK_FALSE(isAudioModule(WorldModule(3, "Fundamental", "Audio-2")));
+    CHECK_FALSE(isAudioModule(WorldModule(4, "CoreX", "Audio-2")));
+}
+
+TEST_CASE("a module with no model is neither audio nor bridge") {
+    // The live code guards `m->model && m->model->plugin` before comparing.
+    // Empty slugs are how that guard survives the move to plain data: an empty
+    // modelSlug must not prefix-match "Audio", and rfind on an empty string
+    // returns npos rather than 0.
+    WorldModule none;
+    CHECK_FALSE(isAudioModule(none));
+    CHECK_FALSE(isBridgeModule(none));
+    CHECK_FALSE(isAudioModule(WorldModule(1, "Core", "")));
+    CHECK_FALSE(isBridgeModule(WorldModule(2, "RackMCP", "")));
+}
+
+TEST_CASE("isBridgeModule is exact, not a prefix like the audio test") {
+    // The two predicates deliberately differ. RackMCP also ships Probe, Chat
+    // and Tutorial modules, and only Bridge carries the control channel -- a
+    // prefix match on "Bridge" would still be wrong if a Bridge2 ever shipped.
+    CHECK(isBridgeModule(WorldModule(1, "RackMCP", "Bridge")));
+    CHECK_FALSE(isBridgeModule(WorldModule(2, "RackMCP", "BridgeX")));
+    CHECK_FALSE(isBridgeModule(WorldModule(3, "RackMCP", "Probe")));
+    CHECK_FALSE(isBridgeModule(WorldModule(4, "Other", "Bridge")));
+}

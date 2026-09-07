@@ -60,9 +60,9 @@ present either way; the gate matches the jansson call shape instead.
 | --- | --- | --- |
 | `opaqueStateDisclosed` | `json_true()` | `plugins/RackMCP/src/rackside/Snapshot.cpp:196` |
 | `requiredTemporaryInstantiation` | `json_true()` | `plugins/RackMCP/src/rackside/Snapshot.cpp:443` |
-| `undoable` | `json_true()` | `plugins/RackMCP/src/rackside/Transaction.cpp:657` |
-| `undoEligible` | `json_true()` | `plugins/RackMCP/src/rackside/Transaction.cpp:1283` |
-| `undone` | `json_true()` | `plugins/RackMCP/src/rackside/Transaction.cpp:1338` |
+| `undoable` | `json_true()` | `plugins/RackMCP/src/rackside/Transaction.cpp:668` |
+| `undoEligible` | `json_true()` | `plugins/RackMCP/src/rackside/Transaction.cpp:1294` |
+| `undone` | `json_true()` | `plugins/RackMCP/src/rackside/Transaction.cpp:1349` |
 
 ## What these gates do not cover
 
