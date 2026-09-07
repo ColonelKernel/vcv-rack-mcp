@@ -653,3 +653,55 @@ TEST_CASE("every operation the schema declares is checkable") {
     }
 }
 #endif
+
+#if RACKMCP_HAVE_JANSSON
+TEST_CASE("an unrecognised policy string is refused, not defaulted") {
+    // Each of these reaches a jstr(op, key, <default>) in the plugin, and every
+    // one of those defaults is the destructive choice: remove_attached takes
+    // the cables, replace_all deletes the existing one.
+    const std::string cable = checkOperationFields(
+        op("{\"op\":\"remove_module\",\"module\":{},\"cablePolicy\":\"banana\"}"));
+    CHECK(cable.find("cablePolicy") != std::string::npos);
+    CHECK(cable.find("remove_attached") != std::string::npos);   // names the options
+    CHECK(cable.find("fail_if_connected") != std::string::npos);
+    CHECK(cable.find("banana") != std::string::npos);            // and what was sent
+
+    CHECK(checkOperationFields(op(
+              "{\"op\":\"connect\",\"output\":{},\"input\":{},\"inputPolicy\":\"REPLACE_ALL\"}")) != "");
+    CHECK(checkOperationFields(op(
+              "{\"op\":\"disconnect_port\",\"port\":{},\"policy\":\"\"}")) != "");
+    CHECK(checkOperationFields(op(
+              "{\"op\":\"move_module\",\"module\":{},\"position\":{},\"collision\":\"squeeze \"}")) != "");
+}
+
+TEST_CASE("every value the schema declares is still accepted") {
+    // The other half: a membership check that rejected a legal value would
+    // break the shipped server, which sends exactly these strings.
+    CHECK(checkOperationFields(op(
+              "{\"op\":\"remove_module\",\"module\":{},\"cablePolicy\":\"remove_attached\"}")) == "");
+    CHECK(checkOperationFields(op(
+              "{\"op\":\"remove_module\",\"module\":{},\"cablePolicy\":\"fail_if_connected\"}")) == "");
+    for (size_t i = 0; i < gen::OPERATION_SPEC_COUNT; i++) {
+        const gen::OperationSpec& spec = gen::OPERATION_SPECS[i];
+        for (size_t f = 0; f < spec.fieldCount; f++) {
+            if (!spec.fields[f].allowed)
+                continue;
+            // An enum with no members would make the membership check refuse
+            // every value, including the legal ones.
+            CHECK(spec.fields[f].allowed[0] != NULL);
+            CHECK(std::string(spec.fields[f].jsonType) == "string");
+        }
+    }
+}
+
+TEST_CASE("at least one operation actually carries an enum") {
+    // Without this the two cases above could both pass on a table where the
+    // generator silently stopped emitting `allowed` at all.
+    size_t withEnum = 0;
+    for (size_t i = 0; i < gen::OPERATION_SPEC_COUNT; i++)
+        for (size_t f = 0; f < gen::OPERATION_SPECS[i].fieldCount; f++)
+            if (gen::OPERATION_SPECS[i].fields[f].allowed)
+                withEnum++;
+    CHECK(withEnum >= 4); // cablePolicy, collision, inputPolicy, policy
+}
+#endif

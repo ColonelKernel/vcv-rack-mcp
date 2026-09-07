@@ -71,6 +71,23 @@ function jsonTypeOf(s: JsonSchema | undefined): string {
 interface FieldRow {
   name: string;
   type: string;
+  /**
+   * The exact strings a string-enum field admits, or undefined when the field
+   * is not an enum. Without these the C++ checker can confirm a policy field is
+   * a string and nothing more -- and every policy field in patch-operation
+   * defaults, in the plugin, to the destructive choice when the value is not
+   * recognised.
+   */
+  allowed?: readonly string[];
+}
+
+/** The string enum a schema declares, if it declares one. */
+function stringEnumOf(s: JsonSchema | undefined): readonly string[] | undefined {
+  if (!s) return undefined;
+  if (Array.isArray(s.enum) && s.enum.every((v) => typeof v === "string"))
+    return s.enum as string[];
+  if (typeof s.const === "string") return [s.const];
+  return undefined;
 }
 function requiredFields(schema: JsonSchema): FieldRow[] {
   const req = schema.required ?? [];
@@ -78,7 +95,24 @@ function requiredFields(schema: JsonSchema): FieldRow[] {
   return req
     .filter((r) => r !== "kind")
     .sort()
-    .map((r) => ({ name: r, type: jsonTypeOf(props[r]) }));
+    .map((r) => ({ name: r, type: jsonTypeOf(props[r]), allowed: stringEnumOf(props[r]) }));
+}
+
+
+/**
+ * Emits a NULL-terminated `const char*` array for a field's enum values and
+ * returns its identifier, or "nullptr" when the field is not an enum. Names are
+ * derived from the owning table entry so two fields called "policy" in
+ * different operations cannot collide.
+ */
+function emitAllowed(owner: string, f: FieldRow): string {
+  if (!f.allowed || f.allowed.length === 0) return "nullptr";
+  const id = `ALLOWED_${owner}_${f.name.replace(/[^a-zA-Z0-9]/g, "_")}`;
+  P(`static const char* const ${id}[] = {`);
+  for (const v of f.allowed) P(`\t"${v}",`);
+  P("\tnullptr");
+  P("};");
+  return id;
 }
 
 // Frame kinds from the bridge-frame schema (a discriminated union).
@@ -115,7 +149,11 @@ for (const v of opVariants) {
     fields: (v.required ?? [])
       .filter((r) => r !== "op")
       .sort()
-      .map((r) => ({ name: r, type: jsonTypeOf(v.properties?.[r]) })),
+      .map((r) => ({
+        name: r,
+        type: jsonTypeOf(v.properties?.[r]),
+        allowed: stringEnumOf(v.properties?.[r]),
+      })),
   });
 }
 opRows.sort((a, b) => a.op.localeCompare(b.op));
@@ -195,14 +233,17 @@ P("\t}");
 P("}");
 P("");
 P("// Frame kinds and their required non-discriminator fields");
-P("struct FieldSpec { const char* name; const char* jsonType; };");
+P("// `allowed` is a NULL-terminated list of the exact strings a string-enum");
+P("// field admits, or NULL when the field is not an enum.");
+P("struct FieldSpec { const char* name; const char* jsonType; const char* const* allowed; };");
 P("struct FrameSpec { const char* kind; const FieldSpec* fields; size_t fieldCount; };");
 P("");
 for (const f of frameRows) {
   const id = f.kind.replace(/[^a-zA-Z0-9]/g, "_");
+  const frameAllowed = f.fields.map((fd) => emitAllowed(`FRAME_${id}`, fd));
   P(`static const FieldSpec FRAME_FIELDS_${id}[] = {`);
-  for (const fd of f.fields) P(`\t{"${fd.name}", "${fd.type}"},`);
-  P('\t{nullptr, nullptr}');
+  f.fields.forEach((fd, k) => P(`\t{"${fd.name}", "${fd.type}", ${frameAllowed[k]}},`));
+  P('\t{nullptr, nullptr, nullptr}');
   P("};");
 }
 P("static const FrameSpec FRAME_SPECS[] = {");
@@ -217,9 +258,10 @@ P("// Bridge methods, whether they mutate, and required request fields");
 P("struct MethodSpec { const char* method; bool mutating; const FieldSpec* fields; size_t fieldCount; };");
 P("");
 methodRows.forEach((m, i) => {
+  const methodAllowed = m.fields.map((fd) => emitAllowed(`METHOD_${i}`, fd));
   P(`static const FieldSpec METHOD_FIELDS_${i}[] = {`);
-  for (const fd of m.fields) P(`\t{"${fd.name}", "${fd.type}"},`);
-  P('\t{nullptr, nullptr}');
+  m.fields.forEach((fd, k) => P(`\t{"${fd.name}", "${fd.type}", ${methodAllowed[k]}},`));
+  P('\t{nullptr, nullptr, nullptr}');
   P("};");
 });
 P("static const MethodSpec METHOD_SPECS[] = {");
@@ -233,9 +275,10 @@ P("// Patch operations and required fields");
 P("struct OperationSpec { const char* op; const FieldSpec* fields; size_t fieldCount; };");
 P("");
 opRows.forEach((o, i) => {
+  const opAllowed = o.fields.map((fd) => emitAllowed(`OP_${i}`, fd));
   P(`static const FieldSpec OP_FIELDS_${i}[] = {`);
-  for (const fd of o.fields) P(`\t{"${fd.name}", "${fd.type}"},`);
-  P('\t{nullptr, nullptr}');
+  o.fields.forEach((fd, k) => P(`\t{"${fd.name}", "${fd.type}", ${opAllowed[k]}},`));
+  P('\t{nullptr, nullptr, nullptr}');
   P("};");
 });
 P("static const OperationSpec OPERATION_SPECS[] = {");

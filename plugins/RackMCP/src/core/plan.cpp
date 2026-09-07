@@ -143,6 +143,28 @@ std::string checkOperationFields(json_t* op) {
             return std::string(name) + ": field \"" + field.name + "\" must be " +
                    field.jsonType + ", not " + actualTypeName(value);
         }
+        // A string of the right type is not yet a string the schema admits, and
+        // for the policy fields that distinction is the whole point: the plugin
+        // reads them with jstr(op, key, <default>) and every one of those
+        // defaults is the destructive choice. An unrecognised `cablePolicy`
+        // selected remove_attached; an unrecognised `inputPolicy` selected
+        // replace_all and deleted the existing cable.
+        if (field.allowed && json_is_string(value)) {
+            const char* actual = json_string_value(value);
+            bool found = false;
+            std::string permitted;
+            for (size_t a = 0; field.allowed[a]; a++) {
+                if (std::strcmp(field.allowed[a], actual) == 0)
+                    found = true;
+                if (!permitted.empty())
+                    permitted += ", ";
+                permitted += field.allowed[a];
+            }
+            if (!found) {
+                return std::string(name) + ": field \"" + field.name + "\" must be one of " +
+                       permitted + ", not \"" + actual + "\"";
+            }
+        }
     }
     return "";
 }

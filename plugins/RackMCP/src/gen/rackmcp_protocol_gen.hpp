@@ -147,57 +147,96 @@ inline const char* riskFlagToString(RiskFlag f) {
 }
 
 // Frame kinds and their required non-discriminator fields
-struct FieldSpec { const char* name; const char* jsonType; };
+// `allowed` is a NULL-terminated list of the exact strings a string-enum
+// field admits, or NULL when the field is not an enum.
+struct FieldSpec { const char* name; const char* jsonType; const char* const* allowed; };
 struct FrameSpec { const char* kind; const FieldSpec* fields; size_t fieldCount; };
 
 static const FieldSpec FRAME_FIELDS_auth[] = {
-	{"hmac", "string"},
-	{nullptr, nullptr}
+	{"hmac", "string", nullptr},
+	{nullptr, nullptr, nullptr}
 };
 static const FieldSpec FRAME_FIELDS_authResult[] = {
-	{"ok", "boolean"},
-	{nullptr, nullptr}
+	{"ok", "boolean", nullptr},
+	{nullptr, nullptr, nullptr}
+};
+static const char* const ALLOWED_FRAME_evt_event[] = {
+	"shutting_down",
+	"patch_epoch_changed",
+	"lease_revoked",
+	"user_note_pending",
+	nullptr
 };
 static const FieldSpec FRAME_FIELDS_evt[] = {
-	{"event", "string"},
-	{nullptr, nullptr}
+	{"event", "string", ALLOWED_FRAME_evt_event},
+	{nullptr, nullptr, nullptr}
 };
 static const FieldSpec FRAME_FIELDS_hello[] = {
-	{"client", "object"},
-	{"versions", "array"},
-	{nullptr, nullptr}
+	{"client", "object", nullptr},
+	{"versions", "array", nullptr},
+	{nullptr, nullptr, nullptr}
 };
 static const FieldSpec FRAME_FIELDS_ping[] = {
-	{"id", "string"},
-	{nullptr, nullptr}
+	{"id", "string", nullptr},
+	{nullptr, nullptr, nullptr}
 };
 static const FieldSpec FRAME_FIELDS_pong[] = {
-	{"id", "string"},
-	{nullptr, nullptr}
+	{"id", "string", nullptr},
+	{nullptr, nullptr, nullptr}
+};
+static const char* const ALLOWED_FRAME_req_method[] = {
+	"status.get",
+	"lease.acquire",
+	"lease.renew",
+	"lease.release",
+	"catalog.listModels",
+	"catalog.inspectModel",
+	"patch.snapshot",
+	"patch.fingerprint",
+	"module.inspect",
+	"txn.preview",
+	"txn.commit",
+	"txn.undoLast",
+	"patchfile.save",
+	"patchfile.saveCopy",
+	"patchfile.load",
+	"patchfile.clear",
+	"probe.list",
+	"probe.read",
+	"metrics.get",
+	"chat.poll",
+	"chat.post",
+	nullptr
 };
 static const FieldSpec FRAME_FIELDS_req[] = {
-	{"deadlineMs", "integer"},
-	{"id", "string"},
-	{"method", "string"},
-	{"payload", "any"},
-	{nullptr, nullptr}
+	{"deadlineMs", "integer", nullptr},
+	{"id", "string", nullptr},
+	{"method", "string", ALLOWED_FRAME_req_method},
+	{"payload", "any", nullptr},
+	{nullptr, nullptr, nullptr}
 };
 static const FieldSpec FRAME_FIELDS_res[] = {
-	{"id", "string"},
-	{"ok", "boolean"},
-	{nullptr, nullptr}
+	{"id", "string", nullptr},
+	{"ok", "boolean", nullptr},
+	{nullptr, nullptr, nullptr}
+};
+static const char* const ALLOWED_FRAME_welcome_rackEdition[] = {
+	"Free",
+	"Pro",
+	"unknown",
+	nullptr
 };
 static const FieldSpec FRAME_FIELDS_welcome[] = {
-	{"authRequired", "boolean"},
-	{"bridgeVersion", "string"},
-	{"instanceId", "string"},
-	{"nonce", "string"},
-	{"patchEpoch", "integer"},
-	{"rackEdition", "string"},
-	{"rackVersion", "string"},
-	{"sessionId", "string"},
-	{"version", "integer"},
-	{nullptr, nullptr}
+	{"authRequired", "boolean", nullptr},
+	{"bridgeVersion", "string", nullptr},
+	{"instanceId", "string", nullptr},
+	{"nonce", "string", nullptr},
+	{"patchEpoch", "integer", nullptr},
+	{"rackEdition", "string", ALLOWED_FRAME_welcome_rackEdition},
+	{"rackVersion", "string", nullptr},
+	{"sessionId", "string", nullptr},
+	{"version", "integer", nullptr},
+	{nullptr, nullptr, nullptr}
 };
 static const FrameSpec FRAME_SPECS[] = {
 	{"auth", FRAME_FIELDS_auth, 1},
@@ -216,100 +255,100 @@ static const size_t FRAME_SPEC_COUNT = 9;
 struct MethodSpec { const char* method; bool mutating; const FieldSpec* fields; size_t fieldCount; };
 
 static const FieldSpec METHOD_FIELDS_0[] = {
-	{nullptr, nullptr}
+	{nullptr, nullptr, nullptr}
 };
 static const FieldSpec METHOD_FIELDS_1[] = {
-	{"clientName", "string"},
-	{nullptr, nullptr}
+	{"clientName", "string", nullptr},
+	{nullptr, nullptr, nullptr}
 };
 static const FieldSpec METHOD_FIELDS_2[] = {
-	{"leaseId", "string"},
-	{nullptr, nullptr}
+	{"leaseId", "string", nullptr},
+	{nullptr, nullptr, nullptr}
 };
 static const FieldSpec METHOD_FIELDS_3[] = {
-	{"leaseId", "string"},
-	{nullptr, nullptr}
+	{"leaseId", "string", nullptr},
+	{nullptr, nullptr, nullptr}
 };
 static const FieldSpec METHOD_FIELDS_4[] = {
-	{nullptr, nullptr}
+	{nullptr, nullptr, nullptr}
 };
 static const FieldSpec METHOD_FIELDS_5[] = {
-	{"modelSlug", "string"},
-	{"pluginSlug", "string"},
-	{nullptr, nullptr}
+	{"modelSlug", "string", nullptr},
+	{"pluginSlug", "string", nullptr},
+	{nullptr, nullptr, nullptr}
 };
 static const FieldSpec METHOD_FIELDS_6[] = {
-	{nullptr, nullptr}
+	{nullptr, nullptr, nullptr}
 };
 static const FieldSpec METHOD_FIELDS_7[] = {
-	{nullptr, nullptr}
+	{nullptr, nullptr, nullptr}
 };
 static const FieldSpec METHOD_FIELDS_8[] = {
-	{"moduleId", "string"},
-	{"scope", "object"},
-	{nullptr, nullptr}
+	{"moduleId", "string", nullptr},
+	{"scope", "object", nullptr},
+	{nullptr, nullptr, nullptr}
 };
 static const FieldSpec METHOD_FIELDS_9[] = {
-	{"label", "string"},
-	{"operations", "array"},
-	{"scope", "object"},
-	{nullptr, nullptr}
+	{"label", "string", nullptr},
+	{"operations", "array", nullptr},
+	{"scope", "object", nullptr},
+	{nullptr, nullptr, nullptr}
 };
 static const FieldSpec METHOD_FIELDS_10[] = {
-	{"expectedFingerprint", "string"},
-	{"operationId", "string"},
-	{"plan", "object"},
-	{"planHash", "string"},
-	{"scope", "object"},
-	{nullptr, nullptr}
+	{"expectedFingerprint", "string", nullptr},
+	{"operationId", "string", nullptr},
+	{"plan", "object", nullptr},
+	{"planHash", "string", nullptr},
+	{"scope", "object", nullptr},
+	{nullptr, nullptr, nullptr}
 };
 static const FieldSpec METHOD_FIELDS_11[] = {
-	{"expectedOperationId", "string"},
-	{"operationId", "string"},
-	{"scope", "object"},
-	{nullptr, nullptr}
+	{"expectedOperationId", "string", nullptr},
+	{"operationId", "string", nullptr},
+	{"scope", "object", nullptr},
+	{nullptr, nullptr, nullptr}
 };
 static const FieldSpec METHOD_FIELDS_12[] = {
-	{"operationId", "string"},
-	{"path", "string"},
-	{"scope", "object"},
-	{nullptr, nullptr}
+	{"operationId", "string", nullptr},
+	{"path", "string", nullptr},
+	{"scope", "object", nullptr},
+	{nullptr, nullptr, nullptr}
 };
 static const FieldSpec METHOD_FIELDS_13[] = {
-	{"operationId", "string"},
-	{"path", "string"},
-	{"scope", "object"},
-	{nullptr, nullptr}
+	{"operationId", "string", nullptr},
+	{"path", "string", nullptr},
+	{"scope", "object", nullptr},
+	{nullptr, nullptr, nullptr}
 };
 static const FieldSpec METHOD_FIELDS_14[] = {
-	{"operationId", "string"},
-	{"path", "string"},
-	{"scope", "object"},
-	{nullptr, nullptr}
+	{"operationId", "string", nullptr},
+	{"path", "string", nullptr},
+	{"scope", "object", nullptr},
+	{nullptr, nullptr, nullptr}
 };
 static const FieldSpec METHOD_FIELDS_15[] = {
-	{"operationId", "string"},
-	{"scope", "object"},
-	{nullptr, nullptr}
+	{"operationId", "string", nullptr},
+	{"scope", "object", nullptr},
+	{nullptr, nullptr, nullptr}
 };
 static const FieldSpec METHOD_FIELDS_16[] = {
-	{nullptr, nullptr}
+	{nullptr, nullptr, nullptr}
 };
 static const FieldSpec METHOD_FIELDS_17[] = {
-	{"probeInputId", "integer"},
-	{"probeModuleId", "string"},
-	{"scope", "object"},
-	{nullptr, nullptr}
+	{"probeInputId", "integer", nullptr},
+	{"probeModuleId", "string", nullptr},
+	{"scope", "object", nullptr},
+	{nullptr, nullptr, nullptr}
 };
 static const FieldSpec METHOD_FIELDS_18[] = {
-	{nullptr, nullptr}
+	{nullptr, nullptr, nullptr}
 };
 static const FieldSpec METHOD_FIELDS_19[] = {
-	{nullptr, nullptr}
+	{nullptr, nullptr, nullptr}
 };
 static const FieldSpec METHOD_FIELDS_20[] = {
-	{"text", "string"},
-	{nullptr, nullptr}
+	{"text", "string", nullptr},
+	{nullptr, nullptr, nullptr}
 };
 static const MethodSpec METHOD_SPECS[] = {
 	{"status.get", false, METHOD_FIELDS_0, 0},
@@ -340,60 +379,83 @@ static const size_t METHOD_SPEC_COUNT = 21;
 struct OperationSpec { const char* op; const FieldSpec* fields; size_t fieldCount; };
 
 static const FieldSpec OP_FIELDS_0[] = {
-	{"alias", "string"},
-	{"modelSlug", "string"},
-	{"pluginSlug", "string"},
-	{nullptr, nullptr}
+	{"alias", "string", nullptr},
+	{"modelSlug", "string", nullptr},
+	{"pluginSlug", "string", nullptr},
+	{nullptr, nullptr, nullptr}
+};
+static const char* const ALLOWED_OP_1_inputPolicy[] = {
+	"fail_if_connected",
+	"stack",
+	"replace_all",
+	nullptr
 };
 static const FieldSpec OP_FIELDS_1[] = {
-	{"input", "object"},
-	{"inputPolicy", "string"},
-	{"output", "object"},
-	{nullptr, nullptr}
+	{"input", "object", nullptr},
+	{"inputPolicy", "string", ALLOWED_OP_1_inputPolicy},
+	{"output", "object", nullptr},
+	{nullptr, nullptr, nullptr}
 };
 static const FieldSpec OP_FIELDS_2[] = {
-	{"cable", "object"},
-	{nullptr, nullptr}
+	{"cable", "object", nullptr},
+	{nullptr, nullptr, nullptr}
+};
+static const char* const ALLOWED_OP_3_policy[] = {
+	"top",
+	"all",
+	nullptr
 };
 static const FieldSpec OP_FIELDS_3[] = {
-	{"policy", "string"},
-	{"port", "object"},
-	{nullptr, nullptr}
+	{"policy", "string", ALLOWED_OP_3_policy},
+	{"port", "object", nullptr},
+	{nullptr, nullptr, nullptr}
 };
 static const FieldSpec OP_FIELDS_4[] = {
-	{"alias", "string"},
-	{"copyCables", "boolean"},
-	{"module", "object"},
-	{nullptr, nullptr}
+	{"alias", "string", nullptr},
+	{"copyCables", "boolean", nullptr},
+	{"module", "object", nullptr},
+	{nullptr, nullptr, nullptr}
+};
+static const char* const ALLOWED_OP_5_collision[] = {
+	"fail",
+	"nearest",
+	"force",
+	"squeeze",
+	nullptr
 };
 static const FieldSpec OP_FIELDS_5[] = {
-	{"collision", "string"},
-	{"module", "object"},
-	{"position", "object"},
-	{nullptr, nullptr}
+	{"collision", "string", ALLOWED_OP_5_collision},
+	{"module", "object", nullptr},
+	{"position", "object", nullptr},
+	{nullptr, nullptr, nullptr}
 };
 static const FieldSpec OP_FIELDS_6[] = {
-	{"module", "object"},
-	{nullptr, nullptr}
+	{"module", "object", nullptr},
+	{nullptr, nullptr, nullptr}
+};
+static const char* const ALLOWED_OP_7_cablePolicy[] = {
+	"remove_attached",
+	"fail_if_connected",
+	nullptr
 };
 static const FieldSpec OP_FIELDS_7[] = {
-	{"cablePolicy", "string"},
-	{"module", "object"},
-	{nullptr, nullptr}
+	{"cablePolicy", "string", ALLOWED_OP_7_cablePolicy},
+	{"module", "object", nullptr},
+	{nullptr, nullptr, nullptr}
 };
 static const FieldSpec OP_FIELDS_8[] = {
-	{"module", "object"},
-	{nullptr, nullptr}
+	{"module", "object", nullptr},
+	{nullptr, nullptr, nullptr}
 };
 static const FieldSpec OP_FIELDS_9[] = {
-	{"bypassed", "boolean"},
-	{"module", "object"},
-	{nullptr, nullptr}
+	{"bypassed", "boolean", nullptr},
+	{"module", "object", nullptr},
+	{nullptr, nullptr, nullptr}
 };
 static const FieldSpec OP_FIELDS_10[] = {
-	{"module", "object"},
-	{"paramId", "integer"},
-	{nullptr, nullptr}
+	{"module", "object", nullptr},
+	{"paramId", "integer", nullptr},
+	{nullptr, nullptr, nullptr}
 };
 static const OperationSpec OPERATION_SPECS[] = {
 	{"add_module", OP_FIELDS_0, 3},
