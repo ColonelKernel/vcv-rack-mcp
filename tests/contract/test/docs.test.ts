@@ -12,8 +12,9 @@ import {
   missingPaths,
   trackedPaths,
 } from "../src/docs.js";
-import { REPO_ROOT } from "../src/sources.js";
+import { filesMentioning, REPO_ROOT } from "../src/sources.js";
 import { INCLUDE_RULES, loadCoreUnits, missingIncludes } from "../src/cppincludes.js";
+import { bannedParses } from "../src/cppparses.js";
 
 suite("documentation referents", () => {
   test("the scanner reads the documentation set", () => {
@@ -148,5 +149,26 @@ suite("core/ standard includes", () => {
         `nothing scanned uses ${rule!.what}, so that rule is vacuous`,
       ).toBe(true);
     }
+  });
+});
+
+suite("plugin id parsing", () => {
+  test("no hand-rolled string-to-number parsing outside the strict parser", () => {
+    // See src/cppparses.ts. Four sites parsed ids four different ways and all
+    // four accepted more than refs.ts DecimalId allows.
+    expect(
+      bannedParses().map((b) => `${b.path}:${b.line} uses ${b.parser}`),
+      "parse ids with core/plan.cpp parseDecimalId, which accepts exactly what refs.ts DecimalId declares",
+    ).toEqual([]);
+  });
+
+  test("the strict parser is actually used by the plugin", () => {
+    // Banning the alternatives proves nothing if nothing replaced them: the
+    // check above would pass just as well on a plugin that had stopped
+    // validating ids altogether.
+    const users = filesMentioning(["parseDecimalId"]).filter((f) =>
+      f.startsWith("plugins/RackMCP/src/rackside/"),
+    );
+    expect(users.length, "no rackside file calls parseDecimalId").toBeGreaterThan(0);
   });
 });

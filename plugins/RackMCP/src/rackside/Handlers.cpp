@@ -8,6 +8,7 @@
 #include "core/activitylog.hpp"
 #include "core/canonical.hpp"
 #include "core/frames.hpp"
+#include "core/plan.hpp"
 #include "gen/rackmcp_protocol_gen.hpp"
 #include "rackmcp_plugin.hpp"
 #include "rackside/RackBridge.hpp"
@@ -133,21 +134,27 @@ struct HandlerResult {
     bool cacheable = false;
 };
 
+/**
+ * Reads a decimal id field, accepting exactly what refs.ts DecimalId declares.
+ *
+ * Was strtoll with an endptr check, which also accepted leading whitespace, a
+ * leading `+`, leading zeros, and an out-of-range value clamped to INT64_MAX.
+ * It did reject the empty string, which is more than the module-reference parse
+ * managed -- but "more careful than the worst one" is not the contract.
+ */
 static int64_t parseDecId(json_t* obj, const char* key, bool& ok) {
     ok = false;
     json_t* v = obj ? json_object_get(obj, key) : NULL;
     if (!json_is_string(v))
         return -1;
     const char* s = json_string_value(v);
-    if (!s || !*s)
+    if (!s)
         return -1;
-    char* endp = NULL;
-    long long id = strtoll(s, &endp, 10);
-    if (endp && *endp == '\0' && id >= 0) {
-        ok = true;
-        return (int64_t) id;
-    }
-    return -1;
+    int64_t id = -1;
+    if (!parseDecimalId(s, id))
+        return -1;
+    ok = true;
+    return id;
 }
 
 static bool getBoolField(json_t* obj, const char* key, bool dflt) {
@@ -360,7 +367,12 @@ static std::string handleProbeRead(const BridgeCommand& cmd) {
     const char* midStr = p ? json_string_value(json_object_get(p, "probeModuleId")) : NULL;
     if (!midStr)
         return buildResError(cmd.requestId, "MODULE_NOT_FOUND", "probeModuleId required", false, false);
-    int64_t mid = strtoll(midStr, NULL, 10);
+    // strtoll with no endptr check read "" and "abc" as module 0, so a probe
+    // read with an empty id returned whatever module 0 happens to be.
+    int64_t mid = -1;
+    if (!parseDecimalId(midStr, mid))
+        return buildResError(cmd.requestId, "MODULE_NOT_FOUND",
+                             "probeModuleId is not a decimal module id", false, false);
     int inputId = (int) json_integer_value(json_object_get(p, "probeInputId"));
     std::string errorCode;
     json_t* reading = buildProbeReading(mid, inputId, errorCode);

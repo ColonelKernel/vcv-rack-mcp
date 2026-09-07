@@ -14,6 +14,7 @@
 #include <vector>
 #include <jansson.h>
 
+#include "core/plan.hpp"
 #include "core/canonical.hpp"
 #include "rackside/RackBridge.hpp"
 
@@ -341,13 +342,18 @@ json_t* buildModelCatalog(const std::string& cursor, int limit, const std::strin
         return a->slug < b->slug;
     });
 
+    // The cursor this plugin emits is std::to_string(end) -- a plain decimal --
+    // so a conforming client always round-trips one. std::stoul was reading
+    // more than that: it ignores trailing garbage, so "42x" silently paged from
+    // 42, and it wraps a negative, so "-1" became SIZE_MAX and produced a
+    // clamped empty page. Neither was reported. Anything that is not a decimal
+    // now restarts pagination, which is the degradation the try/catch already
+    // chose for the cases it did catch -- just applied consistently.
     size_t start = 0;
     if (!cursor.empty()) {
-        try {
-            start = (size_t) std::stoul(cursor);
-        } catch (...) {
-            start = 0;
-        }
+        int64_t parsed = 0;
+        if (parseDecimalId(cursor, parsed))
+            start = (size_t) parsed;
     }
     if (start > all.size())
         start = all.size();

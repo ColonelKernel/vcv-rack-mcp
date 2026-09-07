@@ -59,11 +59,11 @@ present either way; the gate matches the jansson call shape instead.
 
 | Field | Value | Emitted at |
 | --- | --- | --- |
-| `opaqueStateDisclosed` | `json_true()` | `plugins/RackMCP/src/rackside/Snapshot.cpp:195` |
-| `requiredTemporaryInstantiation` | `json_true()` | `plugins/RackMCP/src/rackside/Snapshot.cpp:437` |
-| `undoable` | `json_true()` | `plugins/RackMCP/src/rackside/Transaction.cpp:655` |
-| `undoEligible` | `json_true()` | `plugins/RackMCP/src/rackside/Transaction.cpp:1276` |
-| `undone` | `json_true()` | `plugins/RackMCP/src/rackside/Transaction.cpp:1331` |
+| `opaqueStateDisclosed` | `json_true()` | `plugins/RackMCP/src/rackside/Snapshot.cpp:196` |
+| `requiredTemporaryInstantiation` | `json_true()` | `plugins/RackMCP/src/rackside/Snapshot.cpp:443` |
+| `undoable` | `json_true()` | `plugins/RackMCP/src/rackside/Transaction.cpp:657` |
+| `undoEligible` | `json_true()` | `plugins/RackMCP/src/rackside/Transaction.cpp:1283` |
+| `undone` | `json_true()` | `plugins/RackMCP/src/rackside/Transaction.cpp:1338` |
 
 ## What these gates do not cover
 

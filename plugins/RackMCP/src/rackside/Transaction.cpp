@@ -454,9 +454,11 @@ bool validateOne(json_t* op, PreviewState& st, ValidationError& err) {
     if (type == "disconnect") {
         json_t* cref = json_object_get(op, "cable");
         const char* cidStr = jstr(cref, "cableId", "");
-        char* endp = NULL;
-        long long cid = strtoll(cidStr, &endp, 10);
-        if (!endp || *endp != '\0' || !APP->engine->getCable(cid)) {
+        // The endptr check alone accepted "" as cable 0 -- strtoll returns 0 and
+        // leaves endp on the terminator -- and never checked the sign, so a
+        // negative id reached getCable too.
+        int64_t cid = -1;
+        if (!parseDecimalId(cidStr, cid) || !APP->engine->getCable(cid)) {
             err = {"CABLE_NOT_FOUND", "disconnect: no cable " + std::string(cidStr)};
             return false;
         }
@@ -1049,8 +1051,13 @@ private:
 
     void applyDisconnect(json_t* op) {
         const char* cidStr = jstr(json_object_get(op, "cable"), "cableId", "");
-        int64_t cid = strtoll(cidStr, NULL, 10);
-        if (!APP->engine->getCable(cid))
+        // Parsed the SAME way preview parses it. This had no endptr check at
+        // all, so preview and commit disagreed about what a cable id is:
+        // "42x" was refused at preview and would have been read as 42 here.
+        // Only a previewed plan reaches this path today, so the divergence was
+        // latent rather than reachable -- but the two must not drift.
+        int64_t cid = -1;
+        if (!parseDecimalId(cidStr, cid) || !APP->engine->getCable(cid))
             throw std::string("disconnect: no cable " + std::string(cidStr));
         removeCableById(cid);
         applied.push_back({"disconnect", "cable " + std::string(cidStr)});
