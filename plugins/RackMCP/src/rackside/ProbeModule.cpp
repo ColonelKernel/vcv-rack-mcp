@@ -73,7 +73,7 @@ void ProbeModule::process(const ProcessArgs& args) {
             snap.channelCount = windowChannels_[i];
             for (int c = 0; c < PROBE_MAX_CHANNELS; c++) {
                 if (c < windowChannels_[i])
-                    snap.channels[c] = finalizeChannel(acc_[i][c], windowFrame_);
+                    snap.channels[c] = finalizeChannel(acc_[i][c]);
                 else
                     snap.channels[c] = ChannelStats();
             }

@@ -99,7 +99,7 @@ TEST_CASE("probe accumulation and publication allocate nothing") {
         warm.sampleRate = 44100.f;
         warm.channelCount = 1;
         for (int c = 0; c < PROBE_MAX_CHANNELS; c++)
-            warm.channels[c] = finalizeChannel(acc[0][c], 1);
+            warm.channels[c] = finalizeChannel(acc[0][c]);
         published[0].publish(warm);
     }
     for (int i = 0; i < kInputs; i++) {
@@ -141,7 +141,7 @@ TEST_CASE("probe accumulation and publication allocate nothing") {
         snap.channelCount = (uint8_t) (1 + (i % PROBE_MAX_CHANNELS));
         for (int c = 0; c < PROBE_MAX_CHANNELS; c++) {
             if (c < snap.channelCount)
-                snap.channels[c] = finalizeChannel(acc[i][c], kFrames);
+                snap.channels[c] = finalizeChannel(acc[i][c]);
             else
                 snap.channels[c] = ChannelStats();
         }

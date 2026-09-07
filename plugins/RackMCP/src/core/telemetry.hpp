@@ -24,6 +24,20 @@ struct ChannelAccumulator {
     uint32_t clipped;
     uint32_t nonFinite;
     uint32_t risingEdges;
+    /**
+     * Finite samples actually accumulated into `sum` and `sumSquares`.
+     *
+     * Not the same as the window length. A channel can start contributing
+     * partway through a window -- a cable patched mid-window, or a polyphonic
+     * channel count that grows -- and the loop feeding this accumulator only
+     * visits channels that exist at the time. `mean` and `rms` used to divide
+     * by the window length minus `nonFinite`, so a channel patched five frames
+     * before a 2205-frame window closed had its mean divided by 2200 rather
+     * than 5, understating it by a factor of 440 in the first reading after
+     * anything was plugged in. The comment on that loop already names the
+     * mid-window case, for min/max, which is why this was worth noticing.
+     */
+    uint32_t frames;
     bool gateHigh;
 
     void reset() {
@@ -35,6 +49,7 @@ struct ChannelAccumulator {
         clipped = 0;
         nonFinite = 0;
         risingEdges = 0;
+        frames = 0;
         // gateHigh persists across windows so an edge is not double counted.
     }
 
@@ -60,6 +75,7 @@ struct ChannelAccumulator {
             clipped++;
         sum += (double) v;
         sumSquares += (double) v * (double) v;
+        frames++;
         if (gateHigh) {
             if (v <= PROBE_GATE_LOW_VOLTS)
                 gateHigh = false;
@@ -94,16 +110,23 @@ struct ProbeWindowSnapshot {
     ChannelStats channels[PROBE_MAX_CHANNELS];
 };
 
-/** Finalize an accumulator into stats. finiteFrames = frames minus non-finite. */
-inline ChannelStats finalizeChannel(const ChannelAccumulator& acc, uint32_t windowFrames) {
+/**
+ * Finalize an accumulator into stats.
+ *
+ * Averages over the samples this channel actually contributed, which is what
+ * `acc.frames` counts -- not the window length. For a channel present for the
+ * whole window the two agree exactly (`frames == windowFrames - nonFinite`);
+ * they diverge only for a channel that appeared partway through, which is
+ * precisely the first reading after a cable is patched.
+ */
+inline ChannelStats finalizeChannel(const ChannelAccumulator& acc) {
     ChannelStats s;
-    uint32_t finite = windowFrames > acc.nonFinite ? windowFrames - acc.nonFinite : 0;
     s.minV = acc.minV;
     s.maxV = acc.maxV;
     s.peakAbs = acc.peakAbs;
-    if (finite > 0) {
-        s.mean = (float) (acc.sum / (double) finite);
-        s.rms = (float) std::sqrt(acc.sumSquares / (double) finite);
+    if (acc.frames > 0) {
+        s.mean = (float) (acc.sum / (double) acc.frames);
+        s.rms = (float) std::sqrt(acc.sumSquares / (double) acc.frames);
     }
     else {
         s.mean = 0.f;

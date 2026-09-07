@@ -12,7 +12,7 @@ static ChannelStats runWindow(const float* samples, uint32_t n, ChannelAccumulat
     acc.reset();
     for (uint32_t i = 0; i < n; i++)
         acc.accumulate(samples[i], i == 0);
-    return finalizeChannel(acc, n);
+    return finalizeChannel(acc);
 }
 
 TEST_CASE("dc signal statistics") {
@@ -99,4 +99,66 @@ TEST_CASE("gate state persists across window boundaries") {
     float w2[] = {5.f, 5.f, 0.f, 5.f};
     ChannelStats s2 = runWindow(w2, 4, acc);
     CHECK(s2.risingEdges == 1);
+}
+
+// ---------------------------------------------------------------------------
+// A channel that appears partway through a window
+//
+// The loop feeding these accumulators only visits channels that exist at the
+// time, so a cable patched mid-window -- or a polyphonic channel count that
+// grows -- contributes fewer samples than the window is long. mean and rms used
+// to divide by the window length regardless.
+// ---------------------------------------------------------------------------
+
+TEST_CASE("a channel patched near the end of a window is not averaged over the window") {
+    // 2205 frames is a 50 ms window at 44.1 kHz. Five samples of 5 V arrive
+    // just before it closes. The mean of five 5 V samples is 5 V; dividing by
+    // 2200 instead gives 0.011 V -- a signal reported as effectively silent.
+    ChannelAccumulator acc;
+    acc.resetAll();
+    for (int i = 0; i < 5; i++)
+        acc.accumulate(5.f, i == 0);
+    CHECK(acc.frames == 5u);
+    ChannelStats s = finalizeChannel(acc);
+    CHECK(s.mean == doctest::Approx(5.f));
+    CHECK(s.rms == doctest::Approx(5.f));
+    CHECK(s.minV == doctest::Approx(5.f));
+    CHECK(s.maxV == doctest::Approx(5.f));
+}
+
+TEST_CASE("frames counts finite samples only, so nonFinite is not double-subtracted") {
+    // The old divisor was windowFrames - nonFinite. Counting non-finite samples
+    // in `frames` as well would reintroduce that error from the other side.
+    ChannelAccumulator acc;
+    acc.resetAll();
+    acc.accumulate(4.f, true);
+    acc.accumulate(std::numeric_limits<float>::quiet_NaN(), false);
+    acc.accumulate(std::numeric_limits<float>::infinity(), false);
+    acc.accumulate(6.f, false);
+    CHECK(acc.frames == 2u);
+    CHECK(acc.nonFinite == 2u);
+    ChannelStats s = finalizeChannel(acc);
+    CHECK(s.mean == doctest::Approx(5.f)); // (4 + 6) / 2, not / 4
+}
+
+TEST_CASE("a channel that contributed nothing reports zero rather than dividing by zero") {
+    ChannelAccumulator acc;
+    acc.resetAll();
+    ChannelStats s = finalizeChannel(acc);
+    CHECK(acc.frames == 0u);
+    CHECK(s.mean == doctest::Approx(0.f));
+    CHECK(s.rms == doctest::Approx(0.f));
+}
+
+TEST_CASE("reset clears the frame count between windows") {
+    // If it did not, the second window would divide by both windows' samples.
+    ChannelAccumulator acc;
+    acc.resetAll();
+    for (int i = 0; i < 100; i++)
+        acc.accumulate(1.f, i == 0);
+    CHECK(acc.frames == 100u);
+    acc.reset();
+    CHECK(acc.frames == 0u);
+    acc.accumulate(8.f, true);
+    CHECK(finalizeChannel(acc).mean == doctest::Approx(8.f));
 }
