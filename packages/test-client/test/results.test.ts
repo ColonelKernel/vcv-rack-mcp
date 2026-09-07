@@ -111,6 +111,9 @@ describe("defaultServerEntry", () => {
     const entry = defaultServerEntry();
     expect(entry).not.toContain("%20");
     expect(entry).not.toContain("%");
-    expect(entry.endsWith("apps/mcp-server/dist/index.js")).toBe(true);
+    // Compared separator-agnostically: fileURLToPath returns backslashes on
+    // Windows, so asserting an endsWith on a "/" path reds in the win-latest
+    // TypeScript job only -- which is exactly how this test first failed.
+    expect(entry.split(/[\\/]/).slice(-4).join("/")).toBe("apps/mcp-server/dist/index.js");
   });
 });

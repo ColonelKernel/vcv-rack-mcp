@@ -9,18 +9,18 @@
   <g font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13.5" xml:space="preserve">
     <text x="22.0" y="79.5" fill="#7ee787">$ claude  # with the rack-mcp server connected</text>
     <text x="22.0" y="121.5" fill="#58a6ff">→ list_rack_instances</text>
-    <text x="38.2" y="142.5" fill="#adbac7">← 1 instance   id 4089a9eb…  (patch: Untitled)</text>
+    <text x="38.2" y="142.5" fill="#adbac7">← 1 instance   id 369ce713…  (patch: Untitled)</text>
     <text x="22.0" y="163.5" fill="#58a6ff">→ get_rack_status</text>
     <text x="38.2" y="184.5" fill="#56d364">← connected   Rack 2.6.6 Pro   bridge protocol v1</text>
     <text x="22.0" y="205.5" fill="#58a6ff">→ list_installed_models</text>
-    <text x="38.2" y="226.5" fill="#adbac7">← 53 models installed  (Core, Fundamental, RackMCP)</text>
+    <text x="38.2" y="226.5" fill="#adbac7">← 55 models installed  (Core, Fundamental, RackMCP)</text>
     <text x="22.0" y="268.5" fill="#58a6ff">→ resolve recipe "basic_mono_subtractive"</text>
     <text x="38.2" y="289.5" fill="#56d364">← resolved   6 roles → installed models, 0 unresolved</text>
     <text x="22.0" y="310.5" fill="#58a6ff">→ build_patch  (19 operations)</text>
-    <text x="38.2" y="331.5" fill="#56d364">← committed   19 ops applied   fingerprint 7f6179b15430…</text>
+    <text x="38.2" y="331.5" fill="#56d364">← committed   19 ops applied   fingerprint bfe2b02b1c65…</text>
     <text x="22.0" y="373.5" fill="#58a6ff">→ describe_patch</text>
     <text x="38.2" y="394.5" fill="#adbac7">← Signal path into Audio 2: MIDI to CV → VCO → VCF → VCA → Audio 2</text>
-    <text x="70.6" y="415.5" fill="#adbac7">also feeding it: ADSR EG → VCA, MIDI to CV → ADSR EG</text>
+    <text x="70.6" y="415.5" fill="#adbac7">also feeding it: MIDI to CV → ADSR EG, ADSR EG → VCA</text>
     <text x="22.0" y="436.5" fill="#58a6ff">→ validate_patch</text>
     <text x="38.2" y="457.5" fill="#56d364">← valid ✓   0 errors · 0 warnings · 0 info</text>
     <text x="22.0" y="499.5" fill="#768390" font-style="italic"># a subtractive voice, built and validated through MCP — safely, reversibly.</text>
