@@ -57,15 +57,6 @@ export const CENSUS_EXCEPTIONS: readonly CensusException[] = [
       "a jump and no error.",
   },
   {
-    symbol: "packages/test-client",
-    kind: "doc_referent",
-    disposition: "reserved",
-    reason:
-      "TODO: phase 3 — build it. README.md and the spec both list a scriptable MCP test client " +
-      "as a shipped package; the directory is empty and untracked, so a reader who goes looking " +
-      "finds nothing. The code exists, duplicated across ten files in tests/integration/src.",
-  },
-  {
     symbol: "tests/fuzz",
     kind: "doc_referent",
     disposition: "reserved",

@@ -91,6 +91,12 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
 
+  packages/test-client:
+    dependencies:
+      '@modelcontextprotocol/sdk':
+        specifier: 1.30.0
+        version: 1.30.0(zod@4.4.3)
+
   tests/contract:
     dependencies:
       '@rackmcp/schemas':
@@ -114,6 +120,9 @@ importers:
       '@rackmcp/schemas':
         specifier: workspace:*
         version: link:../../packages/schemas
+      '@rackmcp/test-client':
+        specifier: workspace:*
+        version: link:../../packages/test-client
 
 packages:
 

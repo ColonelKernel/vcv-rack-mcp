@@ -28,12 +28,11 @@ emitted by the plugin.
 
 ## Outstanding debts
 
-6 published symbols are declared ahead of their implementation.
+5 published symbols are declared ahead of their implementation.
 
 | Symbol | Kind | Owed |
 | --- | --- | --- |
 | `copyCables` | schema_property | phase 4 — implement duplicate_module, whose operation this field belongs to. The operation is currently refused outright, so the field cannot be reached. |
-| `packages/test-client` | doc_referent | phase 3 — build it. README.md and the spec both list a scriptable MCP test client as a shipped package; the directory is empty and untracked, so a reader who goes looking finds nothing. The code exists, duplicated across ten files in tests/integration/src. |
 | `requiredTemporaryInstantiation` | constant_field | phase 6 — delete. Metadata can only be produced by instantiating the model once, so this is true in every response, including cache hits which replay the stored payload verbatim. The field that actually varies, and that a client should read, is cached. |
 | `smoothMs` | schema_property | phase 4 — implement parameter ramping. This is the worst kind of dead field: it is accepted by the schema and silently ignored, so a client asking for a smooth change gets a jump and no error. |
 | `tests/fuzz` | doc_referent | phase 8 — populate it. It is listed in pnpm-workspace.yaml and in the spec's monorepo layout, but is an empty untracked directory: the fast-check properties live in packages/schemas/test and the libFuzzer targets in tests/cpp. |
