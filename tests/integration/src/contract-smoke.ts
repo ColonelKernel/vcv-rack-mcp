@@ -262,6 +262,26 @@ try {
     expectedPatchEpoch: epoch.patchEpoch,
   });
 
+  // --- the three tools added late, which the census caught with no coverage --
+  // build_recipe with autoCommit:false so it previews and mutates nothing: the
+  // module-count assertions above would otherwise be reading a patch this call
+  // had rebuilt.
+  const recipePreview = await call("build_recipe", {
+    recipeId: "basic_mono_subtractive",
+    autoCommit: false,
+    operationId: randomUUID(),
+  });
+  ok("build_recipe previews without committing",
+     recipePreview.phase !== "committed", `phase=${String(recipePreview.phase)}`);
+
+  // The chat pair needs no writer lease (MUT(false, false)) and does not touch
+  // the patch; it is exercised here only because the lease is already held and
+  // releasing it below ends the section.
+  await call("post_chat_message", { text: "contract smoke", ackThroughSeq: 0 });
+  const notes = await call("read_user_notes", { sinceSeq: 0 });
+  ok("read_user_notes answers with a sequence", typeof notes.lastSeq === "number",
+     `lastSeq=${String(notes.lastSeq)}`);
+
   await call("release_writer_lease");
 
   // --- resources, with a patch in place -----------------------------------
