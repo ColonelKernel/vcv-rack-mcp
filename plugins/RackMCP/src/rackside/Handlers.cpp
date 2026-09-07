@@ -164,16 +164,32 @@ static bool getBoolField(json_t* obj, const char* key, bool dflt) {
     return dflt;
 }
 
-/** Enforces the client-supplied epoch guard when present. */
+/**
+ * Enforces the client-supplied epoch guard when present.
+ *
+ * "When present" used to mean "when present AND a JSON integer": a client that
+ * sent `"expectedPatchEpoch": "5"` got no staleness protection and no error,
+ * because the check quietly skipped itself and the mutation went ahead. A guard
+ * that silently declines to guard is worse than no guard, since the caller
+ * believes it has one.
+ *
+ * The comparison is also done at full width. It was `(int) json_integer_value`,
+ * so a 64-bit value whose low 32 bits matched the live epoch satisfied it.
+ */
 static bool epochGuardOk(json_t* payload, std::string& frameOut, const BridgeCommand& cmd) {
     json_t* v = payload ? json_object_get(payload, "expectedPatchEpoch") : NULL;
-    if (json_is_integer(v)) {
-        int expected = (int) json_integer_value(v);
-        if (expected != RackBridge::instance().patchEpoch()) {
-            frameOut = buildResError(cmd.requestId, "STALE_PATCH_EPOCH",
-                                     "patch epoch changed; re-read the snapshot", true, false);
-            return false;
-        }
+    if (!v)
+        return true; // absent: the caller is not asking for the guard
+    if (!json_is_integer(v)) {
+        frameOut = buildResError(cmd.requestId, "BAD_REQUEST",
+                                 "expectedPatchEpoch must be an integer", false, false);
+        return false;
+    }
+    const json_int_t expected = json_integer_value(v);
+    if (expected != (json_int_t) RackBridge::instance().patchEpoch()) {
+        frameOut = buildResError(cmd.requestId, "STALE_PATCH_EPOCH",
+                                 "patch epoch changed; re-read the snapshot", true, false);
+        return false;
     }
     return true;
 }
@@ -373,7 +389,13 @@ static std::string handleProbeRead(const BridgeCommand& cmd) {
     if (!parseDecimalId(midStr, mid))
         return buildResError(cmd.requestId, "MODULE_NOT_FOUND",
                              "probeModuleId is not a decimal module id", false, false);
-    int inputId = (int) json_integer_value(json_object_get(p, "probeInputId"));
+    int inputId = 0;
+    {
+        std::string ierr;
+        if (!readIntField(p, "probeInputId", inputId, ierr))
+            return buildResError(cmd.requestId, "BAD_REQUEST", ("probe.read: " + ierr).c_str(),
+                                 false, false);
+    }
     std::string errorCode;
     json_t* reading = buildProbeReading(mid, inputId, errorCode);
     if (!reading)

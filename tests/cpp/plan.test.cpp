@@ -705,3 +705,79 @@ TEST_CASE("at least one operation actually carries an enum") {
     CHECK(withEnum >= 4); // cablePolicy, collision, inputPolicy, policy
 }
 #endif
+
+#if RACKMCP_HAVE_JANSSON
+// ---------------------------------------------------------------------------
+// readIntField
+//
+// Every port id, parameter id and grid coordinate was read as
+// `(int) json_integer_value(json_object_get(o, key))`. That returns 0 for a
+// string, a real, a boolean, a null and an absent key -- and port 0 and
+// parameter 0 exist on nearly every module -- and it casts before any bounds
+// check, so an id at or above 2^32 wraps into range.
+// ---------------------------------------------------------------------------
+
+TEST_CASE("readIntField accepts an integer and reports its value") {
+    json_t* j = op("{\"portId\":3,\"zero\":0,\"neg\":-5}");
+    int v = -999;
+    std::string err;
+    CHECK(readIntField(j, "portId", v, err));
+    CHECK(v == 3);
+    CHECK(err == "");
+    CHECK(readIntField(j, "zero", v, err));
+    CHECK(v == 0);
+    CHECK(readIntField(j, "neg", v, err)); // range, not sign, is this function's job
+    CHECK(v == -5);
+    json_decref(j);
+}
+
+TEST_CASE("readIntField refuses what json_integer_value silently called zero") {
+    json_t* j = op("{\"s\":\"3\",\"r\":3.0,\"b\":true,\"n\":null,\"o\":{},\"a\":[]}");
+    int v = -999;
+    std::string err;
+    const char* keys[] = {"s", "r", "b", "n", "o", "a"};
+    for (size_t i = 0; i < 6; i++) {
+        v = -999;
+        err.clear();
+        CHECK_FALSE(readIntField(j, keys[i], v, err));
+        CHECK(v == -999);              // out is not written on failure
+        CHECK(err.find(keys[i]) != std::string::npos);
+    }
+    json_decref(j);
+}
+
+TEST_CASE("readIntField refuses an absent key rather than defaulting it to 0") {
+    json_t* j = op("{}");
+    int v = -999;
+    std::string err;
+    CHECK_FALSE(readIntField(j, "portId", v, err));
+    CHECK(err.find("missing") != std::string::npos);
+    CHECK(v == -999);
+    json_decref(j);
+}
+
+TEST_CASE("readIntField range-checks before narrowing, not after") {
+    // 2^32 + 3 truncates to 3, a valid index for a different, real port. The
+    // check has to happen on the 64-bit value.
+    json_t* j = op("{\"wrap\":4294967299,\"big\":9223372036854775807,\"small\":-9223372036854775807}");
+    int v = -999;
+    std::string err;
+    CHECK_FALSE(readIntField(j, "wrap", v, err));
+    CHECK(err.find("out of range") != std::string::npos);
+    CHECK(v == -999);                  // NOT 3
+    CHECK_FALSE(readIntField(j, "big", v, err));
+    CHECK_FALSE(readIntField(j, "small", v, err));
+    json_decref(j);
+}
+
+TEST_CASE("readIntField accepts the exact edges of int") {
+    json_t* j = op("{\"max\":2147483647,\"min\":-2147483648}");
+    int v = 0;
+    std::string err;
+    CHECK(readIntField(j, "max", v, err));
+    CHECK(v == 2147483647);
+    CHECK(readIntField(j, "min", v, err));
+    CHECK(v == -2147483647 - 1);
+    json_decref(j);
+}
+#endif

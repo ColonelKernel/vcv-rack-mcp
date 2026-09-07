@@ -182,6 +182,31 @@ int remainingBridgeCount(const std::vector<WorldModule>& modules,
  *         otherwise a message naming the field and what was wrong with it.
  */
 std::string checkOperationFields(json_t* op);
+
+/**
+ * Reads a required JSON integer that must fit a C++ `int`.
+ *
+ * The plugin read every port id, parameter id and grid coordinate as
+ * `(int) json_integer_value(json_object_get(o, key))`, which has two distinct
+ * failure modes and reports neither:
+ *
+ * - `json_integer_value` returns 0 for a string, a real, a boolean, a null and
+ *   an absent key alike. Port 0 and parameter 0 exist on nearly every module,
+ *   so a malformed reference addressed a real port rather than being refused.
+ * - the cast to `int` happens BEFORE any bounds check, so an id at or above
+ *   2^32 wraps into range. `4294967296 + 3` reads as 3 -- a valid index for a
+ *   different, real port.
+ *
+ * `checkOperationFields` covers an operation's top-level fields, but these ids
+ * live inside nested objects (`input.portId`, `position.x`, `port.portId`)
+ * which the generated table does not describe.
+ *
+ * @param err set to a message naming the key and the problem when this returns
+ *            false; untouched otherwise.
+ * @return false without writing `out` when the key is absent, is not a JSON
+ *         integer, or does not fit an `int`.
+ */
+bool readIntField(json_t* obj, const char* key, int& out, std::string& err);
 #endif
 
 /** A resolved module reference: a live id, or a transaction-local alias. */

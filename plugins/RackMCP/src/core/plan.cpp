@@ -1,5 +1,6 @@
 #include "core/plan.hpp"
 
+#include <climits>
 #include <cstdlib>
 #include <cstring>
 
@@ -111,6 +112,27 @@ bool typeMatches(const char* declared, json_t* v) {
 }
 
 } // namespace
+
+bool readIntField(json_t* obj, const char* key, int& out, std::string& err) {
+    json_t* v = json_object_get(obj, key);
+    if (!v) {
+        err = std::string("missing required field \"") + key + "\"";
+        return false;
+    }
+    if (!json_is_integer(v)) {
+        err = std::string("field \"") + key + "\" must be an integer, not " + actualTypeName(v);
+        return false;
+    }
+    const json_int_t raw = json_integer_value(v);
+    // Checked BEFORE the narrowing cast, which is the whole point: casting
+    // first turns an out-of-range id into an in-range one.
+    if (raw < (json_int_t) INT_MIN || raw > (json_int_t) INT_MAX) {
+        err = std::string("field \"") + key + "\" is out of range";
+        return false;
+    }
+    out = (int) raw;
+    return true;
+}
 
 std::string checkOperationFields(json_t* op) {
     if (!json_is_object(op))

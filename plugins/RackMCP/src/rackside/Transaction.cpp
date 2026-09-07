@@ -387,7 +387,12 @@ bool validateOne(json_t* op, const PlanWorld& world, PreviewState& st, Validatio
                 return false;
             }
             if (type == "set_parameter") {
-                int paramId = (int) json_integer_value(json_object_get(op, "paramId"));
+                int paramId = 0;
+                std::string ierr;
+                if (!readIntField(op, "paramId", paramId, ierr)) {
+                    err = {"BAD_REQUEST", "set_parameter: " + ierr};
+                    return false;
+                }
                 if (paramId < 0 || paramId >= (int) m->params.size()) {
                     err = {"PARAMETER_NOT_FOUND",
                            "param " + std::to_string(paramId) + " out of range"};
@@ -418,9 +423,13 @@ bool validateOne(json_t* op, const PlanWorld& world, PreviewState& st, Validatio
             app::ModuleWidget* mw = APP->scene->rack->getModule(r.moduleId);
             if (mw) {
                 json_t* p = json_object_get(op, "position");
-                math::Rect target(gridToPixel((int) json_integer_value(json_object_get(p, "x")),
-                                              (int) json_integer_value(json_object_get(p, "y"))),
-                                  mw->box.size);
+                int gx = 0, gy = 0;
+                std::string ierr;
+                if (!readIntField(p, "x", gx, ierr) || !readIntField(p, "y", gy, ierr)) {
+                    err = {"BAD_REQUEST", "move_module: position " + ierr};
+                    return false;
+                }
+                math::Rect target(gridToPixel(gx, gy), mw->box.size);
                 // Only refuse when the resulting layout is known exactly:
                 // apply-time requestModulePos stays the authority, and a
                 // preview must never reject a plan that would have committed.
@@ -448,8 +457,18 @@ bool validateOne(json_t* op, const PlanWorld& world, PreviewState& st, Validatio
             err = {"MODULE_NOT_FOUND", "connect: unresolved output/input reference"};
             return false;
         }
-        int outId = (int) json_integer_value(json_object_get(outRef, "portId"));
-        int inId = (int) json_integer_value(json_object_get(inRef, "portId"));
+        int outId = 0, inId = 0;
+        {
+            std::string ierr;
+            if (!readIntField(outRef, "portId", outId, ierr)) {
+                err = {"BAD_REQUEST", "connect: output " + ierr};
+                return false;
+            }
+            if (!readIntField(inRef, "portId", inId, ierr)) {
+                err = {"BAD_REQUEST", "connect: input " + ierr};
+                return false;
+            }
+        }
         std::string policy = jstr(op, "inputPolicy", "fail_if_connected");
         // Bounds check against live modules (synthetic modules validated at apply).
         if (out.moduleId >= 0) {
@@ -538,8 +557,22 @@ bool validateOne(json_t* op, const PlanWorld& world, PreviewState& st, Validatio
                 st.touchesAudio = true;
             // Enumerate exactly what apply will remove, so the diff discloses
             // the cables and the destructive classification picks them up.
-            int portId = (int) json_integer_value(json_object_get(portRef, "portId"));
-            std::string ptype = jstr(portRef, "portType", "input");
+            int portId = 0;
+            std::string ierr;
+            if (!readIntField(portRef, "portId", portId, ierr)) {
+                err = {"BAD_REQUEST", "disconnect_port: " + ierr};
+                return false;
+            }
+            // portType is nested, so the generated field table does not reach
+            // it. An unrecognised value made cablesOnPort match nothing and
+            // disconnect_port a silent no-op that still reported success.
+            const std::string ptype = jstr(portRef, "portType", "");
+            if (ptype != "input" && ptype != "output") {
+                err = {"BAD_REQUEST",
+                       "disconnect_port: portType must be \"input\" or \"output\", not \"" +
+                           ptype + "\""};
+                return false;
+            }
             std::string policy = jstr(op, "policy", "all");
             std::vector<int64_t> matches = cablesOnPort(st, r.moduleId, ptype, portId);
             if (policy == "top" && !matches.empty())
@@ -882,8 +915,11 @@ private:
         math::Vec pos;
         if (placement == "at" && jhasKey(op, "position")) {
             json_t* p = json_object_get(op, "position");
-            pos = gridToPixel((int) json_integer_value(json_object_get(p, "x")),
-                              (int) json_integer_value(json_object_get(p, "y")));
+            int gx = 0, gy = 0;
+            std::string ierr;
+            if (!readIntField(p, "x", gx, ierr) || !readIntField(p, "y", gy, ierr))
+                throw std::string("add_module: position " + ierr);
+            pos = gridToPixel(gx, gy);
         }
         else {
             pos = math::Vec(rightmostEdge(), gridToPixel(0, 0).y);
@@ -907,9 +943,22 @@ private:
             size_t i;
             json_t* pv;
             json_array_foreach(initial, i, pv) {
-                int paramId = (int) json_integer_value(json_object_get(pv, "paramId"));
+                int paramId = 0;
+                std::string ierr;
+                if (!readIntField(pv, "paramId", paramId, ierr))
+                    throw std::string("add_module: initialParams[" + std::to_string(i) + "] " +
+                                      ierr);
+                // Skipped silently before, and the transaction then reported
+                // success -- so "add this module with these settings" could
+                // half-happen and say it had happened. set_parameter treats the
+                // identical condition as a hard error. Preview cannot catch
+                // this one: the module does not exist yet, so its parameter
+                // count is unknown until the module is created here.
                 if (paramId < 0 || paramId >= (int) module->params.size())
-                    continue;
+                    throw std::string("add_module: initialParams[" + std::to_string(i) +
+                                      "] param " + std::to_string(paramId) + " out of range (" +
+                                      mslug + " has " + std::to_string(module->params.size()) +
+                                      ")");
                 setParamValue(module->id, paramId, pv);
             }
         }
@@ -959,7 +1008,12 @@ private:
 
     void applySetParam(json_t* op) {
         int64_t id = resolve(json_object_get(op, "module"));
-        int paramId = (int) json_integer_value(json_object_get(op, "paramId"));
+        int paramId = 0;
+        {
+            std::string ierr;
+            if (!readIntField(op, "paramId", paramId, ierr))
+                throw std::string("set_parameter: " + ierr);
+        }
         engine::Module* module = APP->engine->getModule(id);
         if (!module || paramId < 0 || paramId >= (int) module->params.size())
             throw std::string("set_parameter: bad module/param");
@@ -1023,8 +1077,13 @@ private:
         int64_t id = resolve(json_object_get(op, "module"));
         app::ModuleWidget* mw = moduleWidget(id);
         json_t* pos = json_object_get(op, "position");
-        math::Vec target = gridToPixel((int) json_integer_value(json_object_get(pos, "x")),
-                                       (int) json_integer_value(json_object_get(pos, "y")));
+        int gx = 0, gy = 0;
+        {
+            std::string ierr;
+            if (!readIntField(pos, "x", gx, ierr) || !readIntField(pos, "y", gy, ierr))
+                throw std::string("move_module: position " + ierr);
+        }
+        math::Vec target = gridToPixel(gx, gy);
         // The schema field is `collision` (CollisionPolicy).
         std::string policy = jstr(op, "collision", "nearest");
         // force/squeeze displace neighbours; capture every module that moves.
@@ -1059,8 +1118,14 @@ private:
         json_t* inRef = json_object_get(op, "input");
         int64_t outId = resolve(json_object_get(outRef, "module"));
         int64_t inId = resolve(json_object_get(inRef, "module"));
-        int outPort = (int) json_integer_value(json_object_get(outRef, "portId"));
-        int inPort = (int) json_integer_value(json_object_get(inRef, "portId"));
+        int outPort = 0, inPort = 0;
+        {
+            std::string ierr;
+            if (!readIntField(outRef, "portId", outPort, ierr))
+                throw std::string("connect: output " + ierr);
+            if (!readIntField(inRef, "portId", inPort, ierr))
+                throw std::string("connect: input " + ierr);
+        }
         engine::Module* outMod = APP->engine->getModule(outId);
         engine::Module* inMod = APP->engine->getModule(inId);
         if (!outMod || !inMod)
@@ -1123,7 +1188,12 @@ private:
     void applyDisconnectPort(json_t* op) {
         json_t* portRef = json_object_get(op, "port");
         int64_t id = resolve(json_object_get(portRef, "module"));
-        int portId = (int) json_integer_value(json_object_get(portRef, "portId"));
+        int portId = 0;
+        {
+            std::string ierr;
+            if (!readIntField(portRef, "portId", portId, ierr))
+                throw std::string("disconnect_port: " + ierr);
+        }
         std::string ptype = jstr(portRef, "portType", "input");
         std::string policy = jstr(op, "policy", "all");
         std::vector<int64_t> matches;
