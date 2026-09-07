@@ -25,7 +25,7 @@ namespace rackmcp {
 
 static std::string handleStatusGet(const BridgeCommand& cmd) {
     RackBridge& bridge = RackBridge::instance();
-    UiStateCache state = bridge.uiState();
+    UiStateCache state = currentUiState();
 
     LeaseHolder lease = bridge.server().leases().holder(steadyNowMs());
     json_t* leaseJ;

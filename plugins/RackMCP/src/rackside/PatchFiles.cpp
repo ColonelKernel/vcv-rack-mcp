@@ -240,7 +240,7 @@ static void savePatchAtomic(const std::string& path) {
 
 static json_t* buildResult(bool saved, const std::vector<std::string>& warnings) {
     RackBridge& bridge = RackBridge::instance();
-    UiStateCache state = bridge.uiState();
+    UiStateCache state = currentUiState();
     json_t* payload = json_object();
     json_object_set_new(payload, "fingerprint", json_string(computePatchFingerprint().c_str()));
     json_object_set_new(payload, "patchEpoch", json_integer(bridge.patchEpoch()));

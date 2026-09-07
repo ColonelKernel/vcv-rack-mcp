@@ -125,16 +125,7 @@ void CommandPumpWidget::refreshUiStateCache() {
     // the DSP-side hint has to be recomputed on a clock rather than on traffic.
     if (bridge.running())
         bridge.server().refreshLeaseHint();
-    UiStateCache state;
-    state.commandPumpPresent = true;
-    state.bridgeModulePresent = bridge.bridgeModuleCount() > 0;
-    if (APP->patch) {
-        std::string path = APP->patch->path;
-        state.patchName = path.empty() ? "" : rack::system::getStem(path);
-    }
-    if (APP->history)
-        state.saved = APP->history->isSaved();
-    bridge.publishUiState(state);
+    bridge.publishUiState(currentUiState());
 }
 
 } // namespace rackmcp

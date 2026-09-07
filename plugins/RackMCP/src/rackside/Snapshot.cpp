@@ -214,7 +214,7 @@ json_t* buildPatchSnapshot(bool includeOpaqueState) {
     json_object_set_new(root, "sessionId", json_string(bridge.sessionId().c_str()));
     json_object_set_new(root, "patchEpoch", json_integer(bridge.patchEpoch()));
 
-    UiStateCache state = bridge.uiState();
+    UiStateCache state = currentUiState();
     json_object_set_new(root, "patchName",
                         state.patchName.empty() ? json_null() : json_string(state.patchName.c_str()));
     json_object_set_new(root, "saved", json_boolean(state.saved));

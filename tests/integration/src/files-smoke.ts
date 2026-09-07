@@ -41,6 +41,16 @@ try {
   ok("save_patch succeeded", saved.saved === true);
   ok("save reports Bridge present", saved.bridgeModulePresent === true);
 
+  // The very next read must describe the patch that was just written. The
+  // handlers used to answer out of a cache the pump refreshes every 30 frames
+  // AFTER draining the command queue, so this reported `patchName: null` for
+  // the file save_patch had returned success for one call earlier.
+  const statusAfterSave = (await client.call("get_rack_status")).status as Record<string, unknown>;
+  ok("status names the patch immediately after saving it",
+     statusAfterSave.patchName === "roundtrip",
+     `patchName=${String(statusAfterSave.patchName)}`);
+  ok("status agrees the patch is saved", statusAfterSave.saved === true);
+
   // It shows up in list_patch_files.
   const listed = await client.call("list_patch_files", { root: "patches" });
   ok("list_patch_files finds the save", (listed.files as Array<Record<string, unknown>>).some((f) => f.name === "roundtrip.vcv"));

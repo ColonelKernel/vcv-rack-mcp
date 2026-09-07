@@ -24,6 +24,25 @@ struct UiStateCache {
     bool commandPumpPresent = false;
 };
 
+/**
+ * The same facts, read from Rack right now. **UI thread only.**
+ *
+ * Bridge command handlers must use this and not `RackBridge::uiState()`. The
+ * cache is refreshed once every 30 frames and, in `CommandPumpWidget::step`,
+ * *after* the command queue is drained -- so a handler answering out of it
+ * describes the patch as it was up to half a second before the command that is
+ * being answered, including commands in the same drain that just changed it.
+ * Observed: `save_patch` followed immediately by `get_rack_status` reported
+ * `patchName: null` for the file it had just written, and the real name only
+ * after the next refresh.
+ *
+ * The cache exists for consumers that are not on the UI thread and cannot
+ * touch `APP->patch` or `APP->history` at all. Handlers run inside the pump,
+ * on the UI thread, and have no such constraint -- which is what the struct's
+ * own comment above has always said.
+ */
+UiStateCache currentUiState();
+
 class RackBridge : public ServiceCallbacks {
 public:
     static RackBridge& instance();

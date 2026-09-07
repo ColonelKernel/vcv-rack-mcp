@@ -2,6 +2,10 @@
 
 #include <rack.hpp>
 
+// currentUiState() reads APP->patch->path; rack.hpp forward-declares
+// patch::Manager without defining it.
+#include <patch.hpp>
+
 #include <algorithm>
 #include <jansson.h>
 #if defined(_WIN32)
@@ -101,6 +105,21 @@ bool RackBridge::enqueueCommand(BridgeCommand& cmd) {
     if (!pumpAttached_.load())
         return false;
     return commandQueue_.tryPush(cmd);
+}
+
+UiStateCache currentUiState() {
+    UiStateCache state;
+    // True by construction: this is only reachable from the UI thread, and the
+    // only thing that runs there on the bridge's behalf is the pump.
+    state.commandPumpPresent = true;
+    state.bridgeModulePresent = RackBridge::instance().bridgeModuleCount() > 0;
+    if (APP->patch) {
+        std::string path = APP->patch->path;
+        state.patchName = path.empty() ? "" : rack::system::getStem(path);
+    }
+    if (APP->history)
+        state.saved = APP->history->isSaved();
+    return state;
 }
 
 void RackBridge::publishUiState(const UiStateCache& state) {
