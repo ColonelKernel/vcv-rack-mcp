@@ -547,3 +547,109 @@ TEST_CASE("no Bridges at all counts zero, not one") {
     std::vector<int64_t> removed;
     CHECK(remainingBridgeCount(w, removed) == 0);
 }
+
+#if RACKMCP_HAVE_JANSSON
+// ---------------------------------------------------------------------------
+// checkOperationFields
+//
+// gen::OPERATION_SPECS has existed since the generator was written and had no
+// consumer. Meanwhile the plugin read operation fields through helpers that
+// substitute a default for anything unexpected, several of them pointing in
+// the destructive direction.
+// ---------------------------------------------------------------------------
+
+/** Parses a literal, CHECKs it parsed, and hands it over. Caller decrefs. */
+static json_t* op(const char* text) {
+    json_error_t e;
+    json_t* j = json_loads(text, 0, &e);
+    REQUIRE(j != NULL);
+    return j;
+}
+
+TEST_CASE("a well-formed operation passes") {
+    json_t* j = op("{\"op\":\"set_bypass\",\"module\":{\"moduleId\":\"7\"},\"bypassed\":false}");
+    CHECK(checkOperationFields(j) == "");
+    json_decref(j);
+}
+
+TEST_CASE("set_bypass with a string where a boolean is declared is refused") {
+    // The defect this closes: jbool returns its default for a non-boolean, and
+    // applyBypass's default is `true`, so the string "false" bypassed the
+    // module -- the destructive direction -- while reporting success.
+    json_t* j = op("{\"op\":\"set_bypass\",\"module\":{\"moduleId\":\"7\"},\"bypassed\":\"false\"}");
+    const std::string err = checkOperationFields(j);
+    CHECK(err.find("bypassed") != std::string::npos);
+    CHECK(err.find("boolean") != std::string::npos);
+    CHECK(err.find("string") != std::string::npos);
+    json_decref(j);
+}
+
+TEST_CASE("the same field omitted entirely is refused too") {
+    // jbool cannot tell "absent" from "not a boolean"; both took the default.
+    json_t* j = op("{\"op\":\"set_bypass\",\"module\":{\"moduleId\":\"7\"}}");
+    const std::string err = checkOperationFields(j);
+    CHECK(err.find("missing required field") != std::string::npos);
+    CHECK(err.find("bypassed") != std::string::npos);
+    json_decref(j);
+}
+
+TEST_CASE("null is not a boolean, an integer, an object or a string") {
+    // json_is_* are all false for a JSON null, which is what makes the single
+    // presence-and-type check cover `"value": null` shaped inputs.
+    json_t* j = op("{\"op\":\"set_bypass\",\"module\":{\"moduleId\":\"7\"},\"bypassed\":null}");
+    CHECK(checkOperationFields(j).find("bypassed") != std::string::npos);
+    json_decref(j);
+    j = op("{\"op\":\"set_parameter\",\"module\":null,\"paramId\":0}");
+    CHECK(checkOperationFields(j).find("module") != std::string::npos);
+    json_decref(j);
+}
+
+TEST_CASE("0 and 1 are not booleans") {
+    // The C habit. jansson types them JSON_INTEGER, and jbool would have
+    // returned its default for both.
+    json_t* j = op("{\"op\":\"set_bypass\",\"module\":{\"moduleId\":\"7\"},\"bypassed\":0}");
+    CHECK(checkOperationFields(j) != "");
+    json_decref(j);
+    j = op("{\"op\":\"set_bypass\",\"module\":{\"moduleId\":\"7\"},\"bypassed\":1}");
+    CHECK(checkOperationFields(j) != "");
+    json_decref(j);
+}
+
+TEST_CASE("a declared integer refuses a real, a string and a boolean") {
+    // paramId reaches an array index. json_integer_value returns 0 for every
+    // one of these, which is a real parameter on every module.
+    CHECK(checkOperationFields(op("{\"op\":\"set_parameter\",\"module\":{},\"paramId\":1.5}")) != "");
+    CHECK(checkOperationFields(op("{\"op\":\"set_parameter\",\"module\":{},\"paramId\":\"1\"}")) != "");
+    CHECK(checkOperationFields(op("{\"op\":\"set_parameter\",\"module\":{},\"paramId\":true}")) != "");
+    CHECK(checkOperationFields(op("{\"op\":\"set_parameter\",\"module\":{},\"paramId\":0}")) == "");
+}
+
+TEST_CASE("an unrecognised op is left for the caller to reject") {
+    // Reporting it here would replace the UNSUPPORTED_OPERATION the caller
+    // should get with a message about fields.
+    json_t* j = op("{\"op\":\"teleport_module\"}");
+    CHECK(checkOperationFields(j) == "");
+    json_decref(j);
+}
+
+TEST_CASE("a missing or non-string op is reported, not dereferenced") {
+    CHECK(checkOperationFields(op("{}")) != "");
+    CHECK(checkOperationFields(op("{\"op\":7}")) != "");
+    CHECK(checkOperationFields(op("[]")) != "");
+    CHECK(checkOperationFields(NULL) != "");
+}
+
+TEST_CASE("every operation the schema declares is checkable") {
+    // Guards against the table and the plugin drifting apart: if a new
+    // operation ships with no required fields at all, that is a fact worth
+    // seeing rather than a silently empty check.
+    CHECK(gen::OPERATION_SPEC_COUNT > 0);
+    for (size_t i = 0; i < gen::OPERATION_SPEC_COUNT; i++) {
+        CHECK(gen::OPERATION_SPECS[i].op != NULL);
+        // Every declared field carries a type; a null type would make
+        // typeMatches accept anything and the check vacuous.
+        for (size_t f = 0; f < gen::OPERATION_SPECS[i].fieldCount; f++)
+            CHECK(gen::OPERATION_SPECS[i].fields[f].jsonType != NULL);
+    }
+}
+#endif

@@ -1,6 +1,7 @@
 #include "core/plan.hpp"
 
 #include <cstdlib>
+#include <cstring>
 
 namespace rackmcp {
 
@@ -68,6 +69,84 @@ bool parseDecimalId(const std::string& text, int64_t& out) {
 }
 
 #if RACKMCP_HAVE_JANSSON
+
+namespace {
+
+/** The JSON type name jansson reports, for the failure message. */
+const char* actualTypeName(json_t* v) {
+    if (!v) return "absent";
+    switch (json_typeof(v)) {
+        case JSON_OBJECT: return "object";
+        case JSON_ARRAY: return "array";
+        case JSON_STRING: return "string";
+        case JSON_INTEGER: return "integer";
+        case JSON_REAL: return "number";
+        case JSON_TRUE:
+        case JSON_FALSE: return "boolean";
+        case JSON_NULL: return "null";
+        default: return "unknown";
+    }
+}
+
+/**
+ * Whether a value satisfies a declared JSON type.
+ *
+ * An unrecognised declaration accepts anything, deliberately: `jsonTypeOf` in
+ * scripts/gen-cpp.ts emits "any" for a union whose branches disagree, and a
+ * future type name must not turn into a refusal of valid traffic when the
+ * plugin is older than the schema.
+ */
+bool typeMatches(const char* declared, json_t* v) {
+    if (!declared) return true;
+    const std::string t(declared);
+    if (t == "any") return true;
+    if (t == "string") return json_is_string(v) != 0;
+    if (t == "boolean") return json_is_boolean(v) != 0;
+    if (t == "integer") return json_is_integer(v) != 0;
+    // A schema "number" admits an integer; jansson types them separately.
+    if (t == "number") return json_is_number(v) != 0;
+    if (t == "object") return json_is_object(v) != 0;
+    if (t == "array") return json_is_array(v) != 0;
+    return true;
+}
+
+} // namespace
+
+std::string checkOperationFields(json_t* op) {
+    if (!json_is_object(op))
+        return "operation is not a JSON object";
+    json_t* opName = json_object_get(op, "op");
+    if (!json_is_string(opName))
+        return "operation has no \"op\" string";
+    const char* name = json_string_value(opName);
+
+    const gen::OperationSpec* spec = NULL;
+    for (size_t i = 0; i < gen::OPERATION_SPEC_COUNT; i++) {
+        if (std::strcmp(gen::OPERATION_SPECS[i].op, name) == 0) {
+            spec = &gen::OPERATION_SPECS[i];
+            break;
+        }
+    }
+    if (!spec)
+        return ""; // unknown op: the caller reports UNSUPPORTED_OPERATION
+
+    for (size_t i = 0; i < spec->fieldCount; i++) {
+        const gen::FieldSpec& field = spec->fields[i];
+        if (!field.name)
+            break;
+        json_t* value = json_object_get(op, field.name);
+        if (!value) {
+            return std::string(name) + ": missing required field \"" + field.name +
+                   "\" (declared " + field.jsonType + ")";
+        }
+        if (!typeMatches(field.jsonType, value)) {
+            return std::string(name) + ": field \"" + field.name + "\" must be " +
+                   field.jsonType + ", not " + actualTypeName(value);
+        }
+    }
+    return "";
+}
+
 ModuleRef resolveModuleRef(json_t* ref, const std::map<std::string, int64_t>& aliases) {
     ModuleRef r;
     if (!json_is_object(ref))

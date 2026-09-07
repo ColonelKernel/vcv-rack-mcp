@@ -152,6 +152,38 @@ struct PlanWorld {
 int remainingBridgeCount(const std::vector<WorldModule>& modules,
                          const std::vector<int64_t>& removed);
 
+#if RACKMCP_HAVE_JANSSON
+/**
+ * Checks one patch operation against the generated `gen::OPERATION_SPECS`
+ * table -- every field the schema declares required, present and of the
+ * declared JSON type.
+ *
+ * That table has existed since the generator was written and had no consumer.
+ * Meanwhile the plugin read operation fields through helpers that substitute a
+ * default for anything unexpected: `jbool(op, "bypassed", true)` returns the
+ * default for a string, a number, a null or a missing key, and
+ * `json_integer_value` returns 0 for all four. Several of those defaults point
+ * in the destructive direction -- a `set_bypass` frame carrying the string
+ * "false" silenced the module, an unrecognised `cablePolicy` selected
+ * `remove_attached`, an unrecognised `inputPolicy` selected `replace_all` and
+ * deleted the existing cable.
+ *
+ * `docs/security/threat-model.md` draws boundary 2 at the bridge socket and
+ * says the plugin "re-validates every frame afterward". The MCP server's Zod
+ * schemas reject all of this first, so nothing the shipped server sends is
+ * affected; this is what makes that sentence true for anything else holding
+ * the lease.
+ *
+ * An operation whose `op` is not in the table returns success: reporting it
+ * here would replace the UNSUPPORTED_OPERATION the caller should get with a
+ * message about fields.
+ *
+ * @return an empty string when the operation matches its declared shape,
+ *         otherwise a message naming the field and what was wrong with it.
+ */
+std::string checkOperationFields(json_t* op);
+#endif
+
 /** A resolved module reference: a live id, or a transaction-local alias. */
 struct ModuleRef {
     bool ok;

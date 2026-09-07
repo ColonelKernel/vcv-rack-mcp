@@ -293,6 +293,17 @@ bool positionFree(const PreviewState& st, app::ModuleWidget* self, math::Rect bo
 bool validateOne(json_t* op, const PlanWorld& world, PreviewState& st, ValidationError& err) {
     std::string type = jstr(op, "op");
 
+    // Every field the schema declares required, present and of the declared
+    // type, before any accessor gets a chance to substitute a default. The
+    // accessors below (jbool, json_integer_value, jstr) all return a default
+    // for a value of the wrong type, and several of those defaults are the
+    // destructive choice.
+    const std::string shape = checkOperationFields(op);
+    if (!shape.empty()) {
+        err = {"BAD_REQUEST", shape};
+        return false;
+    }
+
     if (type == "add_module") {
         std::string pslug = jstr(op, "pluginSlug");
         std::string mslug = jstr(op, "modelSlug");
@@ -1183,6 +1194,25 @@ TxnOutcome txnCommit(json_t* request) {
         out.errorCode = "BAD_REQUEST";
         out.errorMessage = "plan has no operations";
         return out;
+    }
+
+    // Commit re-checks the operation shapes rather than trusting preview to
+    // have done it. The plan-hash gate below proves the plan hashes to the
+    // value the caller claims, but that value is recomputed from the submitted
+    // plan -- it is self-consistent for any plan, and no record of previously
+    // previewed hashes exists -- so a commit can carry operations no preview
+    // ever saw.
+    {
+        size_t i;
+        json_t* op;
+        json_array_foreach(operations, i, op) {
+            const std::string shape = checkOperationFields(op);
+            if (!shape.empty()) {
+                out.errorCode = "BAD_REQUEST";
+                out.errorMessage = "operation " + std::to_string(i) + ": " + shape;
+                return out;
+            }
+        }
     }
 
     // Plan-hash integrity: the plan must hash to the claimed value.
