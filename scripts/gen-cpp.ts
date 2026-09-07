@@ -147,6 +147,19 @@ P("");
 P("// Limits (spec section 13)");
 for (const [k, v] of Object.entries(LIMITS)) {
   const name = k.replace(/([A-Z])/g, "_$1").toUpperCase();
+  // Every limit lands in an int64_t. A fractional value would narrow silently
+  // here -- copy-initialisation permits it -- leaving C++ with a truncated
+  // constant and TypeScript with the fraction, which is exactly the kind of
+  // disagreement this generator exists to prevent. probeMaxHz is computed
+  // (1000 / probeWindowMs), so this is reachable by editing one number.
+  if (!Number.isSafeInteger(v) || (v as number) < 0) {
+    throw new Error(
+      `LIMITS.${k} is ${String(v)}, which is not a safe non-negative integer. ` +
+        `Limits are generated into int64_t constants and a fractional or ` +
+        `out-of-range value would silently truncate in C++ while TypeScript ` +
+        `kept the original.`,
+    );
+  }
   P(`static const int64_t LIMIT_${name} = ${v};`);
 }
 P("");

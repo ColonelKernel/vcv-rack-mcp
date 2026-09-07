@@ -4,6 +4,15 @@
  * source of truth: the C++ header `plugins/RackMCP/src/gen/rackmcp_protocol_gen.hpp`
  * is generated from this module (`pnpm run gen`).
  */
+/**
+ * Probe telemetry window length (ms), hoisted so the republish rate below can
+ * be computed from it rather than restated. The comment on probeMaxHz claimed
+ * the value was "derived from probeWindowMs, not chosen independently" while
+ * both were hand-written literals -- true only for as long as nobody edited
+ * one of them.
+ */
+const PROBE_WINDOW_MS = 50;
+
 export const BRIDGE_PROTOCOL_VERSION = 1;
 /** Oldest bridge protocol version this codebase can still speak. */
 export const BRIDGE_PROTOCOL_MIN_SUPPORTED = 1;
@@ -20,11 +29,12 @@ export const LIMITS = {
   /** Maximum simultaneously attached probe channels per instance. */
   maxActiveProbes: 16,
   /**
-   * Rate at which the probe telemetry window is republished (Hz). Derived from
-   * probeWindowMs below, not chosen independently: a "max rate" that disagreed
-   * with how often a new window exists would be describing nothing.
+   * Rate at which the probe telemetry window is republished (Hz). Computed from
+   * the window length, not chosen independently: a "max rate" that disagreed
+   * with how often a new window exists would be describing nothing, and
+   * read_probe's published description interpolates this number.
    */
-  probeMaxHz: 20,
+  probeMaxHz: 1000 / PROBE_WINDOW_MS,
   /** Maximum parameter changes per second per client. */
   paramChangesPerSecond: 30,
   /** Confirmation token lifetime (ms). */
@@ -50,7 +60,7 @@ export const LIMITS = {
   /** Soft time budget for the UI command pump per frame (ms). */
   pumpFrameBudgetMs: 4,
   /** Probe telemetry window length (ms). */
-  probeWindowMs: 50,
+  probeWindowMs: PROBE_WINDOW_MS,
   /** Probe inputs on one RackMCP-Probe module. */
   probeInputsPerModule: 8,
 } as const;
