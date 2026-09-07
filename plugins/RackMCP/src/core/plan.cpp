@@ -196,18 +196,25 @@ std::string checkOperationFields(json_t* op) {
     }
     if (!spec)
         return ""; // unknown op: the caller reports UNSUPPORTED_OPERATION
+    return checkDeclaredFields(name, spec->fields, spec->fieldCount, op);
+}
 
-    for (size_t i = 0; i < spec->fieldCount; i++) {
-        const gen::FieldSpec& field = spec->fields[i];
+std::string checkDeclaredFields(const char* what, const gen::FieldSpec* fields, size_t fieldCount,
+                                json_t* obj) {
+    const std::string name(what ? what : "request");
+    if (!json_is_object(obj))
+        return name + ": payload is not a JSON object";
+    for (size_t i = 0; i < fieldCount; i++) {
+        const gen::FieldSpec& field = fields[i];
         if (!field.name)
             break;
-        json_t* value = json_object_get(op, field.name);
+        json_t* value = json_object_get(obj, field.name);
         if (!value) {
-            return std::string(name) + ": missing required field \"" + field.name +
+            return name + ": missing required field \"" + field.name +
                    "\" (declared " + field.jsonType + ")";
         }
         if (!typeMatches(field.jsonType, value)) {
-            return std::string(name) + ": field \"" + field.name + "\" must be " +
+            return name + ": field \"" + field.name + "\" must be " +
                    field.jsonType + ", not " + actualTypeName(value);
         }
         // A string of the right type is not yet a string the schema admits, and
@@ -228,7 +235,7 @@ std::string checkOperationFields(json_t* op) {
                 permitted += field.allowed[a];
             }
             if (!found) {
-                return std::string(name) + ": field \"" + field.name + "\" must be one of " +
+                return name + ": field \"" + field.name + "\" must be one of " +
                        permitted + ", not \"" + actual + "\"";
             }
         }

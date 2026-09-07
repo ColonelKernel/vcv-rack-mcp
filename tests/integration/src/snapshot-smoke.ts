@@ -46,7 +46,12 @@ try {
   const client = new BridgeClient({ clientName: "snap", clientVersion: "0.1.0" });
   await client.connect(instance.manifest.port);
   await client.authenticate(secret);
-  await waitReady(client);
+  const ready = await waitReady(client);
+  const bridgeScope = {
+    instanceId: String(ready.instanceId ?? ""),
+    sessionId: String(ready.sessionId ?? ""),
+    patchEpoch: 0,
+  };
 
   // Catalog: Core + Fundamental must be present and paginated.
   const page1 = (await client.request("catalog.listModels", { limit: 5 })) as {
@@ -190,7 +195,12 @@ try {
 
   // Inspect the Bridge module directly.
   if (bridge) {
+    // `scope` is declared required on module.inspect. This smoke talks to the
+    // bridge directly rather than through the MCP server, so it builds its own
+    // payload -- and omitted it, which nothing noticed until the service began
+    // checking requests against gen::METHOD_SPECS.
     const inspected = (await client.request("module.inspect", {
+      scope: bridgeScope,
       moduleId: bridge.moduleId,
     })) as { module: Record<string, unknown> };
     ok("module.inspect returns the module", inspected.module.moduleId === bridge.moduleId);
@@ -199,7 +209,7 @@ try {
   {
     let code = "";
     try {
-      await client.request("module.inspect", { moduleId: "999999" });
+      await client.request("module.inspect", { scope: bridgeScope, moduleId: "999999" });
     } catch (e) {
       if (e instanceof BridgeRequestError) code = e.rpcError.code;
     }

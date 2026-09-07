@@ -520,7 +520,17 @@ TEST_CASE("a queued mutating command carries its lease and stops validating when
         json_string_value(json_object_get(json_object_get(res, "payload"), "leaseId"));
     json_decref(res);
 
-    REQUIRE(a.send(reqFrame("00000000000000a2", "txn.commit", "{}", uuid4())));
+    // A payload txn.commit actually declares. It used to be "{}", which no real
+    // client sends: bridge-methods.schema.json requires scope, plan, planHash,
+    // expectedFingerprint and operationId, and since gen::METHOD_SPECS gained a
+    // consumer the service refuses a request that omits them. This test is
+    // about the lease travelling with a queued command, so the payload just has
+    // to be well-formed.
+    const std::string commitOpId = uuid4();
+    const std::string commitPayload =
+        "{\"scope\":{},\"plan\":{\"operations\":[]},\"planHash\":\"deadbeef\","
+        "\"expectedFingerprint\":\"cafe\",\"operationId\":\"" + commitOpId + "\"}";
+    REQUIRE(a.send(reqFrame("00000000000000a2", "txn.commit", commitPayload, commitOpId)));
     BridgeCommand queued;
     for (int i = 0; i < 200 && queued.requestId.empty(); i++) {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -714,4 +724,66 @@ TEST_CASE("lease hint follows an ordinary acquire and release") {
     CHECK(server.leases().release(7, leaseId) == true);
     server.refreshLeaseHint();
     CHECK(server.leaseHeldHint() == false);
+}
+
+TEST_CASE("a request missing a field its method declares is refused") {
+    // gen::METHOD_SPECS has carried every method's required request fields and
+    // their JSON types since the generator was written, and nothing read them:
+    // handlers reached into the payload with accessors that substitute a
+    // default for anything unexpected.
+    Harness h;
+    TestClient c;
+    h.handshake(c);
+    json_decref(c.readJson());
+
+    // catalog.inspectModel declares pluginSlug and modelSlug, both strings.
+    REQUIRE(c.send(reqFrame("00000000000000d1", "catalog.inspectModel",
+                            "{\"pluginSlug\":\"Fundamental\"}")));
+    json_t* res = c.readJson();
+    REQUIRE(res);
+    json_t* err = json_object_get(res, "error");
+    REQUIRE(err);
+    CHECK(std::string(json_string_value(json_object_get(err, "code"))) == "BAD_REQUEST");
+    const std::string msg = json_string_value(json_object_get(err, "message"));
+    CHECK(msg.find("modelSlug") != std::string::npos);
+    CHECK(msg.find("catalog.inspectModel") != std::string::npos);
+    json_decref(res);
+
+    // Present but the wrong type is refused just as a missing one is.
+    REQUIRE(c.send(reqFrame("00000000000000d2", "catalog.inspectModel",
+                            "{\"pluginSlug\":\"Fundamental\",\"modelSlug\":7}")));
+    res = c.readJson();
+    REQUIRE(res);
+    CHECK(std::string(json_string_value(
+              json_object_get(json_object_get(res, "error"), "code"))) == "BAD_REQUEST");
+    json_decref(res);
+
+    // A complete one gets past the check and is queued for the UI thread.
+    REQUIRE(c.send(reqFrame("00000000000000d3", "catalog.inspectModel",
+                            "{\"pluginSlug\":\"Fundamental\",\"modelSlug\":\"VCO\"}")));
+    bool queued = false;
+    for (int i = 0; i < 200 && !queued; i++) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        std::lock_guard<std::mutex> lock(h.sink.mutex);
+        for (size_t k = 0; k < h.sink.commands.size(); k++)
+            if (h.sink.commands[k].requestId == "00000000000000d3")
+                queued = true;
+    }
+    CHECK(queued);
+}
+
+TEST_CASE("an unauthorized caller is told about the lease, not about the payload") {
+    // Ordering: the shape check runs after the operationId and writer-lease
+    // checks, so a caller with no lease learns nothing about what the payload
+    // should contain.
+    Harness h;
+    TestClient c;
+    h.handshake(c);
+    json_decref(c.readJson());
+    REQUIRE(c.send(reqFrame("00000000000000e1", "txn.commit", "{}", uuid4())));
+    json_t* res = c.readJson();
+    REQUIRE(res);
+    CHECK(std::string(json_string_value(
+              json_object_get(json_object_get(res, "error"), "code"))) == "WRITER_LEASE_REQUIRED");
+    json_decref(res);
 }

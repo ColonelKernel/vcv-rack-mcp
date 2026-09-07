@@ -184,6 +184,15 @@ int remainingBridgeCount(const std::vector<WorldModule>& modules,
 std::string checkOperationFields(json_t* op);
 
 /**
+ * The same check against any declared field list, so the operation, method and
+ * frame tables share one implementation rather than three that can drift.
+ *
+ * @param what prefix for the message -- the operation, method or frame name.
+ */
+std::string checkDeclaredFields(const char* what, const gen::FieldSpec* fields, size_t fieldCount,
+                                json_t* obj);
+
+/**
  * Reads a required JSON integer that must fit a C++ `int`.
  *
  * The plugin read every port id, parameter id and grid coordinate as

@@ -9,6 +9,7 @@
 #include "core/crypto.hpp"
 #include "core/framing.hpp"
 #include "core/frames.hpp"
+#include "core/plan.hpp"
 #include "gen/rackmcp_protocol_gen.hpp"
 
 namespace rackmcp {
@@ -376,13 +377,6 @@ bool BridgeServer::handleRequest(Session& session, json_t* root) {
     if (json_is_string(opIdJ))
         operationId = json_string_value(opIdJ);
 
-    // Inline service-state methods (no Rack APIs involved).
-    if (std::strncmp(method, "lease.", 6) == 0) {
-        counters_.requestsInline++;
-        handleLeaseRequest(session, id, method, payload);
-        return true;
-    }
-
     std::string leaseIdAtEnqueue;
     if (spec->mutating) {
         if (operationId.size() != 36) {
@@ -401,6 +395,43 @@ bool BridgeServer::handleRequest(Session& session, json_t* root) {
             return true;
         }
         leaseIdAtEnqueue = h.leaseId;
+    }
+
+    // Every field bridge-methods.schema.json declares required, present and of
+    // the declared type, before any handler reads the payload.
+    //
+    // `gen::METHOD_SPECS` has carried this since the generator was written and
+    // only `spec->mutating` was ever read from it. Handlers reach into the
+    // payload with accessors that substitute a default for anything unexpected
+    // -- the habit that let a `set_bypass` frame carrying the string "false"
+    // silence a module. Checking here covers every method at once, and before
+    // the command is queued, so a malformed request costs nothing on the UI
+    // thread.
+    //
+    // docs/security/threat-model.md draws boundary 2 at this socket and says
+    // the plugin "re-validates every frame afterward". This is a large part of
+    // what makes that true.
+    //
+    // Ordered AFTER the operationId and writer-lease checks on purpose: an
+    // unauthorized caller keeps getting WRITER_LEASE_REQUIRED and learns
+    // nothing about what the payload should contain. The three lease.* methods
+    // are all non-mutating, so the block above is a no-op for them and the
+    // inline dispatch below now sees a checked payload too.
+    {
+        const std::string shape =
+            checkDeclaredFields(method, spec->fields, spec->fieldCount, payload);
+        if (!shape.empty()) {
+            counters_.protocolErrors++;
+            enqueueOutbound(session, buildResError(id, "BAD_REQUEST", shape, false, false));
+            return true;
+        }
+    }
+
+    // Inline service-state methods (no Rack APIs involved).
+    if (std::strncmp(method, "lease.", 6) == 0) {
+        counters_.requestsInline++;
+        handleLeaseRequest(session, id, method, payload);
+        return true;
     }
 
     BridgeCommand cmd;

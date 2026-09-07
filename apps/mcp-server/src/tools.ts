@@ -117,7 +117,13 @@ const getPatchSnapshot: ToolHandler = async (args, ctx) => {
 };
 
 const inspectModule: ToolHandler = async (args, ctx) => {
+  // `scope` is declared required on module.inspect, as it is on the eight other
+  // methods that take it -- and these two call sites were the only ones that
+  // omitted it. Nothing noticed, because the plugin never reads the field; it
+  // appears only in the non-identity key list used for idempotency hashing.
+  const instance = await ctx.conn.ensureConnected();
   const res = await ctx.conn.request<{ module: Record<string, unknown> }>("module.inspect", {
+    scope: { instanceId: instance.instanceId, sessionId: instance.sessionId, patchEpoch: 0 },
     moduleId: args.moduleId,
     includeOpaqueState: args.includeOpaqueState ?? false,
     expectedPatchEpoch: args.expectedPatchEpoch,
@@ -133,7 +139,9 @@ const inspectModule: ToolHandler = async (args, ctx) => {
 };
 
 const inspectParameter: ToolHandler = async (args, ctx) => {
+  const instance = await ctx.conn.ensureConnected();
   const res = await ctx.conn.request<{ module: Record<string, unknown> }>("module.inspect", {
+    scope: { instanceId: instance.instanceId, sessionId: instance.sessionId, patchEpoch: 0 },
     moduleId: args.moduleId,
     expectedPatchEpoch: args.expectedPatchEpoch,
   });
