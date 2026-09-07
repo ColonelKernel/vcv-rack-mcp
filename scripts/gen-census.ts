@@ -13,6 +13,8 @@ import { declaredSymbols } from "../tests/contract/src/declared.js";
 import { alwaysConstantKeys, keyProducers } from "../tests/contract/src/producers.js";
 import { loadDocs } from "../tests/contract/src/docs.js";
 import { loadSources, SOURCE_ROOTS } from "../tests/contract/src/sources.js";
+import { GEN_SYMBOL_EXCEPTIONS, generatedSymbols } from "../tests/contract/src/cppgen.js";
+import { emittedCodes, unemittedCodes } from "../tests/contract/src/errorcodes.js";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 
@@ -101,6 +103,32 @@ for (const p of alwaysConstantKeys()) {
   const site = p.sites.map((s) => `\`${s.file}:${s.line}\``).join(", ");
   P(`| \`${p.key}\` | \`${p.sites[0]?.literal ?? "?"}\` | ${site} |`);
 }
+
+P("", "## The generated C++ header", "");
+P(
+  `\`scripts/gen-cpp.ts\` emits ${generatedSymbols().length} top-level symbols, and every one must be read by`,
+  "the plugin's own hand-written C++. Tests do not count: a symbol that lives only in its own",
+  "round-trip test is still dead in production. Two of these tables shipped with no reader at",
+  "all while the plugin read payloads with accessors that default silently, so everything needed",
+  "to refuse a malformed frame was present and unused.",
+  "",
+  `${GEN_SYMBOL_EXCEPTIONS.length} symbols are exempt, with reasons:`,
+  "",
+  "| Symbol | Why it has no reader |",
+  "| --- | --- |",
+);
+for (const e of [...GEN_SYMBOL_EXCEPTIONS].sort((a, b) => a.symbol.localeCompare(b.symbol)))
+  P(`| \`${e.symbol}\` | ${e.reason} |`);
+P(
+  "",
+  `The plugin emits ${emittedCodes().length} error-code string literals, each checked against \`ERROR_CODES\`.`,
+  "The generated `ErrorCode` enum has no C++ caller, so a typo would otherwise compile and reach",
+  "a client that branches on the code.",
+  "",
+  `Declared codes the plugin never raises (the server's to emit): ${
+    unemittedCodes().map((c) => "`" + c + "`").join(", ") || "none"
+  }.`,
+);
 
 P(
   "",

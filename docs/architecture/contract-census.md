@@ -64,6 +64,40 @@ present either way; the gate matches the jansson call shape instead.
 | `undoEligible` | `json_true()` | `plugins/RackMCP/src/rackside/Transaction.cpp:1446` |
 | `undone` | `json_true()` | `plugins/RackMCP/src/rackside/Transaction.cpp:1501` |
 
+## The generated C++ header
+
+`scripts/gen-cpp.ts` emits 37 top-level symbols, and every one must be read by
+the plugin's own hand-written C++. Tests do not count: a symbol that lives only in its own
+round-trip test is still dead in production. Two of these tables shipped with no reader at
+all while the plugin read payloads with accessors that default silently, so everything needed
+to refuse a malformed frame was present and unused.
+
+15 symbols are exempt, with reasons:
+
+| Symbol | Why it has no reader |
+| --- | --- |
+| `ErrorCode` | Known gap, not a decision. The plugin passes error codes to buildResError as string literals, so a typo compiles and ships a code no client recognises, and ERROR_CODES is a vocabulary clients branch on. Converting every call site is a large mechanical change; the literals are checked against ERROR_CODES by errorcodes.ts instead, which catches the same class without touching them. |
+| `errorCodeToString` | Only useful once ErrorCode has C++ callers; same disposition as ErrorCode. |
+| `FRAME_SPEC_COUNT` | Only meaningful alongside FRAME_SPECS; same disposition. |
+| `FRAME_SPECS` | Reserved. The five bridge frame kinds validate the fields they actually read at the point of use -- selectProtocolVersion checks hello.versions, the auth path checks hmac -- and the only declared-but-unread field is hello.client. Enforcing the table would reject a client omitting a field nothing consults: a behaviour change with no safety benefit. Revisit when a frame kind gains a field a handler reads. |
+| `FrameSpec` | The element type of FRAME_SPECS; same disposition. |
+| `LIMIT_COMMAND_TIMEOUT_MS` | Enforced on the MCP server, not in the plugin. The generator emits every entry of LIMITS uniformly so the two sides cannot disagree about a value; a limit whose enforcement lives server-side therefore has a C++ constant with no C++ reader, and that is the intended shape rather than a gap. |
+| `LIMIT_CONFIRMATION_LIFETIME_MS` | Enforced on the MCP server, not in the plugin. The generator emits every entry of LIMITS uniformly so the two sides cannot disagree about a value; a limit whose enforcement lives server-side therefore has a C++ constant with no C++ reader, and that is the intended shape rather than a gap. |
+| `LIMIT_INSTANCE_STALE_AFTER_MS` | Enforced on the MCP server, not in the plugin. The generator emits every entry of LIMITS uniformly so the two sides cannot disagree about a value; a limit whose enforcement lives server-side therefore has a C++ constant with no C++ reader, and that is the intended shape rather than a gap. |
+| `LIMIT_MAX_ACTIVE_PROBES` | Enforced on the MCP server, not in the plugin. The generator emits every entry of LIMITS uniformly so the two sides cannot disagree about a value; a limit whose enforcement lives server-side therefore has a C++ constant with no C++ reader, and that is the intended shape rather than a gap. |
+| `LIMIT_MCP_RESULT_BYTES` | Enforced on the MCP server, not in the plugin. The generator emits every entry of LIMITS uniformly so the two sides cannot disagree about a value; a limit whose enforcement lives server-side therefore has a C++ constant with no C++ reader, and that is the intended shape rather than a gap. |
+| `LIMIT_PARAM_CHANGES_PER_SECOND` | Enforced on the MCP server, not in the plugin. The generator emits every entry of LIMITS uniformly so the two sides cannot disagree about a value; a limit whose enforcement lives server-side therefore has a C++ constant with no C++ reader, and that is the intended shape rather than a gap. |
+| `LIMIT_PATCH_IO_TIMEOUT_MS` | Enforced on the MCP server, not in the plugin. The generator emits every entry of LIMITS uniformly so the two sides cannot disagree about a value; a limit whose enforcement lives server-side therefore has a C++ constant with no C++ reader, and that is the intended shape rather than a gap. |
+| `LIMIT_PROBE_MAX_HZ` | Enforced on the MCP server, not in the plugin. The generator emits every entry of LIMITS uniformly so the two sides cannot disagree about a value; a limit whose enforcement lives server-side therefore has a C++ constant with no C++ reader, and that is the intended shape rather than a gap. |
+| `LIMIT_TXN_COMMIT_TIMEOUT_MS` | Enforced on the MCP server, not in the plugin. The generator emits every entry of LIMITS uniformly so the two sides cannot disagree about a value; a limit whose enforcement lives server-side therefore has a C++ constant with no C++ reader, and that is the intended shape rather than a gap. |
+| `LIMIT_TXN_MAX_ADDED_MODULES` | Enforced on the MCP server, not in the plugin. The generator emits every entry of LIMITS uniformly so the two sides cannot disagree about a value; a limit whose enforcement lives server-side therefore has a C++ constant with no C++ reader, and that is the intended shape rather than a gap. |
+
+The plugin emits 84 error-code string literals, each checked against `ERROR_CODES`.
+The generated `ErrorCode` enum has no C++ caller, so a typo would otherwise compile and reach
+a client that branches on the code.
+
+Declared codes the plugin never raises (the server's to emit): `RACK_NOT_FOUND`, `RACK_DISCONNECTED`, `AUTHENTICATION_FAILED`, `PROTOCOL_VERSION_MISMATCH`, `STALE_SESSION`, `CONFIRMATION_REQUIRED`, `CONFIRMATION_EXPIRED`, `TRANSACTION_TOO_LARGE`, `OPAQUE_STATE_UNSUPPORTED`, `TELEMETRY_UNAVAILABLE`, `RATE_LIMITED`, `INSTANCE_NOT_SELECTED`.
+
 ## What these gates do not cover
 
 Stated so the census is not read as a stronger claim than it is.
