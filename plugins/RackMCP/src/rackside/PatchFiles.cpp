@@ -240,9 +240,28 @@ static void savePatchAtomic(const std::string& path) {
 
 static json_t* buildResult(bool saved, const std::vector<std::string>& warnings) {
     RackBridge& bridge = RackBridge::instance();
+    std::vector<std::string> warningsOut = warnings;
     UiStateCache state = currentUiState();
     json_t* payload = json_object();
-    json_object_set_new(payload, "fingerprint", json_string(computePatchFingerprint().c_str()));
+    // Guarded, like Transaction.cpp's safeFingerprint. This runs on the success
+    // path, AFTER the file operation has landed, so a throw here would report
+    // failure for something that succeeded -- or, before the pump grew an
+    // exception barrier, unwind into Rack's frame loop. An empty fingerprint
+    // plus a warning is the honest answer: the file is written, and the caller
+    // is told it has no baseline to compare against.
+    std::string fingerprint;
+    try {
+        fingerprint = computePatchFingerprint();
+    }
+    catch (const std::exception& e) {
+        warningsOut.push_back(std::string("the patch fingerprint could not be computed (") +
+                              e.what() + "); the operation itself succeeded");
+    }
+    catch (...) {
+        warningsOut.push_back("the patch fingerprint could not be computed; the operation itself "
+                              "succeeded");
+    }
+    json_object_set_new(payload, "fingerprint", json_string(fingerprint.c_str()));
     json_object_set_new(payload, "patchEpoch", json_integer(bridge.patchEpoch()));
     std::string name;
     if (APP->patch && !APP->patch->path.empty())
@@ -259,7 +278,7 @@ static json_t* buildResult(bool saved, const std::vector<std::string>& warnings)
                         json_string(APP->patch ? APP->patch->path.c_str() : ""));
     json_object_set_new(payload, "bridgeModulePresent", json_boolean(patchHasBridge()));
     json_t* warnJ = json_array();
-    for (auto& w : warnings)
+    for (auto& w : warningsOut)
         json_array_append_new(warnJ, json_string(w.c_str()));
     json_object_set_new(payload, "warnings", warnJ);
     json_object_set_new(payload, "replayed", json_false());

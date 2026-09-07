@@ -66,7 +66,44 @@ void CommandPumpWidget::step() {
         }
         else {
             const int64_t began = steadyNowMs();
-            frame = executeCommand(cmd);
+            // An exception barrier, because there was none anywhere between a
+            // handler and Rack.
+            //
+            // `step()` is called by Rack's frame loop, so anything a handler
+            // throws unwinds through Widget::step and out of the application.
+            // The success paths in PatchFiles call computePatchFingerprint()
+            // unguarded *after* the file operation has landed -- Transaction.cpp
+            // wraps the identical call in safeFingerprint precisely because it
+            // can throw -- and an unwind there would also skip the json_decref
+            // below and leave the caller waiting out a deadline that reports
+            // "timeout" for something that was not one.
+            //
+            // Answering INTERNAL is strictly better on every count: Rack lives,
+            // the memory is freed, and the caller learns what actually happened.
+            // `mutationMayHaveOccurred` follows cmd.mutating, since a throw
+            // partway through a mutating handler is exactly the case where the
+            // caller must not assume nothing changed.
+            try {
+                frame = executeCommand(cmd);
+            }
+            catch (const std::exception& e) {
+                WARN("RackMCP: %s threw: %s", cmd.method.c_str(), e.what());
+                frame = buildResError(cmd.requestId, "INTERNAL",
+                                      std::string("handler threw: ") + e.what(), false,
+                                      cmd.mutating);
+            }
+            catch (const std::string& e) {
+                // The transaction applier reports failures this way.
+                WARN("RackMCP: %s threw: %s", cmd.method.c_str(), e.c_str());
+                frame = buildResError(cmd.requestId, "INTERNAL", "handler threw: " + e, false,
+                                      cmd.mutating);
+            }
+            catch (...) {
+                WARN("RackMCP: %s threw a non-standard exception", cmd.method.c_str());
+                frame = buildResError(cmd.requestId, "INTERNAL",
+                                      "handler threw a non-standard exception", false,
+                                      cmd.mutating);
+            }
             bridge.setLastOp(cmd.method);
             // The Chat panel's transcript. setLastOp truncates to 24 chars for
             // the Bridge panel; this keeps the full method name and the outcome.
