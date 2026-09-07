@@ -14,6 +14,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -83,6 +84,73 @@ bool isAudioModule(const WorldModule& module);
  * no test on either copy.
  */
 bool isBridgeModule(const WorldModule& module);
+
+/**
+ * A model's identity: the plugin slug and model slug Rack resolves it by.
+ *
+ * A pair rather than a `"plugin/model"` join. `plugin::isSlugValid`
+ * (`vendor/Rack-SDK/include/plugin.hpp:32`) permits only alphanumerics, `-`
+ * and `_`, so a join would in fact be unambiguous -- but the SDK only
+ * *declares* that validator and never promises the loader applies it, and a
+ * pair costs the same and needs no such assumption.
+ */
+struct ModelRef {
+    std::string pluginSlug;
+    std::string modelSlug;
+    ModelRef() {}
+    ModelRef(const std::string& plugin, const std::string& model)
+        : pluginSlug(plugin), modelSlug(model) {}
+    bool operator<(const ModelRef& other) const {
+        if (pluginSlug != other.pluginSlug)
+            return pluginSlug < other.pluginSlug;
+        return modelSlug < other.modelSlug;
+    }
+};
+
+/**
+ * The Rack-free snapshot transaction validation reads instead of calling into
+ * the engine.
+ *
+ * Built by `snapshotWorld` in rackside, which does the Rack reads once, so the
+ * validation itself becomes a pure function of plain data and can be tested on
+ * three platforms in CI. It grows one field at a time, each with a caller.
+ *
+ * `installedModels` holds only the models THIS plan names and Rack resolved --
+ * not every model on the machine. The whole catalogue was the obvious design
+ * and is worse twice over: it is more work than the lookups it replaces (a
+ * large install is several thousand models, walked on the UI thread inside one
+ * pump step, whether or not the plan adds anything), and reimplementing the
+ * lookup invites divergence from `plugin::getModel`, which
+ * `docs/spec/rack-mcp-spec.md` requires preview and apply to agree on.
+ * Pre-resolving with `getModel` itself makes the same calls in the same order
+ * and merely moves them earlier, so its behaviour is preserved by construction
+ * rather than by argument -- including its treatment of an empty slug, and its
+ * deliberate difference from `getModelFallback`, which neither preview nor
+ * apply uses.
+ */
+struct PlanWorld {
+    std::set<ModelRef> installedModels;
+    /** Every live module, so a check can ask about the ones a plan removes. */
+    std::vector<WorldModule> modules;
+
+    bool modelInstalled(const std::string& pluginSlug, const std::string& modelSlug) const {
+        return installedModels.count(ModelRef(pluginSlug, modelSlug)) != 0;
+    }
+};
+
+/**
+ * Bridge modules that would still exist once `removed` is applied.
+ *
+ * The last-Bridge refusal exists so a transaction cannot sever the control
+ * channel the request arrived on. It used to count Bridges live in the engine,
+ * which during a preview is the patch as it was BEFORE the plan -- so it never
+ * saw a Bridge an earlier operation in the same plan had already removed.
+ * With two Bridges installed, a two-operation plan removing both was permitted:
+ * each check saw two live Bridges and allowed the removal. The refusal is not a
+ * property of one operation, it is a property of the plan.
+ */
+int remainingBridgeCount(const std::vector<WorldModule>& modules,
+                         const std::vector<int64_t>& removed);
 
 /** A resolved module reference: a live id, or a transaction-local alias. */
 struct ModuleRef {

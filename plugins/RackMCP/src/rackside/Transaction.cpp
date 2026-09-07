@@ -186,12 +186,35 @@ WorldModule toWorldModule(int64_t id, engine::Module* m) {
     return WorldModule(id, "", "");
 }
 
-int bridgeModuleCountLive() {
-    int n = 0;
+/**
+ * The Rack reads validation needs, taken once.
+ *
+ * Today it resolves the models the plan names. `plugin::getModel` is called
+ * once per `add_module` operation, in request order, exactly as the validation
+ * loop called it -- the calls move earlier, they do not change. That is what
+ * keeps preview and apply agreeing on what "installed" means: apply calls the
+ * same function (`applyAdd`), and any set rebuilt from `plugin::plugins`
+ * instead would be a second implementation free to drift from it.
+ *
+ * `getModelFallback` is deliberately not used, here or at apply. Adopting
+ * fallback semantics in preview alone would make preview accept a plan that
+ * apply then refuses.
+ */
+PlanWorld snapshotWorld(json_t* operations) {
+    PlanWorld world;
     for (int64_t id : APP->engine->getModuleIds())
-        if (rackmcp::isBridgeModule(toWorldModule(id, APP->engine->getModule(id))))
-            n++;
-    return n;
+        world.modules.push_back(toWorldModule(id, APP->engine->getModule(id)));
+    size_t i;
+    json_t* op;
+    json_array_foreach(operations, i, op) {
+        if (std::string(jstr(op, "op")) != "add_module")
+            continue;
+        std::string pslug = jstr(op, "pluginSlug");
+        std::string mslug = jstr(op, "modelSlug");
+        if (plugin::getModel(pslug, mslug))
+            world.installedModels.insert(ModelRef(pslug, mslug));
+    }
+    return world;
 }
 
 bool isAudioModule(engine::Module* m) {
@@ -267,14 +290,14 @@ bool positionFree(const PreviewState& st, app::ModuleWidget* self, math::Rect bo
     return layout::positionFree(occupants, selfIndex, toBox(box), plan);
 }
 
-bool validateOne(json_t* op, PreviewState& st, ValidationError& err) {
+bool validateOne(json_t* op, const PlanWorld& world, PreviewState& st, ValidationError& err) {
     std::string type = jstr(op, "op");
 
     if (type == "add_module") {
         std::string pslug = jstr(op, "pluginSlug");
         std::string mslug = jstr(op, "modelSlug");
         std::string alias = jstr(op, "alias");
-        if (!plugin::getModel(pslug, mslug)) {
+        if (!world.modelInstalled(pslug, mslug)) {
             err = {"MODEL_NOT_INSTALLED", "model " + pslug + "/" + mslug + " is not installed"};
             st.missingModule = true;
             return false;
@@ -308,7 +331,11 @@ bool validateOne(json_t* op, PreviewState& st, ValidationError& err) {
                 return false;
             }
             bool isBridge = rackmcp::isBridgeModule(toWorldModule(r.moduleId, m));
-            if (isBridge && !jbool(op, "allowLastBridge", false) && bridgeModuleCountLive() <= 1) {
+            // Counted against the plan, not against the live patch. The live
+            // count is the patch as it was before this transaction, so it never
+            // saw a Bridge an earlier operation here had already removed.
+            const int bridgesLeft = remainingBridgeCount(world.modules, st.removedModules);
+            if (isBridge && !jbool(op, "allowLastBridge", false) && bridgesLeft <= 1) {
                 err = {"UNSUPPORTED_OPERATION",
                        "refusing to remove the last RackMCP-Bridge module (set allowLastBridge)"};
                 st.removesBridge = true;
@@ -574,12 +601,20 @@ TxnOutcome txnPreview(json_t* request) {
     std::string baseFingerprint;
     const bool fingerprintTaken = safeFingerprint(baseFingerprint);
 
+    // Taken after the fingerprint, never before. The fingerprint must never be
+    // older than the world it certifies: sampling the world first lets a
+    // mutation land in between, leaving the plan validated against the old
+    // patch while expectedFingerprint matches the new one -- so the commit gate
+    // agrees and applies a plan that was checked against something else. This
+    // is the same argument as the comment above, in the other direction.
+    const PlanWorld world = snapshotWorld(operations);
+
     PreviewState st;
     ValidationError verr;
     size_t idx;
     json_t* op;
     json_array_foreach(operations, idx, op) {
-        if (!validateOne(op, st, verr)) {
+        if (!validateOne(op, world, st, verr)) {
             out.errorCode = verr.code;
             out.errorMessage = "operation " + std::to_string(idx) + ": " + verr.message;
             return out;

@@ -476,3 +476,74 @@ TEST_CASE("isBridgeModule is exact, not a prefix like the audio test") {
     CHECK_FALSE(isBridgeModule(WorldModule(3, "RackMCP", "Probe")));
     CHECK_FALSE(isBridgeModule(WorldModule(4, "Other", "Bridge")));
 }
+
+// ---------------------------------------------------------------------------
+// The last-Bridge refusal
+//
+// This is the guard that stops a transaction severing the control channel the
+// request arrived on. It counted Bridges LIVE IN THE ENGINE, which during a
+// preview is the patch as it was before the plan -- so it could not see a
+// Bridge an earlier operation in the same plan had already removed.
+// ---------------------------------------------------------------------------
+
+static std::vector<WorldModule> twoBridges() {
+    std::vector<WorldModule> w;
+    w.push_back(WorldModule(1, "Fundamental", "VCO"));
+    w.push_back(WorldModule(7, "RackMCP", "Bridge"));
+    w.push_back(WorldModule(9, "RackMCP", "Bridge"));
+    return w;
+}
+
+TEST_CASE("with one Bridge and nothing removed, it is the last one") {
+    std::vector<WorldModule> w;
+    w.push_back(WorldModule(7, "RackMCP", "Bridge"));
+    std::vector<int64_t> removed;
+    CHECK(remainingBridgeCount(w, removed) == 1);
+}
+
+TEST_CASE("a two-operation plan cannot remove every Bridge") {
+    // The bug, stated as a test. Removing Bridge 7 leaves one Bridge, so the
+    // first operation is allowed; the second must then see ONE remaining and be
+    // refused. Counting the live engine returns 2 both times and permits both.
+    std::vector<WorldModule> w = twoBridges();
+    std::vector<int64_t> removed;
+    CHECK(remainingBridgeCount(w, removed) == 2); // first removal: allowed
+    removed.push_back(7);
+    CHECK(remainingBridgeCount(w, removed) == 1); // second: this is the last
+}
+
+TEST_CASE("removing a non-Bridge does not change the Bridge count") {
+    std::vector<WorldModule> w = twoBridges();
+    std::vector<int64_t> removed;
+    removed.push_back(1); // the VCO
+    CHECK(remainingBridgeCount(w, removed) == 2);
+}
+
+TEST_CASE("an id removed twice is not counted down twice") {
+    // st.removeCable dedupes, but st.removedModules is a plain push_back, so a
+    // plan naming the same module in two remove_module operations puts the id
+    // in twice. That must not make a second Bridge disappear.
+    std::vector<WorldModule> w = twoBridges();
+    std::vector<int64_t> removed;
+    removed.push_back(7);
+    removed.push_back(7);
+    CHECK(remainingBridgeCount(w, removed) == 1);
+}
+
+TEST_CASE("a removal naming an id no module has changes nothing") {
+    std::vector<WorldModule> w = twoBridges();
+    std::vector<int64_t> removed;
+    removed.push_back(-1000); // a transaction alias' synthetic id
+    removed.push_back(4242);
+    CHECK(remainingBridgeCount(w, removed) == 2);
+}
+
+TEST_CASE("no Bridges at all counts zero, not one") {
+    // <= 1 is the refusal, so zero must be reachable: a patch with no Bridge
+    // cannot be reached through the bridge, but the arithmetic should still be
+    // honest rather than clamped.
+    std::vector<WorldModule> w;
+    w.push_back(WorldModule(1, "Fundamental", "VCO"));
+    std::vector<int64_t> removed;
+    CHECK(remainingBridgeCount(w, removed) == 0);
+}

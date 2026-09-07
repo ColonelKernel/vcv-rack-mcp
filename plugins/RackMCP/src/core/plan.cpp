@@ -12,6 +12,22 @@ bool isBridgeModule(const WorldModule& module) {
     return module.pluginSlug == "RackMCP" && module.modelSlug == "Bridge";
 }
 
+int remainingBridgeCount(const std::vector<WorldModule>& modules,
+                         const std::vector<int64_t>& removed) {
+    int n = 0;
+    for (size_t i = 0; i < modules.size(); i++) {
+        if (!isBridgeModule(modules[i]))
+            continue;
+        bool gone = false;
+        for (size_t j = 0; j < removed.size(); j++)
+            if (removed[j] == modules[i].id)
+                gone = true;
+        if (!gone)
+            n++;
+    }
+    return n;
+}
+
 
 namespace {
 std::string count(size_t n) {
