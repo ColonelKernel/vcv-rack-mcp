@@ -33,6 +33,8 @@ type JsonSchema = {
   oneOf?: JsonSchema[];
   enum?: unknown[];
   const?: unknown;
+  minimum?: number;
+  maximum?: number;
 };
 
 function jsonTypeOf(s: JsonSchema | undefined): string {
@@ -156,6 +158,66 @@ for (const v of opVariants) {
       })),
   });
 }
+/**
+ * The GridPosition domain, harvested from every `position` property in the
+ * patch-operation schema rather than retyped here.
+ *
+ * `readIntField` bounds a position to a C++ `int`, which is five orders of
+ * magnitude looser than the schema declares. A lease holder can therefore send
+ * `{"x": 2147483647}` to `move_module`, and `layout::gridToPixel` adds Rack's
+ * 2000-column origin to it -- signed overflow, which is undefined behaviour
+ * inside Rack's own process. `docs/security/threat-model.md` draws boundary 2
+ * at the bridge socket and promises the plugin re-validates every frame, so the
+ * domain has to reach C++ as a number rather than as prose in a Zod schema the
+ * plugin never sees.
+ *
+ * Every occurrence must agree. A second, divergent grid domain would otherwise
+ * generate one pair of constants and silently apply it to both.
+ */
+function gridDomain(axis: "x" | "y"): { min: number; max: number } {
+  const found: { min: number; max: number }[] = [];
+  const walk = (node: unknown): void => {
+    if (Array.isArray(node)) {
+      node.forEach(walk);
+      return;
+    }
+    if (!node || typeof node !== "object") return;
+    const s = node as JsonSchema;
+    const pos = s.properties?.position;
+    if (pos?.properties?.x && pos.properties?.y) {
+      const a = pos.properties[axis];
+      if (typeof a.minimum !== "number" || typeof a.maximum !== "number") {
+        throw new Error(
+          `GridPosition.${axis} carries no numeric bounds in ` +
+            `patch-operation.schema.json; the C++ domain check would be generated ` +
+            `from nothing.`,
+        );
+      }
+      found.push({ min: a.minimum, max: a.maximum });
+    }
+    for (const v of Object.values(s)) walk(v);
+  };
+  walk(opSchema);
+  if (found.length === 0) {
+    throw new Error(
+      "no `position` property found in patch-operation.schema.json; the grid " +
+        "domain constants would be generated from nothing.",
+    );
+  }
+  for (const d of found) {
+    if (d.min !== found[0].min || d.max !== found[0].max) {
+      throw new Error(
+        `GridPosition.${axis} is declared with more than one domain ` +
+          `([${found[0].min}, ${found[0].max}] and [${d.min}, ${d.max}]). One ` +
+          `pair of constants cannot describe both.`,
+      );
+    }
+  }
+  return found[0];
+}
+const gridX = gridDomain("x");
+const gridY = gridDomain("y");
+
 opRows.sort((a, b) => a.op.localeCompare(b.op));
 {
   const fromSchema = opRows.map((o) => o.op).sort();
@@ -200,6 +262,16 @@ for (const [k, v] of Object.entries(LIMITS)) {
   }
   P(`static const int64_t LIMIT_${name} = ${v};`);
 }
+P("");
+P("// Grid position domain (packages/schemas/src/refs.ts GridPosition).");
+P("//");
+P("// Rack's own origin is added to a grid column before it becomes a pixel");
+P("// coordinate, so an unbounded column is a signed overflow rather than a");
+P("// module in a strange place. These are the bounds the schema declares.");
+P(`static const int GRID_POSITION_X_MIN = ${gridX.min};`);
+P(`static const int GRID_POSITION_X_MAX = ${gridX.max};`);
+P(`static const int GRID_POSITION_Y_MIN = ${gridY.min};`);
+P(`static const int GRID_POSITION_Y_MAX = ${gridY.max};`);
 P("");
 P("// Stable error codes (spec section 12)");
 P("enum class ErrorCode {");

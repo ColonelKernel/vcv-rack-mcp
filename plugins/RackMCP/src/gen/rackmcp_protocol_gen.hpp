@@ -33,6 +33,16 @@ static const int64_t LIMIT_PUMP_FRAME_BUDGET_MS = 4;
 static const int64_t LIMIT_PROBE_WINDOW_MS = 50;
 static const int64_t LIMIT_PROBE_INPUTS_PER_MODULE = 8;
 
+// Grid position domain (packages/schemas/src/refs.ts GridPosition).
+//
+// Rack's own origin is added to a grid column before it becomes a pixel
+// coordinate, so an unbounded column is a signed overflow rather than a
+// module in a strange place. These are the bounds the schema declares.
+static const int GRID_POSITION_X_MIN = -4096;
+static const int GRID_POSITION_X_MAX = 4096;
+static const int GRID_POSITION_Y_MIN = -256;
+static const int GRID_POSITION_Y_MAX = 256;
+
 // Stable error codes (spec section 12)
 enum class ErrorCode {
 	RACK_NOT_FOUND,

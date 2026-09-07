@@ -66,7 +66,7 @@ present either way; the gate matches the jansson call shape instead.
 
 ## The generated C++ header
 
-`scripts/gen-cpp.ts` emits 37 top-level symbols, and every one must be read by
+`scripts/gen-cpp.ts` emits 41 top-level symbols, and every one must be read by
 the plugin's own hand-written C++. Tests do not count: a symbol that lives only in its own
 round-trip test is still dead in production. Two of these tables shipped with no reader at
 all while the plugin read payloads with accessors that default silently, so everything needed

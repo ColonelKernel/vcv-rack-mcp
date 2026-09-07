@@ -28,7 +28,14 @@ bool intersects(const Box& a, const Box& b) {
 }
 
 Point gridToPixel(int gx, int gy, const Grid& grid) {
-    return Point((gx + grid.originColumns) * grid.width, (gy + grid.originRows) * grid.height);
+    // Widened before the addition, not after. Rack's origin is 2000 columns and
+    // 100 rows, so `gx + originColumns` in `int` overflows for any column above
+    // INT_MAX - 2000 -- undefined behaviour, reachable from the wire because
+    // readIntField only guaranteed the value fit an `int`. Callers now hold the
+    // schema's much narrower GridPosition domain, but this is the function that
+    // does the arithmetic and it should not depend on being called correctly.
+    return Point((float) ((int64_t) gx + grid.originColumns) * grid.width,
+                 (float) ((int64_t) gy + grid.originRows) * grid.height);
 }
 
 float rightmostEdge(const std::vector<Occupant>& occupants, const Grid& grid) {

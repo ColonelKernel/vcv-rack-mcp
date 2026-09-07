@@ -425,7 +425,7 @@ bool validateOne(json_t* op, const PlanWorld& world, PreviewState& st, Validatio
                 json_t* p = json_object_get(op, "position");
                 int gx = 0, gy = 0;
                 std::string ierr;
-                if (!readIntField(p, "x", gx, ierr) || !readIntField(p, "y", gy, ierr)) {
+                if (!readGridPosition(p, gx, gy, ierr)) {
                     err = {"BAD_REQUEST", "move_module: position " + ierr};
                     return false;
                 }
@@ -917,7 +917,7 @@ private:
             json_t* p = json_object_get(op, "position");
             int gx = 0, gy = 0;
             std::string ierr;
-            if (!readIntField(p, "x", gx, ierr) || !readIntField(p, "y", gy, ierr))
+            if (!readGridPosition(p, gx, gy, ierr))
                 throw std::string("add_module: position " + ierr);
             pos = gridToPixel(gx, gy);
         }
@@ -1097,7 +1097,7 @@ private:
         int gx = 0, gy = 0;
         {
             std::string ierr;
-            if (!readIntField(pos, "x", gx, ierr) || !readIntField(pos, "y", gy, ierr))
+            if (!readGridPosition(pos, gx, gy, ierr))
                 throw std::string("move_module: position " + ierr);
         }
         math::Vec target = gridToPixel(gx, gy);

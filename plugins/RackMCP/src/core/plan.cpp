@@ -179,6 +179,30 @@ bool readIntField(json_t* obj, const char* key, int& out, std::string& err) {
     return true;
 }
 
+bool readIntField(json_t* obj, const char* key, int& out, std::string& err, int min, int max) {
+    int v = 0;
+    if (!readIntField(obj, key, v, err))
+        return false;
+    if (v < min || v > max) {
+        err = std::string("field \"") + key + "\" is outside the allowed range " +
+              std::to_string(min) + ".." + std::to_string(max);
+        return false;
+    }
+    out = v;
+    return true;
+}
+
+bool readGridPosition(json_t* position, int& x, int& y, std::string& err) {
+    int gx = 0, gy = 0;
+    if (!readIntField(position, "x", gx, err, gen::GRID_POSITION_X_MIN, gen::GRID_POSITION_X_MAX))
+        return false;
+    if (!readIntField(position, "y", gy, err, gen::GRID_POSITION_Y_MIN, gen::GRID_POSITION_Y_MAX))
+        return false;
+    x = gx;
+    y = gy;
+    return true;
+}
+
 std::string checkOperationFields(json_t* op) {
     if (!json_is_object(op))
         return "operation is not a JSON object";

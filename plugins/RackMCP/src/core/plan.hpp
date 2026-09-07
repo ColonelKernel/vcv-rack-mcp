@@ -217,6 +217,43 @@ std::string checkDeclaredFields(const char* what, const gen::FieldSpec* fields, 
  */
 bool readIntField(json_t* obj, const char* key, int& out, std::string& err);
 
+/**
+ * The same read, additionally held to the domain the schema declares.
+ *
+ * Fitting an `int` is not the same as being a legal value. `GridPosition` is
+ * x in [-4096, 4096] and y in [-256, 256] (packages/schemas/src/refs.ts), five
+ * orders of magnitude narrower than `int`, and the gap is not cosmetic:
+ * `layout::gridToPixel` adds Rack's 2000-column origin to the column before
+ * scaling it, so `x = INT_MAX` is signed overflow -- undefined behaviour inside
+ * Rack's process -- rather than a module placed far away. The MCP server's Zod
+ * schemas refuse it first, but the threat model
+ * (`docs/security/threat-model.md`, boundary 2) promises the plugin
+ * re-validates every frame, and anything else holding the writer lease reaches
+ * this path directly.
+ *
+ * The bounds are passed in from `gen::` constants generated out of the same Zod
+ * schema, so the two cannot drift.
+ *
+ * @param min lowest accepted value, inclusive.
+ * @param max highest accepted value, inclusive.
+ */
+bool readIntField(json_t* obj, const char* key, int& out, std::string& err, int min, int max);
+
+/**
+ * Reads a whole `GridPosition` -- both axes, each against its own domain.
+ *
+ * A helper rather than two calls at each of the three sites that need one,
+ * because x and y do NOT share a domain (x is [-4096, 4096], y is [-256, 256]),
+ * and a caller pairing the wrong constants would accept every y from 257 to
+ * 4096 while looking exactly like a bounds check.
+ *
+ * @param position the `position` object itself, not the operation containing it.
+ * @return false, with `err` naming the axis and the domain, when either axis is
+ *         absent, is not an integer, or is outside its range. Neither output is
+ *         written unless both axes read cleanly.
+ */
+bool readGridPosition(json_t* position, int& x, int& y, std::string& err);
+
 /** Which of the three parameter targets a `set_parameter` spec names. */
 enum class ParamTargetKind { None, Value, Normalized, Display };
 

@@ -27,6 +27,24 @@ TEST_CASE("grid coordinates convert the way Rack lays out a rack") {
     CHECK(gridToPixel(4, 0, g).x - gridToPixel(3, 0, g).x == doctest::Approx(15.f));
 }
 
+TEST_CASE("a grid column far outside the schema's domain still converts forwards") {
+    // Rack's origin is added to the column before scaling. Done in `int`, that
+    // is signed overflow for any column above INT_MAX - 2000, and the result
+    // came out NEGATIVE -- a module placed to the left of the rack origin by a
+    // request asking for the far right. Widening before the addition is what
+    // makes this arithmetic instead of undefined behaviour.
+    //
+    // gridToPixel is not the enforcement point -- callers hold the value to
+    // GridPosition first -- but it is the function that does the addition, and
+    // it should not depend on being called correctly.
+    const Grid g = rackGrid();
+    CHECK(gridToPixel(2147483647, 0, g).x > gridToPixel(2000000000, 0, g).x);
+    CHECK(gridToPixel(2147483647, 0, g).x > 0.f);
+    CHECK(gridToPixel(0, 2147483647, g).y > 0.f);
+    // And symmetrically at the bottom end.
+    CHECK(gridToPixel(-2147483647 - 1, 0, g).x < 0.f);
+}
+
 TEST_CASE("the grid comes from the caller, so a different grid really is different") {
     // The point of taking Grid as a parameter rather than copying
     // RACK_GRID_WIDTH into core/: nothing here can silently disagree with the

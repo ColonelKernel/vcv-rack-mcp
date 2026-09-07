@@ -780,6 +780,92 @@ TEST_CASE("readIntField accepts the exact edges of int") {
     CHECK(v == -2147483647 - 1);
     json_decref(j);
 }
+
+TEST_CASE("the bounded read holds a grid coordinate to the domain the schema declares") {
+    // Fitting an int is not the same as being legal. INT_MAX is a value
+    // gridToPixel adds Rack's 2000-column origin to, so the unbounded read let
+    // the wire reach a signed overflow inside Rack's process.
+    json_t* j = op("{\"x\":2147483647,\"lo\":-4097,\"hi\":4097,\"ok\":-4096}");
+    int v = -999;
+    std::string err;
+    CHECK_FALSE(readIntField(j, "x", v, err, gen::GRID_POSITION_X_MIN, gen::GRID_POSITION_X_MAX));
+    CHECK(err.find("outside the allowed range") != std::string::npos);
+    // The message has to name the domain: an operator reading it needs to know
+    // what was expected, not merely that something was wrong.
+    CHECK(err.find("-4096..4096") != std::string::npos);
+    CHECK(v == -999); // untouched, exactly as the unbounded read promises
+    CHECK_FALSE(readIntField(j, "lo", v, err, gen::GRID_POSITION_X_MIN, gen::GRID_POSITION_X_MAX));
+    CHECK_FALSE(readIntField(j, "hi", v, err, gen::GRID_POSITION_X_MIN, gen::GRID_POSITION_X_MAX));
+    // Inclusive at both edges, as the Zod .min()/.max() are.
+    CHECK(readIntField(j, "ok", v, err, gen::GRID_POSITION_X_MIN, gen::GRID_POSITION_X_MAX));
+    CHECK(v == -4096);
+    json_decref(j);
+}
+
+TEST_CASE("the bounded read is the narrow one, and y is narrower than x") {
+    // The two axes have different domains; passing the wrong pair would be
+    // silently wrong for every y between 257 and 4096.
+    json_t* j = op("{\"y\":300}");
+    int v = 0;
+    std::string err;
+    CHECK(readIntField(j, "y", v, err, gen::GRID_POSITION_X_MIN, gen::GRID_POSITION_X_MAX));
+    CHECK_FALSE(readIntField(j, "y", v, err, gen::GRID_POSITION_Y_MIN, gen::GRID_POSITION_Y_MAX));
+    CHECK(err.find("-256..256") != std::string::npos);
+    json_decref(j);
+}
+
+TEST_CASE("readGridPosition holds each axis to its own domain") {
+    // The reason this is one helper and not two calls at each of the three
+    // sites: x and y do not share a domain, and a caller that paired the wrong
+    // constants would accept every y from 257 to 4096 while still looking like
+    // a bounds check.
+    json_t* j = op("{\"x\":4096,\"y\":256}");
+    int x = 0, y = 0;
+    std::string err;
+    CHECK(readGridPosition(j, x, y, err));
+    CHECK(x == 4096);
+    CHECK(y == 256);
+
+    json_t* tallY = op("{\"x\":0,\"y\":300}");
+    x = -1;
+    y = -1;
+    CHECK_FALSE(readGridPosition(tallY, x, y, err));
+    CHECK(err.find("\"y\"") != std::string::npos);
+    CHECK(err.find("-256..256") != std::string::npos);
+    // Neither output is written when either axis fails, so a caller that
+    // ignores the return value does not silently place a module at (0, -1).
+    CHECK(x == -1);
+    CHECK(y == -1);
+
+    json_t* wideX = op("{\"x\":2147483647,\"y\":0}");
+    CHECK_FALSE(readGridPosition(wideX, x, y, err));
+    CHECK(err.find("\"x\"") != std::string::npos);
+
+    json_t* noY = op("{\"x\":0}");
+    CHECK_FALSE(readGridPosition(noY, x, y, err));
+    CHECK(err.find("missing required field") != std::string::npos);
+
+    json_decref(j);
+    json_decref(tallY);
+    json_decref(wideX);
+    json_decref(noY);
+}
+
+TEST_CASE("the bounded read still refuses everything the unbounded read refuses") {
+    // Delegation, not a second parser: type, absence and 64-bit range are the
+    // base function's job and must not be re-decided here.
+    json_t* j = op("{\"str\":\"3\",\"real\":3.5,\"null\":null,\"wrap\":4294967299}");
+    int v = -999;
+    std::string err;
+    const char* keys[] = {"str", "real", "null", "wrap", "absent"};
+    for (int i = 0; i < 5; i++) {
+        CHECK_FALSE(readIntField(j, keys[i], v, err, gen::GRID_POSITION_X_MIN,
+                                 gen::GRID_POSITION_X_MAX));
+        CHECK(err.find("outside the allowed range") == std::string::npos);
+    }
+    CHECK(v == -999);
+    json_decref(j);
+}
 #endif
 
 #if RACKMCP_HAVE_JANSSON
