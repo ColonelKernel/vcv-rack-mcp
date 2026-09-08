@@ -105,6 +105,40 @@ describe("tool registry", () => {
     }
   });
 
+  it("no tool accepts an empty string where it accepts a path", () => {
+    // Every path input either names a file or is absent. An empty string is a
+    // malformed value, and every handler that reads one branches on
+    // truthiness, so an accepted "" silently becomes "use the default" -- for
+    // save_patch that meant writing over the current patch instead of
+    // reporting the bad argument.
+    const pathish = /(^|[a-z])[Pp]ath$/;
+    for (const t of TOOLS) {
+      const shape = (t.input as unknown as { shape?: Record<string, unknown> }).shape;
+      if (!shape) continue;
+      for (const key of Object.keys(shape)) {
+        if (!pathish.test(key)) continue;
+        const sample = VALID_TOOL_INPUTS[t.name];
+        const res = t.input.safeParse({ ...sample, [key]: "" });
+        expect(res.success, `${t.name}.${key} should reject an empty path`).toBe(false);
+      }
+    }
+  });
+
+  it("the empty-path scan actually looks at some paths", () => {
+    // Without this the check passes when the key regex stops matching: an
+    // empty population has no violations.
+    const pathish = /(^|[a-z])[Pp]ath$/;
+    const seen: string[] = [];
+    for (const t of TOOLS) {
+      const shape = (t.input as unknown as { shape?: Record<string, unknown> }).shape;
+      if (!shape) continue;
+      for (const key of Object.keys(shape)) if (pathish.test(key)) seen.push(`${t.name}.${key}`);
+    }
+    expect(seen).toContain("save_patch.path");
+    expect(seen).toContain("preview_load_patch.path");
+    expect(seen).toContain("restore_checkpoint.checkpointPath");
+  });
+
   it("there is no generic set_module_data tool", () => {
     expect(getTool("set_module_data")).toBeUndefined();
   });

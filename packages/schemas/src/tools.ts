@@ -375,8 +375,19 @@ export const CreateCheckpointOutput = z
 
 export const SavePatchInput = z
   .object({
-    /** Defaults to the current patch path; error when the patch has no path. */
-    path: z.string().max(4096).optional(),
+    /**
+     * Where to save. OMIT the key to mean "where this patch already lives";
+     * the plugin resolves that and refuses when the patch has no path.
+     *
+     * The floor is not decoration. The handler selects the default branch on
+     * truthiness, so before this an explicit `""` -- what a client building
+     * arguments as `path: userInput || ""` produces from an empty box -- was
+     * silently reinterpreted as "save somewhere I did not specify" and wrote
+     * over the current patch. Asking for the default has to be the absence of
+     * the key, not a malformed value for it. `preview_load_patch` and
+     * `restore_checkpoint` already floor their paths this way.
+     */
+    path: z.string().min(1).max(4096).optional(),
     operationId: Uuid,
   })
   .strict();

@@ -363,7 +363,7 @@ Save the current patch to its current path or a policy-checked .vcv path. Warns 
 
 **Input**
 
-- `path`: string _(max length 4096)_ _(optional)_
+- `path`: string _(min length 1, max length 4096)_ _(optional)_
 - `operationId`: string (uuid) _(required)_
 
 **Output**

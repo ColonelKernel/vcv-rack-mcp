@@ -481,6 +481,26 @@ export const PatchFilePathPayload = z
   })
   .strict();
 
+/**
+ * `patchfile.save` only. Unlike every other path payload this one accepts an
+ * EMPTY path, which means "save where this patch already lives" -- the plugin
+ * substitutes `APP->patch->path` and refuses with PATH_NOT_ALLOWED when the
+ * patch has none.
+ *
+ * Split from `PatchFilePathPayload` rather than loosening it, because
+ * `saveCopy` genuinely requires a destination: it writes a copy and adopts
+ * nothing, so an empty path there would have no meaning to fall back on. The
+ * shipped server has always sent `""` here, so the shared `.min(1)` was a
+ * declaration the server violated on every pathless save.
+ */
+export const PatchFileSavePayload = z
+  .object({
+    scope: Scope,
+    path: z.string().max(4096),
+    operationId: Uuid,
+  })
+  .strict();
+
 export const PatchFileLoadPayload = z
   .object({
     scope: Scope,
@@ -625,7 +645,7 @@ export const BRIDGE_METHODS: Record<BridgeMethod, BridgeMethodSpec> = {
   "txn.preview": { request: TxnPreviewPayload, result: TxnPreviewResult, mutating: false },
   "txn.commit": { request: TxnCommitPayload, result: TxnCommitResult, mutating: true },
   "txn.undoLast": { request: TxnUndoPayload, result: TxnUndoResult, mutating: true },
-  "patchfile.save": { request: PatchFilePathPayload, result: PatchFileResult, mutating: true },
+  "patchfile.save": { request: PatchFileSavePayload, result: PatchFileResult, mutating: true },
   "patchfile.saveCopy": { request: PatchFilePathPayload, result: PatchFileResult, mutating: true },
   "patchfile.load": { request: PatchFileLoadPayload, result: PatchFileResult, mutating: true },
   "patchfile.clear": { request: PatchFileClearPayload, result: PatchFileResult, mutating: true },
