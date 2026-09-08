@@ -384,7 +384,7 @@ disconnects mid-write cannot deliver `SIGPIPE` and terminate Rack.
   security and privacy requirements.
 - [ADR-0001: execution model](../architecture/ADR-0001-execution-model.md) —
   the UI-thread command pump and real-time safety rationale.
-- [Tool reference](../tools/tool-reference.md) — the 29 tools, their error
+- [Tool reference](../tools/tool-reference.md) — the 32 tools, their error
   codes, and which require the writer lease.
 - [Configuration examples](../tools/configuration-examples.md) — how to point
   the server at a Rack user directory and set request deadlines.

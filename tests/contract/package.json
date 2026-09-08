@@ -8,6 +8,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@rackmcp/adapters": "workspace:*",
     "@rackmcp/schemas": "workspace:*"
   }
 }

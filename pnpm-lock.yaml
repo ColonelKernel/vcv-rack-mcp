@@ -99,6 +99,9 @@ importers:
 
   tests/contract:
     dependencies:
+      '@rackmcp/adapters':
+        specifier: workspace:*
+        version: link:../../packages/adapters
       '@rackmcp/schemas':
         specifier: workspace:*
         version: link:../../packages/schemas

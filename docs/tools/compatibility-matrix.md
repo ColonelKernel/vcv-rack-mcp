@@ -230,7 +230,7 @@ Stated plainly, so there is no ambiguity:
 
 ## See also
 
-- [Tool reference](./tool-reference.md) — the 29 MCP tools and their schemas.
+- [Tool reference](./tool-reference.md) — the 32 MCP tools and their schemas.
 - [ADR-0001: execution model](../architecture/ADR-0001-execution-model.md) —
   supported modes, Rack API boundaries, and licensing.
 - [Normative specification](../spec/rack-mcp-spec.md) — §2 verified platform

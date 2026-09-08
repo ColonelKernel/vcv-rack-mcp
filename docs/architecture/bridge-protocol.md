@@ -8,7 +8,7 @@ public [MCP tool surface](../tools/tool-reference.md) into the internal RPC
 calls described here.
 
 > **Scope.** The 19 RPC methods in this document are the plugin's *internal*
-> bridge API. They are **not** the 29 MCP tools. One MCP tool can map to several
+> bridge API. They are **not** the 32 MCP tools. One MCP tool can map to several
 > bridge calls (for example `build_patch` drives `txn.preview` then
 > `txn.commit`), and several bridge methods (`patch.fingerprint`, `metrics.get`)
 > are plumbing that no single tool exposes directly. Never confuse a bridge

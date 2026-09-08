@@ -15,7 +15,7 @@ Verification tiers used below:
 - **Live** — integration smokes in `tests/integration/` that launch the
   installed VCV Rack 2 Pro 2.6.6 against an isolated user directory and drive it
   through the real MCP server over stdio. Verified on **macOS arm64**.
-  `contract-smoke` is the output-contract gate: it calls all 29 tools and
+  `contract-smoke` is the output-contract gate: it calls all 32 tools and
   reads all 6 `rack://` resources, strict-parses every result against the
   schema that surface declares, and fails if a tool or resource in the registry
   goes unexercised. The server's own output validation is deliberately
