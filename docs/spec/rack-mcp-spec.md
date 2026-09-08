@@ -55,9 +55,17 @@ and prompt registration; preview and confirmation-token management; path
 policy enforcement; adapter and recipe loading; error normalization; audit
 logging; client-facing timeouts and idempotency.
 
-Use `serveStdio()` from the MCP TypeScript SDK v2 so modern and supported
-legacy protocol eras work correctly. Never write logs to stdout; stdout is
-reserved for MCP traffic. Write diagnostic logs to stderr.
+Serve over stdio with `StdioServerTransport` from
+`@modelcontextprotocol/sdk`, connected with `server.connect(transport)`. (This
+sentence named a `serveStdio()` from an "SDK v2"; neither exists. The same
+mistake was corrected in ADR-0001, which had named a nonexistent
+`@modelcontextprotocol/server@2.0.0`.) Protocol-era compatibility is the
+server's own work, not the transport's: a spec-legal client may omit
+`arguments` entirely on `tools/call` and `prompts/get`, which the SDK's
+generated Zod shape rejects, so `transport-compat.ts` normalizes it.
+
+Never write logs to stdout; stdout is reserved for MCP traffic. Write
+diagnostic logs to stderr.
 
 ### 3.2 Rack plugin
 
