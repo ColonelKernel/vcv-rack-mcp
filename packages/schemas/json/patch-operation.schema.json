@@ -758,7 +758,8 @@
           "enum": [
             "top",
             "all"
-          ]
+          ],
+          "description": "Which cables to remove from the port. \"all\" removes every cable on it. \"top\" removes exactly one: the last in Rack's internal cable order, which is sorted by destination module and port rather than by when the cables were made, so on an output port with several cables it is not the newest or the visually topmost one. To remove a specific cable, use the \"disconnect\" operation with its id."
         }
       },
       "required": [

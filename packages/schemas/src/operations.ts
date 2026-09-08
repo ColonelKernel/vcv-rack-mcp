@@ -125,7 +125,25 @@ export const DisconnectOp = z
   })
   .strict();
 
-export const DisconnectPortPolicy = z.enum(["top", "all"]);
+/**
+ * Which cables `disconnect_port` removes.
+ *
+ * `"all"` is the one with a stable meaning. `"top"` removes a single cable, and
+ * the description says which one because the wire should not imply a choice the
+ * engine does not offer: Rack keeps its cable vector sorted on (destination
+ * module pointer, destination port), so among several cables leaving one output
+ * port, "top" is decided by a heap address. Deterministic in a session, not
+ * across restarts, and not the visually topmost cable.
+ */
+export const DisconnectPortPolicy = z
+  .enum(["top", "all"])
+  .describe(
+    'Which cables to remove from the port. "all" removes every cable on it. ' +
+      '"top" removes exactly one: the last in Rack\'s internal cable order, which is ' +
+      "sorted by destination module and port rather than by when the cables were made, " +
+      "so on an output port with several cables it is not the newest or the visually " +
+      'topmost one. To remove a specific cable, use the "disconnect" operation with its id.',
+  );
 
 export const DisconnectPortOp = z
   .object({

@@ -326,8 +326,21 @@ struct PlanCable {
  * Cable ids touching `moduleId` at either end, excluding those `removed`
  * already accounts for.
  *
- * Order follows the engine's own cable order, which is semantic: the
- * disconnect_port "top" policy takes the last match.
+ * Order is the caller's, preserved exactly, because `disconnect_port`'s "top"
+ * policy takes the LAST match and so depends on it.
+ *
+ * What that order means, said accurately rather than conveniently: the caller's
+ * order is the engine's, and the engine's is not insertion order. `addCable_NoLock`
+ * sorts its whole cable vector on every add, keyed on `(inputModule POINTER,
+ * inputId)` -- verified in the vendored 2.6.6 dylib, whose comparator
+ * (`__sort4<..., Engine::addCable_NoLock::$_0, ...>` at 0x11e4a8) loads
+ * `[cable+0x8]` and compares it UNSIGNED, then `[cable+0x10]` signed, which per
+ * engine/Cable.hpp:16-17 is exactly those two fields. So for the one case where
+ * "top" chooses among several -- a fan-out from a single output port -- the key
+ * is the destination module's heap address, which is allocation-order and not
+ * reproducible across sessions. It is deterministic within one, and that is all
+ * it is. A caller that means a particular cable should name it with `disconnect`;
+ * a caller that means all of them should say `"all"`.
  */
 std::vector<int64_t> cablesOnModule(const std::vector<PlanCable>& cables,
                                     const std::vector<int64_t>& removed, int64_t moduleId);

@@ -390,6 +390,37 @@ TEST_CASE("cables on a port distinguish input from output") {
     CHECK(cablesOnPort(patch(), none, 2, "sideways", 0).empty());
 }
 
+TEST_CASE("a fan-out keeps the caller's order, which is what \"top\" selects from") {
+    // `disconnect_port` with policy "top" takes matches.back(), so the order
+    // this returns IS the choice. Pin it: an implementation that sorted, or
+    // that gathered hits by walking a set, would change which cable a "top"
+    // disconnect removes without changing any other behaviour.
+    //
+    // Three cables leave module 5's output 0 for three different destinations.
+    // The header explains why the caller's order is not insertion order and
+    // what "top" therefore means; here we only guarantee that whatever order
+    // arrives, arrives intact.
+    std::vector<PlanCable> fan;
+    fan.push_back(PlanCable::connected(200, 5, 0, 10, 0));
+    fan.push_back(PlanCable::connected(201, 5, 0, 11, 0));
+    fan.push_back(PlanCable::connected(202, 5, 0, 12, 0));
+    const std::vector<int64_t> none;
+    CHECK(cablesOnPort(fan, none, 5, "output", 0) == std::vector<int64_t>({200, 201, 202}));
+
+    // Reversed input, reversed output: nothing re-orders on the way through.
+    std::vector<PlanCable> reversed;
+    reversed.push_back(fan[2]);
+    reversed.push_back(fan[1]);
+    reversed.push_back(fan[0]);
+    CHECK(cablesOnPort(reversed, none, 5, "output", 0) == std::vector<int64_t>({202, 201, 200}));
+
+    // And a cable an earlier operation removed drops out without disturbing the
+    // rest, so "top" after a disconnect is the last SURVIVING match.
+    std::vector<int64_t> removed;
+    removed.push_back(202);
+    CHECK(cablesOnPort(fan, removed, 5, "output", 0) == std::vector<int64_t>({200, 201}));
+}
+
 TEST_CASE("a detached cable end is not a connection") {
     // The engine can hold a cable with an end unattached, and hasOutput/hasInput
     // are what say so. The id beside a cleared flag must never be read: a
