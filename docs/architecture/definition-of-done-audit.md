@@ -178,15 +178,35 @@ are deliberate and recorded here rather than papered over.
   (`plugins/RackMCP/src/rackside/Transaction.cpp`), which is a deliberate
   narrowing: previously a plan containing it previewed successfully and then
   threw at commit, so preview and commit now agree exactly, at the cost of the
-  operation being unavailable. Implementing it undoably inside one history action
-  is not settled by the vendored Rack SDK headers — `ModuleWidget::cloneAction`
-  pushes its own action straight onto `APP->history`, which would escape the
-  transaction's rollback, and whether `Module::fromJson` overwrites the module id
-  cannot be determined from headers alone; guessing risked corrupting the engine
-  id map. Duplicating a module today means `add_module` plus explicit
-  `set_parameter` / `connect` operations, which does not carry over opaque module
-  storage. Callers that previously sent `duplicate_module` will now fail at
-  preview instead of at commit.
+  operation being unavailable.
+
+  **The SDK question that originally blocked it is now settled**, and this
+  paragraph used to say otherwise. It read that "whether `Module::fromJson`
+  overwrites the module id cannot be determined from headers alone" — true of
+  the headers, but the vendored `libRack.dylib` answers it. `Module::fromJson`
+  (`0x11fa48`) loads `this->id` and executes `tbz x8, #0x3f` on it: if the sign
+  bit is clear, meaning `id >= 0`, it branches past the `json_object_get(root,
+  "id")` block entirely and never assigns. `Module::id` is an `int64_t`
+  defaulting to `-1` (`engine/Module.hpp:40`) and is assigned when the module is
+  added to the engine, so letting `Engine::addModule` allocate the clone's id
+  *before* calling `fromJson` is sufficient: the id map cannot be corrupted,
+  because `fromJson` will not touch an id that already exists.
+  `Module::jsonStripIds` is likewise real and exported
+  (`__ZN4rack6engine6Module12jsonStripIdsEP6json_t`), though declared `PRIVATE`
+  in `engine/Module.hpp:471`, so relying on it is a deliberate step outside the
+  supported plugin surface rather than an unknown.
+
+  What remains true is the history problem: `ModuleWidget::cloneAction` pushes
+  its own action straight onto `APP->history`, which would escape the
+  transaction's rollback — so an implementation must follow that method's order
+  while pushing to the transaction's own `ComplexAction`. The operation being
+  unimplemented is therefore a scheduling decision, not an open question about
+  the SDK.
+
+  Duplicating a module today means `add_module` plus explicit `set_parameter` /
+  `connect` operations, which does not carry over opaque module storage. Callers
+  that previously sent `duplicate_module` will now fail at preview instead of at
+  commit.
 - **`set_parameter`'s `smoothMs` is accepted and ignored.** Spec section 7 asks
   for an optional transition duration for non-audio-rate smoothing, and
   `packages/schemas/src/operations.ts` declares the field, but no plugin code
