@@ -16,7 +16,8 @@ import {
   restoreCheckpoint,
   savePatch,
 } from "../src/patchfiles.js";
-import { BRIDGE_METHODS, SavePatchOutput } from "@rackmcp/schemas";
+import { SavePatchOutput } from "@rackmcp/schemas";
+import { expectDeclaredRequests, expectNoStaleDivergences } from "./support/wire.js";
 import type { ToolContext } from "../src/tools.js";
 
 /**
@@ -140,73 +141,15 @@ beforeEach(() => {
   bindServerConfig(ctx, cfg);
 });
 
-/**
- * Divergences between what this server sends and what `BRIDGE_METHODS`
- * declares, each with the reason it is not fixed here. Keyed by the JSON path
- * of the offending field. A stale entry fails, like `CENSUS_EXCEPTIONS`: if the
- * divergence is fixed, the exception has to go with it.
- */
-const KNOWN_REQUEST_DIVERGENCES: { readonly path: string; readonly reason: string }[] = [
-  {
-    path: "scope.patchEpoch",
-    reason:
-      "every scopeFor() hardcodes 0 (patchfiles.ts, telemetry.ts, transactions.ts, the last with " +
-      "a comment saying the scope epoch is advisory), while Scope declares PatchEpoch = min(1). " +
-      "The plugin never reads scope, and the real guard is the separate expectedPatchEpoch field " +
-      "that Handlers.cpp checks -- but spec section 5 requires the epoch in every scope and says " +
-      "to reject stale references, so this is unimplemented rather than speculative. Sending the " +
-      "live epoch changes the wire and needs a fixture recapture: it belongs with Phase 6.",
-  },
-];
-
 afterEach(() => {
-  // Every bridge request this server builds must satisfy the request schema the
-  // same package declares for that method. Nothing validates outbound frames at
-  // runtime -- the plugin only checks the generated required-field table, which
-  // tests presence and JSON type, not domain -- so a divergence ships silently.
-  // Two already had: `module.inspect` went out without the declared `scope`,
-  // and `patchfile.save` went out with `path: ""` against a `.min(1)`.
-  //
-  // It rides on afterEach rather than on each test so a new test cannot forget
-  // it, and FakeBridge already records every call.
-  const excused = new Set(KNOWN_REQUEST_DIVERGENCES.map((d) => d.path));
-  const hit = new Set<string>();
-  for (const call of bridge.calls) {
-    const spec = BRIDGE_METHODS[call.method as keyof typeof BRIDGE_METHODS];
-    expect(spec, `${call.method} is not a declared bridge method`).toBeDefined();
-    const res = spec.request.safeParse(call.payload);
-    if (res.success) continue;
-    const unexcused = res.error.issues.filter((i) => {
-      const at = i.path.join(".");
-      if (!excused.has(at)) return true;
-      hit.add(at);
-      return false;
-    });
-    expect(
-      unexcused,
-      `${call.method} request does not match its declared schema`,
-    ).toEqual([]);
-  }
-  for (const at of hit) EXCUSED_SEEN.add(at);
+  // Free coverage: FakeBridge already receives every payload the handlers
+  // build, and nothing else in the repo checks an outbound frame.
+  expectDeclaredRequests(bridge.calls);
   rmSync(dir, { recursive: true, force: true });
 });
 
-/**
- * Stale exceptions fail, across the suite rather than per test: a divergence
- * that has been fixed must not keep its excuse, or the next one to appear at
- * the same path is silently excused too. Checked once at the end because not
- * every test makes a call that carries the offending field.
- */
-const EXCUSED_SEEN = new Set<string>();
-afterAll(() => {
-  for (const d of KNOWN_REQUEST_DIVERGENCES) {
-    expect(
-      EXCUSED_SEEN.has(d.path),
-      `${d.path} no longer diverges from its declared schema; remove it from ` +
-        `KNOWN_REQUEST_DIVERGENCES`,
-    ).toBe(true);
-  }
-});
+// This file exercises every excused path, so it owns the staleness check.
+afterAll(expectNoStaleDivergences);
 
 async function loadToken(name = "song.vcv"): Promise<string> {
   const res = (await previewLoadPatch({ path: join(cfg.patchesDir, name) }, ctx)) as PreviewResult;
