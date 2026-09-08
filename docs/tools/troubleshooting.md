@@ -26,6 +26,12 @@ Two more things to read on a failed mutating call:
   pre-transaction value; `"indeterminate"` (which comes with `ROLLBACK_FAILED` and
   `mutationMayHaveOccurred: true`) means it could not, and the patch may be partly
   changed — re-read the snapshot before doing anything else.
+  `inversesExecuted` counts **inverse actions**, not plan operations: one
+  `remove_module` with three cables attached contributes four inverses, and a
+  `set_bypass` on a module already in the requested state contributes none. Read it
+  against `failedOperationIndex` — a rollback that stopped early shows an
+  `inversesExecuted` short of what the operations up to that index pushed, and
+  `detail` then names the inverse that refused.
 
 For the full tool contract see the [tool reference](./tool-reference.md); for server
 setup see the [configuration examples](./configuration-examples.md).

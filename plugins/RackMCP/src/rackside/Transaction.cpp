@@ -18,6 +18,7 @@
 #include "core/canonical.hpp"
 #include "core/layout.hpp"
 #include "core/plan.hpp"
+#include "core/rollback.hpp"
 #include "core/frames.hpp"
 #include "rackside/RackBridge.hpp"
 #include "rackside/Snapshot.hpp"
@@ -1357,23 +1358,17 @@ TxnOutcome txnCommit(json_t* request) {
         // proven against the pre-transaction fingerprint, never assumed: an
         // inverse can throw, and a half-applied operation (an engine module
         // whose widget never materialized, say) has no inverse at all.
-        std::string rollbackDetail;
-        bool rollbackThrew = false;
-        try {
-            complex->undo();
-        }
-        catch (const std::string& e) {
-            rollbackThrew = true;
-            rollbackDetail = e;
-        }
-        catch (const std::exception& e) {
-            rollbackThrew = true;
-            rollbackDetail = e.what();
-        }
-        catch (...) {
-            rollbackThrew = true;
-            rollbackDetail = "an inverse action threw";
-        }
+        //
+        // Run the inverses here rather than calling ComplexAction::undo, which
+        // is the same reverse loop with no bookkeeping (confirmed against the
+        // shipped libRack, whose header only declares it). The difference is
+        // that this one can be counted: undo() reports nothing, and the list
+        // length is unreadable afterwards because the ComplexAction is deleted
+        // before the report is packed -- and would over-report anyway, since a
+        // throwing inverse abandons every older one behind it.
+        const InverseRun rollback = runInverses(complex->actions);
+        const bool rollbackThrew = rollback.threw;
+        std::string rollbackDetail = rollback.detail;
         delete complex;
 
         bool restored = false;
@@ -1407,7 +1402,7 @@ TxnOutcome txnCommit(json_t* request) {
         json_t* rb = json_pack("{s:s, s:i, s:i, s:s}", "rolledBack",
                                restored ? "complete" : "indeterminate", "failedOperationIndex",
                                (int) applier.currentIndex, "inversesExecuted",
-                               (int) applier.applied.size(), "detail", detail.c_str());
+                               (int) rollback.executed, "detail", detail.c_str());
         out.payload = json_object();
         json_object_set_new(out.payload, "rollback", rb);
         return out;

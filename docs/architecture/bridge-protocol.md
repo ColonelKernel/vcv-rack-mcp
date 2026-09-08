@@ -255,7 +255,18 @@ and `detail` — grafted onto the error object by the plugin after the frame is
 built. `rolledBack` is `"complete"` only when the post-rollback patch
 fingerprint proves the pre-transaction state was restored; otherwise the code is
 `ROLLBACK_FAILED`, `rolledBack` is `"indeterminate"`, and
-`mutationMayHaveOccurred` is true. A `details` object is carried through the
+`mutationMayHaveOccurred` is true.
+
+`failedOperationIndex` and `inversesExecuted` count different things, and the
+gap between them is the useful part. `failedOperationIndex` is the index in the
+submitted plan of the operation that threw. `inversesExecuted` is the number of
+**inverse actions** whose undo returned normally, counted as they ran — one plan
+operation pushes anywhere from zero inverses (`set_bypass` on a module already
+in the requested state) to many (`remove_module` pushes one per attached cable
+plus one for the module), and the failing operation's own partial work has
+inverses too. Inverses run newest-first and stop at the first one that throws,
+so an `inversesExecuted` short of what the plan pushed means the rollback
+stalled, and `detail` names the reason. A `details` object is carried through the
 same path if a handler supplies one, though no bridge handler emits one today.
 No other key survives: the wire error schema is strict, so the plugin copies
 only `rollback` and `details`, and drops both rather than the error itself if

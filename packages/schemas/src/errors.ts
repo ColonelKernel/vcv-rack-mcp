@@ -7,7 +7,18 @@ import { z } from "zod";
 export const RollbackReport = z
   .object({
     rolledBack: z.enum(["complete", "indeterminate"]),
+    /** Index in the submitted plan of the operation that failed. */
     failedOperationIndex: z.number().int().min(0),
+    /**
+     * Inverse actions whose undo returned normally, counted as they ran.
+     *
+     * NOT the number of plan operations rolled back, which is what the plugin
+     * used to send: one operation pushes zero inverses (a redundant
+     * `set_bypass`) to many (`remove_module` pushes one per attached cable plus
+     * one for the module), and the failing operation's own partial work has
+     * inverses too. Inverses run newest-first and stop at the first throw, so a
+     * count short of what the plan pushed means the rollback stalled.
+     */
     inversesExecuted: z.number().int().min(0),
     detail: z.string().max(4096),
   })
