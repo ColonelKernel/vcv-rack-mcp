@@ -754,7 +754,7 @@ export const TOOLS: readonly ToolSpec[] = [
     name: "create_checkpoint",
     title: "Create checkpoint",
     description:
-      "Save a checkpoint copy of the current patch into the RackMCP checkpoints directory without changing the current patch path or save state.",
+      "Save a checkpoint copy of the current patch into the RackMCP checkpoints directory without changing the current patch path or save state. The name is claimed before writing, so two checkpoints made in the same millisecond with the same label get separate files rather than one overwriting the other.",
     input: CreateCheckpointInput,
     output: CreateCheckpointOutput,
     annotations: MUT(false, true),
@@ -763,7 +763,7 @@ export const TOOLS: readonly ToolSpec[] = [
     name: "save_patch",
     title: "Save patch",
     description:
-      "Save the current patch to its current path or a policy-checked .vcv path. Warns when the saved patch lacks a Bridge module and therefore cannot reconnect after restart.",
+      "Save the current patch to its current path or a policy-checked .vcv path inside the patches root. Refuses a path in the checkpoints root: checkpoints are written by create_checkpoint. Warns when the saved patch lacks a Bridge module and therefore cannot reconnect after restart.",
     input: SavePatchInput,
     output: SavePatchOutput,
     annotations: MUT(true, true),
@@ -772,7 +772,7 @@ export const TOOLS: readonly ToolSpec[] = [
     name: "preview_load_patch",
     title: "Preview load patch",
     description:
-      "Preview loading a .vcv patch: path policy, unsaved-work risk, recovery-checkpoint plan and a confirmation token. Nothing is loaded.",
+      "Preview loading a .vcv patch from the patches root: path policy, unsaved-work risk, recovery-checkpoint plan and a confirmation token. Nothing is loaded. Use restore_checkpoint for a file in the checkpoints root.",
     input: PreviewLoadPatchInput,
     output: PreviewLoadPatchOutput,
     annotations: RO,
@@ -808,7 +808,7 @@ export const TOOLS: readonly ToolSpec[] = [
     name: "restore_checkpoint",
     title: "Restore checkpoint",
     description:
-      "Restore a previously created checkpoint. Called without a confirmation token it returns a preview and token only; called with the token it creates a recovery checkpoint of the current state and then loads the checkpoint.",
+      "Restore a previously created checkpoint. Called without a confirmation token it returns a preview and token only; called with the token it creates a recovery checkpoint of the current state and then loads the checkpoint. The restored patch has no file path, so it cannot be saved over the checkpoint: save it with save_patch and an explicit path.",
     input: RestoreCheckpointInput,
     output: RestoreCheckpointOutput,
     annotations: MUT(true, true),

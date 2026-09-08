@@ -1,5 +1,17 @@
-import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { platform } from "node:os";
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  realpathSync,
+  rmSync,
+  statSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
@@ -7,10 +19,13 @@ import type { ServerConfig } from "../src/config.js";
 import type { ConnectionManager, SelectedInstance } from "../src/connection.js";
 import { ToolError } from "../src/errors.js";
 import { TransactionManager } from "../src/transactions.js";
+import { releaseCheckpointReservation, reserveCheckpointPath } from "../src/paths.js";
 import {
   bindServerConfig,
   commitClearPatch,
+  listPatchFiles,
   commitLoadPatch,
+  createCheckpoint,
   previewClearPatch,
   previewLoadPatch,
   restoreCheckpoint,
@@ -145,6 +160,10 @@ afterEach(() => {
   // Free coverage: FakeBridge already receives every payload the handlers
   // build, and nothing else in the repo checks an outbound frame.
   expectDeclaredRequests(bridge.calls);
+  // Here rather than at the end of each test body: a failing assertion throws
+  // past a trailing restore, and a leaked `Date.now` mock would then decide the
+  // outcome of every test after it.
+  vi.restoreAllMocks();
   rmSync(dir, { recursive: true, force: true });
 });
 
@@ -439,5 +458,338 @@ describe("save_patch reports where it saved", () => {
     };
     expect(SavePatchOutput.safeParse(shaped).success).toBe(false);
     expect(SavePatchOutput.safeParse({ ...shaped, path: "/p.vcv" }).success).toBe(true);
+  });
+});
+
+describe("a checkpoint is contents, not an identity", () => {
+  /**
+   * `commitLoadOrClear` sent `setPath: true` for a restore as well as a load,
+   * so `APP->patch->path` became the checkpoint file. Both `save_patch` with no
+   * path and Rack's own Cmd/Ctrl+S write to that member, so restoring a
+   * recovery point and then saving overwrote the recovery point -- the one file
+   * whose whole job is to still be there.
+   */
+  it("restores without adopting the checkpoint as the patch path", async () => {
+    const token = await restoreToken("cp-a.vcv");
+    await restoreCheckpoint(
+      {
+        checkpointPath: join(cfg.checkpointsDir, "cp-a.vcv"),
+        confirmationToken: token,
+        operationId: randomUUID(),
+      },
+      ctx,
+    );
+    expect(bridge.payloadsFor("patchfile.load")[0]!.setPath).toBe(false);
+  });
+
+  it("still adopts the path for an ordinary load, which is what a load means", async () => {
+    const token = await loadToken();
+    await commitLoadPatch({ confirmationToken: token, operationId: randomUUID() }, ctx);
+    expect(bridge.payloadsFor("patchfile.load")[0]!.setPath).toBe(true);
+  });
+});
+
+describe("each root has exactly one door", () => {
+  // `restoreCheckpoint` refused a source outside the checkpoints root and
+  // nothing enforced the other three directions, which is how an ordinary save
+  // could masquerade as a checkpoint and a load could adopt one.
+  it("refuses to save into the checkpoints root", async () => {
+    await expectCode(
+      savePatch({ path: join(cfg.checkpointsDir, "cp-a.vcv"), operationId: randomUUID() }, ctx),
+      "PATH_NOT_ALLOWED",
+    );
+    expect(bridge.methods()).not.toContain("patchfile.save");
+  });
+
+  it("refuses to save into the checkpoints root even under a new name", async () => {
+    await expectCode(
+      savePatch({ path: join(cfg.checkpointsDir, "sneaky.vcv"), operationId: randomUUID() }, ctx),
+      "PATH_NOT_ALLOWED",
+    );
+  });
+
+  it("still saves into the patches root", async () => {
+    const target = join(cfg.patchesDir, "song.vcv");
+    bridge.resolvedPath = target;
+    await expect(savePatch({ path: target, operationId: randomUUID() }, ctx)).resolves.toBeDefined();
+  });
+
+  it("refuses to load a checkpoint through preview_load_patch", async () => {
+    await expectCode(
+      previewLoadPatch({ path: join(cfg.checkpointsDir, "cp-a.vcv") }, ctx),
+      "PATH_NOT_ALLOWED",
+    );
+  });
+
+  it("refuses at commit too, not only at the mint", async () => {
+    // `commit_load_patch` takes its path from the token alone -- there is no
+    // argument to re-check it against -- so without this the mint is the only
+    // thing standing between a confirmation and a load of any resolvable file.
+    // Unreachable through the shipped tools, which is the point: the guard is
+    // here so a future mint cannot quietly become the whole policy.
+    const token = await loadToken();
+    vi.spyOn(ctx.txns, "verifyLoadToken").mockReturnValue({
+      instanceId: INSTANCE.instanceId,
+      sessionId: INSTANCE.sessionId,
+      kind: "load",
+      path: join(cfg.checkpointsDir, "cp-a.vcv"),
+      patchEpoch: bridge.patchEpoch,
+      fingerprint: bridge.fingerprint,
+    });
+    await expectCode(
+      commitLoadPatch({ confirmationToken: token, operationId: randomUUID() }, ctx),
+      "PATH_NOT_ALLOWED",
+    );
+    expect(bridge.methods()).not.toContain("patchfile.load");
+  });
+});
+
+describe("a checkpoint name is claimed, not computed", () => {
+  /**
+   * The name is a lossy encoding of (millisecond, label) three times over --
+   * millisecond resolution, `[^A-Za-z0-9_-]` collapsed to `_`, and a 40-char
+   * cut -- and `savePatchAtomic` renames over whatever is at the destination.
+   * Two `create_checkpoint` calls that collide destroy one recovery point, and
+   * there is no retention anywhere to keep a second copy.
+   */
+  const FIXED = Date.parse("2026-09-08T12:00:00.000Z");
+
+  function freezeClock(): void {
+    vi.spyOn(Date, "now").mockReturnValue(FIXED);
+  }
+
+  it("gives two same-millisecond checkpoints different files", async () => {
+    freezeClock();
+    const a = (await createCheckpoint({ label: "same", operationId: randomUUID() }, ctx)) as {
+      checkpointPath: string;
+    };
+    const b = (await createCheckpoint({ label: "same", operationId: randomUUID() }, ctx)) as {
+      checkpointPath: string;
+    };
+    expect(b.checkpointPath).not.toBe(a.checkpointPath);
+    expect(existsSync(a.checkpointPath)).toBe(true);
+    expect(existsSync(b.checkpointPath)).toBe(true);
+  });
+
+  it("separates labels that sanitisation would otherwise merge", async () => {
+    freezeClock();
+    const a = (await createCheckpoint({ label: "a/b", operationId: randomUUID() }, ctx)) as {
+      checkpointPath: string;
+    };
+    const b = (await createCheckpoint({ label: "a:b", operationId: randomUUID() }, ctx)) as {
+      checkpointPath: string;
+    };
+    expect(b.checkpointPath).not.toBe(a.checkpointPath);
+  });
+
+  it("separates labels that truncation would otherwise merge", async () => {
+    freezeClock();
+    const long = "x".repeat(40);
+    const a = (await createCheckpoint({ label: long + "AAA", operationId: randomUUID() }, ctx)) as {
+      checkpointPath: string;
+    };
+    const b = (await createCheckpoint({ label: long + "BBB", operationId: randomUUID() }, ctx)) as {
+      checkpointPath: string;
+    };
+    expect(b.checkpointPath).not.toBe(a.checkpointPath);
+  });
+
+  it("does not leave an empty .vcv behind when the save never lands", async () => {
+    freezeClock();
+    bridge.saveCopyError = new ToolError("INTERNAL", "disk full");
+    await expectCode(createCheckpoint({ label: "doomed", operationId: randomUUID() }, ctx), "INTERNAL");
+    const stray = readdirSync(cfg.checkpointsDir).filter((f) => /doomed/.test(f));
+    expect(stray).toEqual([]);
+  });
+
+  it("does not leave one behind when the recovery checkpoint fails either", async () => {
+    const token = await loadToken();
+    bridge.saveCopyError = new ToolError("INTERNAL", "disk full");
+    await expectCode(
+      commitLoadPatch({ confirmationToken: token, operationId: randomUUID() }, ctx),
+      "INTERNAL",
+    );
+    const stray = readdirSync(cfg.checkpointsDir).filter((f) => /recovery/.test(f));
+    expect(stray).toEqual([]);
+  });
+
+  it("keeps a checkpoint the plugin did write, whatever else went wrong", () => {
+    // The release is guarded on emptiness on purpose: once the archive has
+    // landed, the file is a recovery point and outranks any tidying.
+    const kept = join(cfg.checkpointsDir, "cp-a.vcv");
+    expect(statSync(kept).size).toBeGreaterThan(0);
+    releaseCheckpointReservation(kept);
+    expect(existsSync(kept)).toBe(true);
+  });
+});
+
+describe("a reservation is only taken back when the plugin says it wrote nothing", () => {
+  /**
+   * `releaseCheckpointReservation` is `statSync` then `unlinkSync` -- two
+   * syscalls, so a write landing between them is deleted. What makes that safe
+   * is not the size guard alone but WHEN it runs: `savePatchAtomic` archives
+   * into a sibling temp and renames only on success, so an error the plugin
+   * reports proves the destination is untouched. A timeout proves nothing --
+   * the UI thread may still be saving, and the deadline only bounds this side.
+   */
+  it("keeps the reservation when the call timed out", async () => {
+    bridge.saveCopyError = new ToolError("TIMEOUT", "the plugin did not answer in time");
+    await expectCode(createCheckpoint({ label: "slow", operationId: randomUUID() }, ctx), "TIMEOUT");
+    const left = readdirSync(cfg.checkpointsDir).filter((f) => /slow/.test(f));
+    expect(left.length, "a timed-out save may still be in flight").toBe(1);
+    expect(statSync(join(cfg.checkpointsDir, left[0]!)).size).toBe(0);
+  });
+
+  it("keeps it when the connection dropped, for the same reason", async () => {
+    bridge.saveCopyError = new ToolError("RACK_DISCONNECTED", "the bridge went away");
+    await expectCode(
+      createCheckpoint({ label: "gone", operationId: randomUUID() }, ctx),
+      "RACK_DISCONNECTED",
+    );
+    expect(readdirSync(cfg.checkpointsDir).filter((f) => /gone/.test(f)).length).toBe(1);
+  });
+
+  it("but a file the write never reached is not offered as something to restore", async () => {
+    // Which is what makes leaving it harmless: an empty .vcv is refused on the
+    // read side, because loading one clears the patch and then throws.
+    bridge.saveCopyError = new ToolError("TIMEOUT", "the plugin did not answer in time");
+    await expectCode(createCheckpoint({ label: "slow", operationId: randomUUID() }, ctx), "TIMEOUT");
+    const left = readdirSync(cfg.checkpointsDir).find((f) => /slow/.test(f))!;
+    await expectCode(
+      restoreCheckpoint(
+        { checkpointPath: join(cfg.checkpointsDir, left), operationId: randomUUID() },
+        ctx,
+      ),
+      "PATH_NOT_ALLOWED",
+    );
+  });
+
+  it("refuses an empty patch file on the load side too", async () => {
+    writeFileSync(join(cfg.patchesDir, "truncated.vcv"), "");
+    await expectCode(
+      previewLoadPatch({ path: join(cfg.patchesDir, "truncated.vcv") }, ctx),
+      "PATH_NOT_ALLOWED",
+    );
+  });
+});
+
+describe("the recovery-checkpoint failure contract covers the whole checkpoint write", () => {
+  /**
+   * Claiming the name is now the first thing that touches the checkpoints
+   * directory, so the cause the contract names -- a full or unwritable
+   * checkpoints dir -- reaches the reservation before it reaches the plugin.
+   * Taken outside the try, it escaped as a bare error that never said the load
+   * had not happened, and with `retrySafe` inverted.
+   */
+  const posix = platform() !== "win32";
+
+  it.skipIf(!posix)("wraps an unwritable checkpoints directory, and aborts the load", async () => {
+    const token = await loadToken();
+    chmodSync(cfg.checkpointsDir, 0o500);
+    try {
+      await expect(
+        commitLoadPatch({ confirmationToken: token, operationId: randomUUID() }, ctx),
+      ).rejects.toThrow(/recovery checkpoint could not be created/);
+    } finally {
+      chmodSync(cfg.checkpointsDir, 0o700);
+    }
+    expect(bridge.methods()).not.toContain("patchfile.load");
+  });
+
+  it.skipIf(!posix)("reports it as retry-safe, because nothing was mutated", async () => {
+    const token = await loadToken();
+    chmodSync(cfg.checkpointsDir, 0o500);
+    let caught: ToolError | null = null;
+    try {
+      await commitLoadPatch({ confirmationToken: token, operationId: randomUUID() }, ctx);
+    } catch (e) {
+      caught = e as ToolError;
+    } finally {
+      chmodSync(cfg.checkpointsDir, 0o700);
+    }
+    expect(caught).toBeInstanceOf(ToolError);
+    expect(caught!.retrySafe).toBe(true);
+    // And the confirmation survives, so fixing the directory is enough.
+    await expect(
+      commitLoadPatch({ confirmationToken: token, operationId: randomUUID() }, ctx),
+    ).resolves.toBeDefined();
+  });
+
+  it.skipIf(!posix)("does not answer PATH_NOT_ALLOWED for a path that is inside the root", async () => {
+    // The published remedy for that code is "use a path within the configured
+    // roots", which cannot fix a read-only directory.
+    chmodSync(cfg.checkpointsDir, 0o500);
+    let caught: ToolError | null = null;
+    try {
+      await createCheckpoint({ label: "nowhere", operationId: randomUUID() }, ctx);
+    } catch (e) {
+      caught = e as ToolError;
+    } finally {
+      chmodSync(cfg.checkpointsDir, 0o700);
+    }
+    expect(caught!.code).toBe("INTERNAL");
+    expect(caught!.message).toMatch(/checkpoints directory writable/);
+  });
+});
+
+describe("reserveCheckpointPath", () => {
+  it("creates the file it returns, rather than promising a free name", () => {
+    // The distinction the whole function exists for. A `existsSync`-then-return
+    // implementation passes every test that only compares two names; this one
+    // fails it, because there would be nothing on disk to collide with.
+    const first = reserveCheckpointPath(cfg, "claimed", 1_760_000_000_000);
+    expect(existsSync(first)).toBe(true);
+    expect(statSync(first).size).toBe(0);
+    const second = reserveCheckpointPath(cfg, "claimed", 1_760_000_000_000);
+    expect(second).not.toBe(first);
+    expect(existsSync(second)).toBe(true);
+    // Atomicity itself cannot be shown in-process -- `wx` is what closes the
+    // window between deciding a name is free and taking it, and no single-
+    // threaded test can be inside that window. What is pinned here is that the
+    // name is taken at all.
+  });
+
+  it("never hands out a name that already holds a checkpoint", () => {
+    const taken = reserveCheckpointPath(cfg, "occupied", 1_760_000_000_000);
+    writeFileSync(taken, "a real archive");
+    const next = reserveCheckpointPath(cfg, "occupied", 1_760_000_000_000);
+    expect(next).not.toBe(taken);
+    expect(statSync(taken).size).toBeGreaterThan(0);
+  });
+});
+
+describe("one file, one name", () => {
+  /**
+   * `create_checkpoint` builds its name on the realpath'd root and
+   * `list_patch_files` joined the configured string, so under a symlinked root
+   * the same file came back under two names and a client tracking checkpoints
+   * by path saw two. Not hypothetical: every macOS temp dir is reached through
+   * `/var -> private/var`, which is why this file realpaths its own temp dir at
+   * the top -- and why the roots have to be reached through a link here for the
+   * check to mean anything.
+   */
+  function throughASymlink(): ServerConfig {
+    const real = join(dir, "real-user-dir");
+    mkdirSync(join(real, "patches"), { recursive: true });
+    mkdirSync(join(real, "RackMCP", "checkpoints"), { recursive: true });
+    const link = join(dir, "linked-user-dir");
+    symlinkSync(real, link, "dir");
+    return configFor(link);
+  }
+
+  it("lists a checkpoint under the same path create_checkpoint returned", async () => {
+    const linked = throughASymlink();
+    bindServerConfig(ctx, linked);
+    expect(linked.checkpointsDir).not.toBe(realpathSync.native(linked.checkpointsDir));
+
+    const made = (await createCheckpoint({ label: "named", operationId: randomUUID() }, ctx)) as {
+      checkpointPath: string;
+    };
+    const listed = (await listPatchFiles({ root: "checkpoints" }, ctx)) as {
+      files: { path: string }[];
+      roots: { checkpoints: string };
+    };
+    expect(listed.files.map((f) => f.path)).toContain(made.checkpointPath);
+    expect(made.checkpointPath.startsWith(listed.roots.checkpoints)).toBe(true);
   });
 });

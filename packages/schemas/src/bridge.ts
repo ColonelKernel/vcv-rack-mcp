@@ -505,7 +505,17 @@ export const PatchFileLoadPayload = z
   .object({
     scope: Scope,
     path: z.string().min(1).max(4096),
-    /** When true the loaded path becomes the current patch path. */
+    /**
+     * Whether the loaded file becomes the patch's identity.
+     *
+     * `true` for `commit_load_patch`: the user named a patch and it is now the
+     * open one, so `save_patch` with no path and Rack's Cmd/Ctrl+S write back
+     * to it. `false` for `restore_checkpoint`, which loads contents from a
+     * recovery point that must not become a save target -- restoring and then
+     * saving used to overwrite the checkpoint. On `false` the plugin sets the
+     * path empty rather than leaving it, so a `"path"` key inside the archive
+     * cannot supply one.
+     */
     setPath: z.boolean().default(true),
     operationId: Uuid,
   })

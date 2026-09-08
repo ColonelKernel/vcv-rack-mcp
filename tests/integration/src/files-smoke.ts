@@ -59,6 +59,20 @@ try {
   const checkpoint = await client.call("create_checkpoint", { label: "manual", operationId: randomUUID() });
   ok("checkpoint created", typeof checkpoint.checkpointPath === "string" && (checkpoint.checkpointPath as string).endsWith(".vcv"));
 
+  // Two checkpoints with the same label must be two files. The name encodes
+  // (millisecond, sanitised label, truncated to 40) and the plugin renames over
+  // whatever is at the destination, so a collision silently destroys a recovery
+  // point -- and nothing keeps a second copy.
+  const twinA = await client.call("create_checkpoint", { label: "twin", operationId: randomUUID() });
+  const twinB = await client.call("create_checkpoint", { label: "twin", operationId: randomUUID() });
+  ok("same-label checkpoints get distinct files",
+     twinA.checkpointPath !== twinB.checkpointPath,
+     `${String(twinA.checkpointPath)} vs ${String(twinB.checkpointPath)}`);
+  const bothListed = (await client.call("list_patch_files", { root: "checkpoints" })).files as Array<Record<string, unknown>>;
+  ok("both twins were written",
+     [twinA, twinB].every((t) => bothListed.some((f) => f.path === t.checkpointPath && (f.sizeBytes as number) > 0)),
+     JSON.stringify(bothListed.map((f) => [f.name, f.sizeBytes])));
+
   // Path policy: outside roots and non-.vcv are rejected.
   ok("save outside roots rejected",
     (await client.expectError("save_patch", { path: "/etc/passwd", operationId: randomUUID() })).code === "PATH_NOT_ALLOWED");
@@ -66,6 +80,18 @@ try {
     (await client.expectError("save_patch", { path: join(harness.userDir, "patches", "x.txt"), operationId: randomUUID() })).code === "PATH_NOT_ALLOWED");
   ok("URL path rejected",
     (await client.expectError("preview_load_patch", { path: "https://evil.example/patch.vcv" })).code === "PATH_NOT_ALLOWED");
+
+  // Each root has exactly one door. restore_checkpoint already refused a
+  // patches-root source; these are the other three directions, which nothing
+  // enforced -- so an ordinary save could overwrite a recovery point and be
+  // listed as one, and a load could adopt a checkpoint as the patch path.
+  ok("save into the checkpoints root rejected",
+    (await client.expectError("save_patch", { path: checkpoint.checkpointPath, operationId: randomUUID() })).code === "PATH_NOT_ALLOWED");
+  ok("load of a checkpoint through preview_load_patch rejected",
+    (await client.expectError("preview_load_patch", { path: checkpoint.checkpointPath })).code === "PATH_NOT_ALLOWED");
+  const stillThere = (await client.call("list_patch_files", { root: "checkpoints" })).files as Array<Record<string, unknown>>;
+  ok("the refused save left the checkpoint intact",
+     stillThere.some((f) => f.path === checkpoint.checkpointPath && (f.sizeBytes as number) > 0));
 
   // Clear the patch (preview -> commit), then confirm epoch bumped + Bridge reinserted.
   const clearPrev = await client.call("preview_clear_patch", {});
@@ -89,6 +115,10 @@ try {
     operationId: randomUUID(),
   });
   ok("load made a recovery checkpoint", typeof loaded.recoveryCheckpointPath === "string");
+  // A load DOES adopt the file as the patch's identity -- that is what loading
+  // a patch means, and the restore assertions below only mean something if this
+  // half still works.
+  ok("load adopted the loaded file as the patch", loaded.patchName === "roundtrip", String(loaded.patchName));
   ok("load bumped the epoch", (loaded.patchEpoch as number) >= 3, `${loaded.patchEpoch}`);
   const afterLoad = await client.call("get_patch_snapshot", {});
   ok("reloaded patch restores module count", (afterLoad.modules as unknown[]).length === beforeCount, `${(afterLoad.modules as unknown[]).length}`);
@@ -106,6 +136,32 @@ try {
   ok("restore committed", restored.phase === "restored");
   const afterRestore = await client.call("get_patch_snapshot", {});
   ok("restore brought modules back", (afterRestore.modules as unknown[]).length === beforeCount, `${(afterRestore.modules as unknown[]).length}`);
+
+  // A checkpoint is contents, not an identity. Restoring used to point
+  // `APP->patch->path` at the checkpoint, and both `save_patch` with no path
+  // and Rack's own Cmd/Ctrl+S write to that member -- so restoring a recovery
+  // point and then saving overwrote the recovery point. Only a live Rack can
+  // answer this: the path lives in the patch manager, and `patchName` is its
+  // stem (RackBridge.cpp).
+  const checkpointStem = (checkpoint.checkpointPath as string).replace(/^.*[/\\]/, "").replace(/\.vcv$/i, "");
+  const restoredResult = restored.result as Record<string, unknown>;
+  ok("restore did not adopt the checkpoint as the patch",
+     restoredResult.patchName !== checkpointStem && restoredResult.patchName === null,
+     `patchName=${String(restoredResult.patchName)} checkpoint=${checkpointStem}`);
+  const statusAfterRestore = (await client.call("get_rack_status")).status as Record<string, unknown>;
+  ok("status agrees the restored patch has no file",
+     statusAfterRestore.patchName === null,
+     `patchName=${String(statusAfterRestore.patchName)}`);
+  // The consequence that matters: a pathless save can no longer land on the
+  // checkpoint. It is refused instead, which is also what Rack's Save does
+  // (it opens a chooser rather than writing).
+  ok("a pathless save after a restore is refused rather than overwriting the checkpoint",
+    (await client.expectError("save_patch", { operationId: randomUUID() })).code === "PATH_NOT_ALLOWED");
+  const afterAll = (await client.call("list_patch_files", { root: "checkpoints" })).files as Array<Record<string, unknown>>;
+  const cp = afterAll.find((f) => f.path === checkpoint.checkpointPath);
+  ok("the restored checkpoint is still on disk and unchanged in size",
+     cp !== undefined && (cp.sizeBytes as number) > 0,
+     JSON.stringify(cp ?? null));
 } catch (e) {
   checks.fail("FILES SMOKE", String(e));
   console.error("Rack log tail:\n" + harness.logTail());

@@ -424,7 +424,7 @@ others run on Rack's UI thread.
 | `txn.undoLast` | **yes** | Undo the last MCP transaction (guarded by `expectedOperationId`). |
 | `patchfile.save` | **yes** | Save the current patch to a policy-checked path, via a sibling temp file. |
 | `patchfile.saveCopy` | **yes** | Save a copy without changing the current patch path (same temp-file write). |
-| `patchfile.load` | **yes** | Load a patch file (bumps the patch epoch, on success *and* on failure). |
+| `patchfile.load` | **yes** | Load a patch file (bumps the patch epoch, on success *and* on failure). `setPath: false` loads the contents and sets the patch path **empty**, so the file does not become what a pathless save writes to; that is how `restore_checkpoint` keeps a checkpoint from becoming a save target. It is set empty rather than left alone because `patch::Manager::fromJson` adopts a `"path"` key from inside the archive. |
 | `patchfile.clear` | **yes** | Clear to an empty patch (bumps the patch epoch). |
 | `probe.list` | no | List active probe slots. |
 | `probe.read` | no | Read one probe channel's telemetry window. |

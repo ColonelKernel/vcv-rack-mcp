@@ -69,6 +69,37 @@ Checkpoint filenames are timestamp-prefixed and label-suffixed, e.g.
 `[A-Za-z0-9_-]`, truncated to 40 characters, and defaults to `checkpoint` when
 omitted, so a label never escapes the checkpoints directory.
 
+**The name is claimed, not just computed.** That filename is a lossy encoding of
+(timestamp, label) three times over — millisecond resolution, every character
+outside `[A-Za-z0-9_-]` collapsed to `_` (so `a/b` and `a:b` are the same name),
+and a 40-character cut — and the write moves a temp file *over* whatever is at
+the destination. Two checkpoints that landed on one name would leave one
+recovery point, silently, with nothing anywhere holding a second copy. So the
+server creates the file exclusively (`O_EXCL`) before asking the plugin to write
+it, and on collision appends `-2`, `-3`, … up to `-100`. You may therefore get a
+`…_manual-2.vcv` back from a call you labelled `manual`; use the returned
+`checkpointPath` rather than reconstructing the name.
+
+Between the claim and the write the file exists and is empty, so a concurrent
+`list_patch_files` can briefly show a 0-byte checkpoint.
+
+**When the write fails, the reservation is taken back only if the plugin said
+so.** Releasing it is a `stat` then an `unlink`, two syscalls with a gap
+between them, and the guard that makes the gap safe is *when* it runs rather
+than the size check alone: the plugin archives into a sibling temp file and
+renames only on success, so an error **it** reports proves the destination was
+never touched. A `TIMEOUT` or `RACK_DISCONNECTED` proves nothing — the UI
+thread may still be saving, and the deadline only bounds how long the server
+waits — so those leave the empty file in place rather than risk deleting a
+checkpoint that landed a moment later.
+
+A leftover empty `.vcv` is therefore possible, and it is harmless by
+construction: **an empty patch file is refused on the read side**, by
+`preview_load_patch` and `restore_checkpoint` alike, with `PATH_NOT_ALLOWED`
+("patch file is empty"). That refusal matters more than the tidiness — loading
+an empty archive would not fail cleanly, it would leave the rack *empty*, since
+Rack's `Manager::load()` clears the patch before it reads the file.
+
 Creating a checkpoint requires the **writer lease** (it is a mutating tool) and
 runs under the 60-second patch-file timeout.
 
@@ -104,7 +135,21 @@ checkpoint. It is two-phase and mirrors the load flow:
 
 The source path must land in the checkpoints root; a path that resolves anywhere
 else is rejected with `PATH_NOT_ALLOWED` ("restore source must be a checkpoint
-file"). The preview reports the target size, whether the current patch is saved,
+file").
+
+**A restored patch has no file path**, and that is deliberate. A checkpoint is
+contents, not an identity: adopting its path would make the checkpoint the
+target of both `save_patch` with no `path` *and* Rack's own Cmd/Ctrl+S, so
+restoring a recovery point and then saving would overwrite the recovery point.
+After a restore, `patchName` is `null`, a pathless `save_patch` is refused with
+`PATH_NOT_ALLOWED` ("current patch has no path; provide one"), and Rack's Save
+opens a file chooser. Save the restored patch with `save_patch` and an explicit
+path in the patches root. This is Rack's own behaviour after **File > New**, which
+loads the template patch and then clears the path for the same reason
+(`patch::Manager::loadTemplate` is `load(templatePath)`, `path = ""`,
+`history::setSaved()` — the three steps the plugin now performs here).
+
+The preview reports the target size, whether the current patch is saved,
 `willCreateRecoveryCheckpoint: true`, and a `high` risk level because the restore
 replaces the whole patch. The returned token expires after **5 minutes**, is
 single-use, and is minted with kind `restore`: it is not interchangeable with a
@@ -136,7 +181,11 @@ space, then retry
 
 Nothing has mutated at that point and the confirmation token has not been burned,
 so fixing the cause (usually a full or unwritable checkpoints directory) and
-re-sending the same commit works. On a commit that succeeds,
+re-sending the same commit works. That wrapper covers the **whole** checkpoint
+write, claiming the filename included: reserving the name is the first thing
+that touches the checkpoints directory, so an unwritable one is reported as a
+recovery-checkpoint failure that says the load did not happen, rather than as a
+bare write error that does not. On a commit that succeeds,
 `recoveryCheckpointPath` always holds the absolute path of the just-written
 recovery file — it is never `null` — and it is the anchor for the
 [recover-from-a-bad-load](#procedure-recover-from-a-bad-load) procedure below.
@@ -168,11 +217,23 @@ containment-checked (see [path policy](#path-policy)) before anything is written
 On success the plugin adopts the path as the current one and marks Rack's history
 clean (`setSaved()`), so the title bar no longer shows unsaved changes.
 
+**An explicit `path` must be in the patches root.** A `.vcv` inside the
+checkpoints root is refused with `PATH_NOT_ALLOWED`, because an ordinary save
+landing there would overwrite a recovery point and then be listed by
+`list_patch_files` under `root: "checkpoints"` and offered to
+`restore_checkpoint` — a save masquerading as a checkpoint. See
+[one door per root](#one-door-per-root).
+
 `save_patch` is annotated **destructive** by the host because it can overwrite an
 existing file. Like every write path it requires the writer lease and runs under
 the 60-second timeout. If the patch being saved has no Bridge module, the result
 carries the "will not reconnect after restart" warning — `save_patch` writes what
 is in the rack, it does **not** silently add a Bridge for you.
+
+Every path these tools report — `create_checkpoint`'s `checkpointPath`,
+`list_patch_files`' `path` and `roots`, `save_patch`'s `path` — is canonical
+(symlinks resolved), so the same file has exactly one name across tools and can
+be compared for identity.
 
 **Writes never truncate the previous file.** `save_patch` and `create_checkpoint`
 both go through the same routine: Rack's patch manager archives into a sibling
@@ -304,8 +365,11 @@ rules (in `apps/mcp-server/src/paths.ts`) are:
    symlink loop, a non-directory component, an unreadable ancestor — is refused
    ("path could not be resolved") rather than treated as a new in-root file.
 6. **Regular files only.** If the target exists it must be a regular file.
-7. **Existence.** Load and restore require the file to exist; save allows a new
-   file as long as its parent directory exists.
+7. **Existence, and non-emptiness.** Load and restore require the file to exist
+   **and to be larger than zero bytes**; save allows a new file as long as its
+   parent directory exists. A 0-byte `.vcv` is a write that never completed, not
+   a patch, and loading one is worse than refusing it: Rack clears the patch
+   before it reads the archive, so the failure would leave an empty rack.
 
 On Windows a reserved device name (`CON`, `NUL`, `COM1`…) or a name ending in a
 dot or a space is refused as well, since such a name would silently discard the
@@ -316,6 +380,35 @@ decided before parent-directory existence, so a path outside both roots always
 reports the containment error rather than leaking whether some directory exists.
 Because `preview_load_patch` validates eagerly, an out-of-policy path is caught
 before you ever reach a commit.
+
+### One door per root
+
+The two roots hold different things and the tools that reach them are not
+interchangeable:
+
+| Root | Written by | Read by |
+| --- | --- | --- |
+| `patches` | `save_patch` | `preview_load_patch` → `commit_load_patch` |
+| `checkpoints` | `create_checkpoint`, and the automatic recovery checkpoints | `restore_checkpoint` |
+
+A path that resolves into the wrong root for the tool is refused with
+`PATH_NOT_ALLOWED`, in all four directions. Containment (rule 4 above) decides
+*whether* a path is allowed at all; this decides *which tool* may use it.
+
+The rule governs paths the server is **given**. `save_patch` with no `path` is
+outside it: the plugin substitutes `APP->patch->path`, which the server never
+sees. Nothing reachable over MCP puts a checkpoint into that member any more —
+`restore_checkpoint` sends `setPath: false` and `preview_load_patch` refuses a
+checkpoint source — but if *you* open a checkpoint in Rack's own File > Open,
+a pathless `save_patch` writes to it, exactly as Rack's Cmd/Ctrl+S would. That
+is Rack's behaviour and your own choice, not something this server overrides.
+
+The reason is that the roots differ in what a mistake costs. Overwriting a patch
+is an edit you can undo by re-saving; overwriting the checkpoint you took *in
+order to* undo something is unrecoverable, and no retention policy anywhere
+keeps a second copy. `commit_load_patch` re-checks the root when it uses the
+token as well as when the preview mints it, so the rule cannot be reduced to a
+single check in one place.
 
 ## Bridge persistence
 

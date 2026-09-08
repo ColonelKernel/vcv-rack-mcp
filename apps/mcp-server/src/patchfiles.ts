@@ -6,7 +6,13 @@ import type { PatchFileResult } from "@rackmcp/schemas";
 import type { ServerConfig } from "./config.js";
 import type { ConnectionManager, SelectedInstance } from "./connection.js";
 import { ToolError, toErrorPayload } from "./errors.js";
-import { checkpointPath, resolvePatchPath, type PatchRoot } from "./paths.js";
+import {
+  canonicalRoot,
+  releaseCheckpointReservation,
+  reserveCheckpointPath,
+  resolvePatchPath,
+  type PatchRoot,
+} from "./paths.js";
 import type { ToolContext, ToolHandler } from "./tools.js";
 
 /**
@@ -22,6 +28,60 @@ interface PatchFingerprint {
 
 function scopeFor(instance: SelectedInstance) {
   return { instanceId: instance.instanceId, sessionId: instance.sessionId, patchEpoch: 0 };
+}
+
+/**
+ * Each root has exactly one door.
+ *
+ * `restoreCheckpoint` has always refused a source outside the checkpoints root,
+ * and nothing enforced the other three directions -- so `save_patch` could
+ * overwrite a recovery point, `preview_load_patch` could load one, and a
+ * checkpoint loaded that way became `APP->patch->path`, which is what Rack's
+ * own Cmd/Ctrl+S writes to. The asymmetry was the tell: the code already knew
+ * the two roots have different jobs and only said so in one place.
+ *
+ * Checkpoints are written by `create_checkpoint` and read by
+ * `restore_checkpoint`; patches are written by `save_patch` and read by
+ * `preview_load_patch` / `commit_load_patch`. No shipped caller crosses that
+ * line, so refusing it breaks nothing.
+ *
+ * The rule governs paths this server is GIVEN. `save_patch` with no path is
+ * outside it: the plugin substitutes `APP->patch->path`, which the server never
+ * sees, so a patch the user themselves opened from the checkpoints directory
+ * through Rack's own File > Open is still saved there -- exactly as Rack's
+ * Cmd/Ctrl+S would. Nothing reachable over MCP puts a checkpoint into that
+ * member any more; `setPath: false` on restore is the other half of this.
+ */
+function requireRoot(resolved: { root: PatchRoot }, want: PatchRoot, what: string): void {
+  if (resolved.root === want) return;
+  throw new ToolError(
+    "PATH_NOT_ALLOWED",
+    want === "patches"
+      ? `${what} must be in the patches root; checkpoints are written by create_checkpoint and read by restore_checkpoint`
+      : `${what} must be a checkpoint file`,
+  );
+}
+
+/**
+ * Whether a failed bridge call proves the plugin wrote nothing at the path.
+ *
+ * The plugin archives into a sibling temp file, flushes it, and only then
+ * renames it over the target -- so any error IT reports leaves the destination
+ * untouched, whatever went wrong. A timeout or a dropped connection reports no
+ * such thing: the UI thread may still be saving, and the deadline only bounds
+ * how long this side waits. Used to decide whether a checkpoint reservation is
+ * safe to take back.
+ *
+ * Deliberately not `mutationMayHaveOccurred`, which looks like the same
+ * question and is not: the plugin sets it for every `INTERNAL` patch-file
+ * failure (Handlers.cpp), which is the common "save failed" case and exactly
+ * the one where the atomic write guarantees the destination is untouched. That
+ * flag is a conservative statement about the PATCH; this is a precise one about
+ * one file.
+ */
+function pluginReportedFailure(err: unknown): boolean {
+  const code = toErrorPayload(err).code;
+  return code !== "TIMEOUT" && code !== "RACK_DISCONNECTED";
 }
 
 /** Canonical patch paths compare case-insensitively on Windows, like the roots. */
@@ -40,7 +100,14 @@ function samePath(a: string | null, b: string): boolean {
 const BRIDGE_INSERTION_NOTICE =
   "a RackMCP-Bridge module will be inserted into the resulting patch if it does not already contain one, which changes the layout of the loaded file";
 
-function listRoot(dir: string, root: PatchRoot) {
+function listRoot(rawDir: string, root: PatchRoot) {
+  // Canonical, because every other tool's path is. `create_checkpoint` builds
+  // its name on the realpath'd root, `resolvePatchPath` returns the realpath,
+  // and this listed one `join`ed the configured string -- so on any machine
+  // whose roots sit under a symlink (every macOS temp dir: /var -> private/var)
+  // the same file came back under two names and a client tracking checkpoints
+  // by path saw two files.
+  const dir = canonicalRoot(rawDir);
   let entries: string[] = [];
   try {
     entries = readdirSync(dir).filter((f) => f.toLowerCase().endsWith(".vcv"));
@@ -81,7 +148,10 @@ export const listPatchFiles: ToolHandler = async (args, ctx) => {
   return {
     files: page,
     nextCursor: start + limit < files.length ? String(start + limit) : null,
-    roots: { patches: config.patchesDir, checkpoints: config.checkpointsDir },
+    roots: {
+      patches: canonicalRoot(config.patchesDir),
+      checkpoints: canonicalRoot(config.checkpointsDir),
+    },
   };
 };
 
@@ -90,12 +160,21 @@ export const createCheckpoint: ToolHandler = async (args, ctx) => {
   const instance = await ctx.conn.ensureConnected();
   await ctx.conn.ensureLease();
   const stampMs = Date.now();
-  const path = checkpointPath(config, args.label as string | undefined, stampMs);
-  const res = await ctx.conn.request<PatchFileResult>(
-    "patchfile.saveCopy",
-    { scope: scopeFor(instance), path, operationId: args.operationId },
-    { operationId: args.operationId as string, deadlineMs: config.patchIoTimeoutMs },
-  );
+  const path = reserveCheckpointPath(config, args.label as string | undefined, stampMs);
+  let res: PatchFileResult;
+  try {
+    res = await ctx.conn.request<PatchFileResult>(
+      "patchfile.saveCopy",
+      { scope: scopeFor(instance), path, operationId: args.operationId },
+      { operationId: args.operationId as string, deadlineMs: config.patchIoTimeoutMs },
+    );
+  } catch (err) {
+    // The reservation exists to stop a concurrent caller taking this name, not
+    // to leave an empty .vcv behind when the save never lands -- but only the
+    // plugin's own failure proves it is not still writing.
+    if (pluginReportedFailure(err)) releaseCheckpointReservation(path);
+    throw err;
+  }
   return {
     checkpointPath: path,
     fingerprint: res.fingerprint,
@@ -110,7 +189,9 @@ export const savePatch: ToolHandler = async (args, ctx) => {
   await ctx.conn.ensureLease();
   let path: string | undefined;
   if (args.path) {
-    path = resolvePatchPath(config, args.path as string, { mustExist: false }).absolute;
+    const resolved = resolvePatchPath(config, args.path as string, { mustExist: false });
+    requireRoot(resolved, "patches", "the save target");
+    path = resolved.absolute;
   }
   const res = await ctx.conn.request<PatchFileResult>(
     "patchfile.save",
@@ -204,7 +285,11 @@ async function buildLoadPreview(
 export const previewLoadPatch: ToolHandler = async (args, ctx) => {
   const config = serverConfig(ctx);
   // Validate the path eagerly so preview surfaces PATH_NOT_ALLOWED.
-  resolvePatchPath(config, args.path as string, { mustExist: true });
+  requireRoot(
+    resolvePatchPath(config, args.path as string, { mustExist: true }),
+    "patches",
+    "the load source",
+  );
   return buildLoadPreview(ctx, "load", args.path as string);
 };
 
@@ -262,14 +347,20 @@ async function commitLoadOrClear(
   // never destroyed with the safety net missing. Nothing has mutated yet, so
   // the confirmation token stays valid and the commit can simply be retried.
   const stampMs = Date.now();
-  const recoveryPath = checkpointPath(config, "recovery", stampMs);
+  // Inside the try: claiming the name is now the first thing that writes to the
+  // checkpoints directory, so the failure this whole block exists to describe --
+  // a full or unwritable checkpoints dir -- arrives here first. Outside it, that
+  // cause would have escaped as a bare error with no mention of the load.
+  let recoveryPath = "";
   try {
+    recoveryPath = reserveCheckpointPath(config, "recovery", stampMs);
     await ctx.conn.request<PatchFileResult>(
       "patchfile.saveCopy",
       { scope: scopeFor(instance), path: recoveryPath, operationId: randomUUID() },
       { operationId: randomUUID(), deadlineMs: config.patchIoTimeoutMs },
     );
   } catch (err) {
+    if (recoveryPath && pluginReportedFailure(err)) releaseCheckpointReservation(recoveryPath);
     const cause = toErrorPayload(err);
     throw new ToolError(
       cause.code,
@@ -286,9 +377,22 @@ async function commitLoadOrClear(
   let res: PatchFileResult;
   if (kind === "load" || kind === "restore") {
     const resolved = resolvePatchPath(config, binding.path!, { mustExist: true });
+    // Re-checked here rather than trusted from the mint: the token carries a
+    // path, and the policy that decided it must hold at the moment it is used.
+    requireRoot(resolved, kind === "restore" ? "checkpoints" : "patches", "the load source");
     res = await ctx.conn.request<PatchFileResult>(
       "patchfile.load",
-      { scope: scopeFor(instance), path: resolved.absolute, setPath: true, operationId },
+      {
+        scope: scopeFor(instance),
+        path: resolved.absolute,
+        // A checkpoint is contents, not an identity. Adopting its path made
+        // `APP->patch->path` the checkpoint, and both `save_patch` with no
+        // path and Rack's own Cmd/Ctrl+S write to that member -- so restoring
+        // a recovery point and then saving overwrote the recovery point.
+        // Loading a patch is the opposite: the file IS the patch's identity.
+        setPath: kind === "load",
+        operationId,
+      },
       { operationId, deadlineMs: config.patchIoTimeoutMs },
     );
   } else {

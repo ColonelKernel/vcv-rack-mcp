@@ -361,8 +361,28 @@ PatchFileOutcome patchLoad(json_t* request) {
         // Owned by the command pump: safe because the pump is a child of the
         // scene, not the rack, so rebuilding the rack does not destroy it.
         APP->patch->load(path);
-        if (setPath)
+        if (setPath) {
             APP->patch->path = path;
+        }
+        else {
+            // "Load the contents, adopt no identity." Not a no-op, and not a
+            // guess: patch::Manager::fromJson reads a "path" key out of the
+            // archive and assigns it to Manager::path (verified by disassembly
+            // of the vendored 2.6.6 libRack: json_object_get(root, "path") ->
+            // json_string_value -> operator=(this+8)). Manager::save blanks
+            // path before archiving, so no .vcv Rack writes carries the key --
+            // but a hand-authored or autosave-derived one does, and skipping
+            // the assignment would silently adopt whatever write target the
+            // file names. That member is what save_patch with no path and
+            // Rack's own Cmd/Ctrl+S both write to.
+            //
+            // Empty is Rack's own answer for this state: Manager::loadTemplate
+            // is load(templatePath), then path = "", then history::setSaved()
+            // -- the same three steps in the same order as here. With no path,
+            // patchSave answers PATH_NOT_ALLOWED and Rack's Save opens a
+            // chooser, which is the point: the loaded contents have no file.
+            APP->patch->path.clear();
+        }
     } catch (const std::exception& e) {
         // Manager::load() clears the patch (and the autosave dir) before it
         // touches the archive, so the throw leaves an empty rack behind, not the
@@ -388,6 +408,19 @@ PatchFileOutcome patchLoad(json_t* request) {
         if (insertBridgeModule(w) && !w.empty())
             warnings.push_back(w);
     }
+    // Unconditional, in both branches, and Rack agrees: loadTemplate() calls
+    // setSaved() with an empty path, and fromJson() calls it itself whenever
+    // the archive carries no "unsaved" key -- so a load already arrives here
+    // marked saved, and this only re-asserts it for an archive that was taken
+    // while dirty.
+    //
+    // Not the whole truth, and worth saying rather than implying: the Bridge
+    // insertion just above adds a module that is in no file, and this then
+    // marks that difference clean, so Rack will discard it without a prompt.
+    // Pre-existing, unchanged here, and left alone deliberately -- the
+    // alternative reports every MCP load as having unsaved changes, which is
+    // wrong for the far more common case where nothing was inserted, and
+    // history::State offers no way to say "saved except for this".
     if (APP->history)
         APP->history->setSaved();
     armReplacementWatermark();
