@@ -257,3 +257,23 @@ are deliberate and recorded here rather than papered over.
   during the hold window, and reading the assertions that follow. Recorded here
   rather than left implicit, because the alternative is a green suite that
   quietly never exercised the feature's only entry point.
+- **A Rack-linked C++ test target is rejected, not merely absent.** It would
+  compile and then fail on the first statement: `contextGet()` returns whatever
+  some thread last passed to `contextSet()` — nothing does, outside a running
+  Rack — so the `APP` macro dereferences NULL; `Engine()`, `Scene()` and
+  `Window()` are all `PRIVATE` constructors (`engine/Engine.hpp:26`,
+  `app/Scene.hpp:27`, `window/Window.hpp:70`); and `Window` owns a `GLFWwindow*`
+  and an `NVGcontext*`, so it needs a live GL context. `tests/cpp` therefore
+  links no Rack at all, and its CI job does not even fetch the SDK.
+
+  That is a constraint on *where* logic lives, not a reason for it to go
+  untested. Two techniques cover the ground. Logic that only **reads** Rack is
+  extracted into plain data and validated there (`core/plan`, `core/layout`,
+  the `PlanWorld` snapshot). Logic that must **call** an SDK object is written
+  as a template over the type and instantiated twice — with the real type in
+  `rackside/`, and in `tests/cpp` with a fake that can be made to misbehave.
+  `core/rollback.hpp`'s `runInverses` and `core/barrier.hpp`'s `guardedCall` are
+  both that shape; the second is how the exception barrier between a throwing
+  handler and Rack's frame loop finally got a regression test, which this
+  document previously expected to need a fault-injection hook and a new wire
+  method.
