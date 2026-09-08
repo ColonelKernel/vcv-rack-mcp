@@ -18,6 +18,7 @@
 #include "core/canonical.hpp"
 #include "core/layout.hpp"
 #include "core/plan.hpp"
+#include "core/validate.hpp"
 #include "core/rollback.hpp"
 #include "core/frames.hpp"
 #include "rackside/RackBridge.hpp"
@@ -117,64 +118,10 @@ static float rightmostEdge() {
 
 namespace {
 
-struct ValidationError {
-    std::string code;
-    std::string message;
-};
-
-/** Tracks provisional alias declarations while validating (no mutation). */
-struct PreviewState {
-    std::map<std::string, int64_t> aliases; // provisional: negative synthetic ids
-    int64_t nextSyntheticId = -1000;
-    std::vector<std::string> warnings;
-    // diff accumulators
-    std::vector<std::pair<std::string, std::pair<std::string, std::string>>> addedModules; // alias -> (plugin, model)
-    std::vector<int64_t> removedModules, movedModules, modifiedModules;
-    int addedCables = 0;
-    std::vector<int64_t> removedCables;
-    std::vector<std::pair<int64_t, int>> replacedInputs, stackedInputs;
-    // plan-local simulation: input ports an earlier operation already took
-    std::vector<std::pair<int64_t, int>> claimedInputs;
-    // plan-local layout: where earlier operations put modules, when that is
-    // knowable exactly. `layoutUncertain` records that some operation makes the
-    // final layout unpredictable at preview time (a module this plan creates,
-    // or a nearest/squeeze move, where Rack chooses the resulting position), in
-    // which case the collision check must not refuse anything.
-    std::map<int64_t, math::Rect> plannedBoxes;
-    bool layoutUncertain = false;
-    // risk
-    bool removesBridge = false, touchesAudio = false, missingModule = false;
-    bool adapterUncertainty = false, possibleFeedback = false;
-
-    /** Records a cable the plan removes; the diff and the risk read this. */
-    void removeCable(int64_t cableId) {
-        if (!cableRemoved(cableId))
-            removedCables.push_back(cableId);
-    }
-    bool cableRemoved(int64_t cableId) const {
-        for (size_t i = 0; i < removedCables.size(); i++)
-            if (removedCables[i] == cableId)
-                return true;
-        return false;
-    }
-    bool moduleRemoved(int64_t moduleId) const {
-        for (size_t i = 0; i < removedModules.size(); i++)
-            if (removedModules[i] == moduleId)
-                return true;
-        return false;
-    }
-    bool inputClaimed(int64_t moduleId, int portId) const {
-        for (size_t i = 0; i < claimedInputs.size(); i++)
-            if (claimedInputs[i].first == moduleId && claimedInputs[i].second == portId)
-                return true;
-        return false;
-    }
-};
-
 /**
  * A live module as plain data.
  *
- * Every slug comparison below goes through this rather than chasing
+ * Every slug comparison downstream goes through this rather than chasing
  * `m->model->plugin->slug` at the point of use: the two-pointer guard was
  * written out three times in this file with no test on any copy, and the
  * predicates it feeds decide a risk flag the client is shown and the refusal
@@ -183,28 +130,81 @@ struct PreviewState {
  */
 WorldModule toWorldModule(int64_t id, engine::Module* m) {
     if (m && m->model && m->model->plugin)
-        return WorldModule(id, m->model->plugin->slug, m->model->slug);
+        return WorldModule(id, m->model->plugin->slug, m->model->slug, m->params.size(),
+                           m->inputs.size(), m->outputs.size());
+    if (m)
+        return WorldModule(id, "", "", m->params.size(), m->inputs.size(), m->outputs.size());
     return WorldModule(id, "", "");
 }
 
 /**
- * The Rack reads validation needs, taken once.
+ * Every Rack read validation needs, taken once, in one place.
  *
- * Today it resolves the models the plan names. `plugin::getModel` is called
- * once per `add_module` operation, in request order, exactly as the validation
- * loop called it -- the calls move earlier, they do not change. That is what
- * keeps preview and apply agreeing on what "installed" means: apply calls the
- * same function (`applyAdd`), and any set rebuilt from `plugin::plugins`
- * instead would be a second implementation free to drift from it.
+ * This is the whole reason `core/validate.cpp` can be a pure function and can
+ * be tested on three platforms in CI: after this returns, nothing downstream
+ * touches Rack. Each capture below replaces reads that used to happen at the
+ * point of use, sometimes several times per operation.
  *
- * `getModelFallback` is deliberately not used, here or at apply. Adopting
- * fallback semantics in preview alone would make preview accept a plan that
- * apply then refuses.
+ * `installedModels` holds only the models THIS plan names and Rack resolved --
+ * not every model on the machine. The whole catalogue was the obvious design
+ * and is worse twice over: it is more work than the lookups it replaces (a
+ * large install is several thousand models, walked on the UI thread inside one
+ * pump step, whether or not the plan adds anything), and reimplementing the
+ * lookup invites divergence from `plugin::getModel`, which
+ * `docs/spec/rack-mcp-spec.md` requires preview and apply to agree on.
+ * Pre-resolving with `getModel` itself makes the same calls in the same order
+ * and merely moves them earlier, so its behaviour is preserved by construction
+ * rather than by argument -- including its treatment of an empty slug, and its
+ * deliberate difference from `getModelFallback`, which neither preview nor
+ * apply uses.
+ *
+ * The panels are captured in `getModules()` order, with a NULL `module` kept as
+ * an id-less occupant: such a panel can never be the module being moved, but it
+ * is still an obstacle, and dropping it would let a plan place a module on top
+ * of one. Walking the list here instead of calling `RackWidget::getModule(id)`
+ * per operation is also the only null-safe way to ask the question -- that
+ * function dereferences `widget->module->id` with no null check (0xe5db8 in the
+ * vendored 2.6.6 dylib), so one module-less panel would crash the process.
+ *
+ * The cables are captured once rather than re-read per check. Disclosed in
+ * core/validate.hpp as a contract change rather than claimed as identity: the
+ * UI thread cannot mutate during validation, but a third-party module's worker
+ * thread can, and fresh-per-call reads then describe several instants at once.
  */
 PlanWorld snapshotWorld(json_t* operations) {
-    PlanWorld world;
+    PlanWorld world(rackGrid());
     for (int64_t id : APP->engine->getModuleIds())
         world.modules.push_back(toWorldModule(id, APP->engine->getModule(id)));
+
+    std::vector<app::ModuleWidget*> mws = APP->scene->rack->getModules();
+    for (size_t i = 0; i < mws.size(); i++) {
+        app::ModuleWidget* mw = mws[i];
+        if (!mw)
+            continue;
+        world.occupants.push_back(mw->module
+                                      ? layout::Occupant(mw->module->id, toBox(mw->box))
+                                      : layout::Occupant(toBox(mw->box)));
+    }
+
+    for (int64_t cid : APP->engine->getCableIds()) {
+        engine::Cable* c = APP->engine->getCable(cid);
+        if (!c)
+            continue;
+        PlanCable pc;
+        pc.id = cid;
+        if (c->outputModule) {
+            pc.hasOutput = true;
+            pc.outputModuleId = c->outputModule->id;
+            pc.outputId = c->outputId;
+        }
+        if (c->inputModule) {
+            pc.hasInput = true;
+            pc.inputModuleId = c->inputModule->id;
+            pc.inputId = c->inputId;
+        }
+        world.cables.push_back(pc);
+    }
+
     size_t i;
     json_t* op;
     json_array_foreach(operations, i, op) {
@@ -222,380 +222,6 @@ bool isAudioModule(engine::Module* m) {
     return m && rackmcp::isAudioModule(toWorldModule(m->id, m));
 }
 
-/** A live module, treating one an earlier plan operation removes as gone. */
-engine::Module* liveModule(const PreviewState& st, int64_t moduleId) {
-    if (st.moduleRemoved(moduleId))
-        return NULL;
-    return APP->engine->getModule(moduleId);
-}
-
-/** Live cables attached to a module that the plan has not already removed. */
-/**
- * The engine's cables as plain data.
- *
- * Read fresh per call rather than snapshotted once: these run during
- * validation, and the shape of the patch is what they are asking about.
- */
-static std::vector<PlanCable> livePlanCables() {
-    std::vector<PlanCable> out;
-    for (int64_t cid : APP->engine->getCableIds()) {
-        engine::Cable* c = APP->engine->getCable(cid);
-        if (!c)
-            continue;
-        PlanCable pc;
-        pc.id = cid;
-        if (c->outputModule) {
-            pc.hasOutput = true;
-            pc.outputModuleId = c->outputModule->id;
-            pc.outputId = c->outputId;
-        }
-        if (c->inputModule) {
-            pc.hasInput = true;
-            pc.inputModuleId = c->inputModule->id;
-            pc.inputId = c->inputId;
-        }
-        out.push_back(pc);
-    }
-    return out;
-}
-
-std::vector<int64_t> cablesOnModule(const PreviewState& st, int64_t moduleId) {
-    return rackmcp::cablesOnModule(livePlanCables(), st.removedCables, moduleId);
-}
-std::vector<int64_t> cablesOnPort(const PreviewState& st, int64_t moduleId,
-                                  const std::string& portType, int portId) {
-    return rackmcp::cablesOnPort(livePlanCables(), st.removedCables, moduleId, portType, portId);
-}
-
-bool positionFree(const PreviewState& st, app::ModuleWidget* self, math::Rect box) {
-    std::vector<app::ModuleWidget*> mws = APP->scene->rack->getModules();
-    std::vector<layout::Occupant> occupants;
-    size_t selfIndex = layout::kNoSelf;
-    for (size_t i = 0; i < mws.size(); i++) {
-        app::ModuleWidget* other = mws[i];
-        if (!other)
-            continue;
-        if (other == self)
-            selfIndex = occupants.size();
-        occupants.push_back(other->module
-                                ? layout::Occupant(other->module->id, toBox(other->box))
-                                : layout::Occupant(toBox(other->box)));
-    }
-
-    layout::PlanLayout plan;
-    plan.removedModules = st.removedModules;
-    for (std::map<int64_t, math::Rect>::const_iterator it = st.plannedBoxes.begin();
-         it != st.plannedBoxes.end(); ++it)
-        plan.plannedBoxes[it->first] = toBox(it->second);
-
-    return layout::positionFree(occupants, selfIndex, toBox(box), plan);
-}
-
-bool validateOne(json_t* op, const PlanWorld& world, PreviewState& st, ValidationError& err) {
-    std::string type = jstr(op, "op");
-
-    // Every field the schema declares required, present and of the declared
-    // type, before any accessor gets a chance to substitute a default. The
-    // accessors below (jbool, json_integer_value, jstr) all return a default
-    // for a value of the wrong type, and several of those defaults are the
-    // destructive choice.
-    const std::string shape = checkOperationFields(op);
-    if (!shape.empty()) {
-        err = {"BAD_REQUEST", shape};
-        return false;
-    }
-
-    if (type == "add_module") {
-        std::string pslug = jstr(op, "pluginSlug");
-        std::string mslug = jstr(op, "modelSlug");
-        std::string alias = jstr(op, "alias");
-        if (!world.modelInstalled(pslug, mslug)) {
-            err = {"MODEL_NOT_INSTALLED", "model " + pslug + "/" + mslug + " is not installed"};
-            st.missingModule = true;
-            return false;
-        }
-        if (alias.empty() || st.aliases.count(alias)) {
-            err = {"BAD_REQUEST", "duplicate or empty transaction alias '" + alias + "'"};
-            return false;
-        }
-        st.aliases[alias] = st.nextSyntheticId--;
-        st.addedModules.push_back({alias, {pslug, mslug}});
-        // The new module's panel width, and so where it lands, is not known
-        // until it is created at commit time.
-        st.layoutUncertain = true;
-        if (pslug == "Core" && mslug.rfind("Audio", 0) == 0)
-            st.touchesAudio = true;
-        if (pslug != "Core" && pslug != "Fundamental" && pslug != "RackMCP")
-            st.adapterUncertainty = true;
-        return true;
-    }
-
-    if (type == "remove_module") {
-        RefResult r = resolveRef(json_object_get(op, "module"), st.aliases);
-        if (!r.ok) {
-            err = {"MODULE_NOT_FOUND", "remove_module: unresolved module reference"};
-            return false;
-        }
-        if (r.moduleId >= 0) {
-            engine::Module* m = liveModule(st, r.moduleId);
-            if (!m) {
-                err = {"MODULE_NOT_FOUND", "no module with id " + std::to_string(r.moduleId)};
-                return false;
-            }
-            bool isBridge = rackmcp::isBridgeModule(toWorldModule(r.moduleId, m));
-            // Counted against the plan, not against the live patch. The live
-            // count is the patch as it was before this transaction, so it never
-            // saw a Bridge an earlier operation here had already removed.
-            const int bridgesLeft = remainingBridgeCount(world.modules, st.removedModules);
-            if (isBridge && !jbool(op, "allowLastBridge", false) && bridgesLeft <= 1) {
-                err = {"UNSUPPORTED_OPERATION",
-                       "refusing to remove the last RackMCP-Bridge module (set allowLastBridge)"};
-                st.removesBridge = true;
-                return false;
-            }
-            if (isBridge)
-                st.removesBridge = true;
-            if (isAudioModule(m))
-                st.touchesAudio = true;
-            // The cable policy decides between refusing and taking the cables
-            // with the module; either way the diff must list them.
-            std::string cablePolicy = jstr(op, "cablePolicy", "remove_attached");
-            std::vector<int64_t> attached = cablesOnModule(st, r.moduleId);
-            if (!attached.empty() && cablePolicy == "fail_if_connected") {
-                err = {"VALIDATION_FAILED",
-                       "remove_module: module " + std::to_string(r.moduleId) +
-                           " has attached cables (policy fail_if_connected)"};
-                return false;
-            }
-            for (size_t i = 0; i < attached.size(); i++)
-                st.removeCable(attached[i]);
-            st.removedModules.push_back(r.moduleId);
-        }
-        return true;
-    }
-
-    if (type == "set_parameter" || type == "set_bypass" || type == "reset_module" ||
-        type == "randomize_module") {
-        RefResult r = resolveRef(json_object_get(op, "module"), st.aliases);
-        if (!r.ok) {
-            err = {"MODULE_NOT_FOUND", type + ": unresolved module reference"};
-            return false;
-        }
-        if (r.moduleId >= 0) {
-            engine::Module* m = liveModule(st, r.moduleId);
-            if (!m) {
-                err = {"MODULE_NOT_FOUND", "no module with id " + std::to_string(r.moduleId)};
-                return false;
-            }
-            if (type == "set_parameter") {
-                int paramId = 0;
-                std::string ierr;
-                if (!readIntField(op, "paramId", paramId, ierr)) {
-                    err = {"BAD_REQUEST", "set_parameter: " + ierr};
-                    return false;
-                }
-                if (paramId < 0 || paramId >= (int) m->params.size()) {
-                    err = {"PARAMETER_NOT_FOUND",
-                           "param " + std::to_string(paramId) + " out of range"};
-                    return false;
-                }
-            }
-            st.modifiedModules.push_back(r.moduleId);
-        }
-        else {
-            st.modifiedModules.push_back(r.moduleId); // synthetic; applied post-add
-        }
-        return true;
-    }
-
-    if (type == "move_module") {
-        RefResult r = resolveRef(json_object_get(op, "module"), st.aliases);
-        if (!r.ok) {
-            err = {"MODULE_NOT_FOUND", "move_module: unresolved module reference"};
-            return false;
-        }
-        // Schema field is `collision` (CollisionPolicy), not `collisionPolicy`.
-        std::string policy = jstr(op, "collision", "nearest");
-        if (r.moduleId >= 0) {
-            if (!liveModule(st, r.moduleId)) {
-                err = {"MODULE_NOT_FOUND", "no module with id " + std::to_string(r.moduleId)};
-                return false;
-            }
-            app::ModuleWidget* mw = APP->scene->rack->getModule(r.moduleId);
-            if (mw) {
-                json_t* p = json_object_get(op, "position");
-                int gx = 0, gy = 0;
-                std::string ierr;
-                if (!readGridPosition(p, gx, gy, ierr)) {
-                    err = {"BAD_REQUEST", "move_module: position " + ierr};
-                    return false;
-                }
-                math::Rect target(gridToPixel(gx, gy), mw->box.size);
-                // Only refuse when the resulting layout is known exactly:
-                // apply-time requestModulePos stays the authority, and a
-                // preview must never reject a plan that would have committed.
-                if (policy == "fail" && !st.layoutUncertain && !positionFree(st, mw, target)) {
-                    err = {"VALIDATION_FAILED",
-                           "move_module: target position is occupied (collision fail)"};
-                    return false;
-                }
-                if (policy == "fail" || policy == "force")
-                    st.plannedBoxes[r.moduleId] = target; // lands exactly here
-                else
-                    st.layoutUncertain = true; // nearest/squeeze: Rack decides
-            }
-        }
-        st.movedModules.push_back(r.moduleId);
-        return true;
-    }
-
-    if (type == "connect") {
-        json_t* outRef = json_object_get(op, "output");
-        json_t* inRef = json_object_get(op, "input");
-        RefResult out = resolveRef(json_object_get(outRef, "module"), st.aliases);
-        RefResult in = resolveRef(json_object_get(inRef, "module"), st.aliases);
-        if (!out.ok || !in.ok) {
-            err = {"MODULE_NOT_FOUND", "connect: unresolved output/input reference"};
-            return false;
-        }
-        int outId = 0, inId = 0;
-        {
-            std::string ierr;
-            if (!readIntField(outRef, "portId", outId, ierr)) {
-                err = {"BAD_REQUEST", "connect: output " + ierr};
-                return false;
-            }
-            if (!readIntField(inRef, "portId", inId, ierr)) {
-                err = {"BAD_REQUEST", "connect: input " + ierr};
-                return false;
-            }
-        }
-        std::string policy = jstr(op, "inputPolicy", "fail_if_connected");
-        // Bounds check against live modules (synthetic modules validated at apply).
-        if (out.moduleId >= 0) {
-            engine::Module* m = liveModule(st, out.moduleId);
-            if (!m || outId < 0 || outId >= (int) m->outputs.size()) {
-                err = {"PORT_NOT_FOUND", "connect: output port out of range"};
-                return false;
-            }
-            if (isAudioModule(m))
-                st.touchesAudio = true;
-        }
-        // Input already connected -- by a live cable the plan keeps, or by an
-        // earlier connect in this same plan.
-        bool connected = st.inputClaimed(in.moduleId, inId);
-        std::vector<int64_t> existing;
-        if (in.moduleId >= 0) {
-            engine::Module* m = liveModule(st, in.moduleId);
-            if (!m || inId < 0 || inId >= (int) m->inputs.size()) {
-                err = {"PORT_NOT_FOUND", "connect: input port out of range"};
-                return false;
-            }
-            if (isAudioModule(m))
-                st.touchesAudio = true;
-            existing = cablesOnPort(st, in.moduleId, "input", inId);
-            if (!existing.empty())
-                connected = true;
-        }
-        if (connected) {
-            if (policy == "fail_if_connected") {
-                err = {"VALIDATION_FAILED",
-                       "connect: input already connected (policy fail_if_connected)"};
-                return false;
-            }
-            if (policy == "stack") {
-                err = {"UNSUPPORTED_OPERATION",
-                       "VCV Rack inputs accept a single cable; use replace_all or a different "
-                       "input"};
-                return false;
-            }
-            // replace_all: the existing cables go away.
-            if (in.moduleId >= 0 && !existing.empty())
-                st.replacedInputs.push_back({in.moduleId, inId});
-            for (size_t i = 0; i < existing.size(); i++)
-                st.removeCable(existing[i]);
-        }
-        st.claimedInputs.push_back({in.moduleId, inId});
-        st.addedCables++;
-        return true;
-    }
-
-    if (type == "disconnect") {
-        json_t* cref = json_object_get(op, "cable");
-        const char* cidStr = jstr(cref, "cableId", "");
-        // The endptr check alone accepted "" as cable 0 -- strtoll returns 0 and
-        // leaves endp on the terminator -- and never checked the sign, so a
-        // negative id reached getCable too.
-        int64_t cid = -1;
-        if (!parseDecimalId(cidStr, cid) || !APP->engine->getCable(cid)) {
-            err = {"CABLE_NOT_FOUND", "disconnect: no cable " + std::string(cidStr)};
-            return false;
-        }
-        if (st.cableRemoved(cid)) {
-            err = {"CABLE_NOT_FOUND",
-                   "disconnect: cable " + std::string(cidStr) + " is already removed by an earlier "
-                   "operation in this plan"};
-            return false;
-        }
-        st.removeCable(cid);
-        return true;
-    }
-
-    if (type == "disconnect_port") {
-        json_t* portRef = json_object_get(op, "port");
-        RefResult r = resolveRef(json_object_get(portRef, "module"), st.aliases);
-        if (!r.ok && r.moduleId < 0) {
-            err = {"MODULE_NOT_FOUND", "disconnect_port: unresolved module"};
-            return false;
-        }
-        if (r.moduleId >= 0) {
-            engine::Module* m = liveModule(st, r.moduleId);
-            if (!m) {
-                err = {"MODULE_NOT_FOUND", "no module with id " + std::to_string(r.moduleId)};
-                return false;
-            }
-            if (isAudioModule(m))
-                st.touchesAudio = true;
-            // Enumerate exactly what apply will remove, so the diff discloses
-            // the cables and the destructive classification picks them up.
-            int portId = 0;
-            std::string ierr;
-            if (!readIntField(portRef, "portId", portId, ierr)) {
-                err = {"BAD_REQUEST", "disconnect_port: " + ierr};
-                return false;
-            }
-            // portType is nested, so the generated field table does not reach
-            // it. An unrecognised value made cablesOnPort match nothing and
-            // disconnect_port a silent no-op that still reported success.
-            const std::string ptype = jstr(portRef, "portType", "");
-            if (ptype != "input" && ptype != "output") {
-                err = {"BAD_REQUEST",
-                       "disconnect_port: portType must be \"input\" or \"output\", not \"" +
-                           ptype + "\""};
-                return false;
-            }
-            std::string policy = jstr(op, "policy", "all");
-            std::vector<int64_t> matches = cablesOnPort(st, r.moduleId, ptype, portId);
-            if (policy == "top" && !matches.empty())
-                matches = std::vector<int64_t>(1, matches.back());
-            for (size_t i = 0; i < matches.size(); i++)
-                st.removeCable(matches[i]);
-        }
-        return true;
-    }
-
-    if (type == "duplicate_module") {
-        // Commit cannot execute this yet; preview must not promise it can
-        // (spec section 6: the previewed plan is the plan commit applies).
-        err = {"UNSUPPORTED_OPERATION",
-               "duplicate_module is not implemented; use add_module with explicit "
-               "set_parameter and connect operations"};
-        return false;
-    }
-
-    err = {"UNSUPPORTED_OPERATION", "unknown operation '" + type + "'"};
-    return false;
-}
 
 json_t* idStr(int64_t id) {
     return json_string(std::to_string(id).c_str());

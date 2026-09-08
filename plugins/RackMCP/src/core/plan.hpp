@@ -18,6 +18,8 @@
 #include <string>
 #include <vector>
 
+#include "core/layout.hpp"
+
 #if RACKMCP_HAVE_JANSSON
 #include <jansson.h>
 #endif
@@ -46,6 +48,20 @@ namespace rackmcp {
  */
 bool parseDecimalId(const std::string& text, int64_t& out);
 
+/** A cable as validation needs to see it. */
+struct PlanCable {
+    int64_t id;
+    /** False when the engine holds the cable with an end detached. */
+    bool hasOutput, hasInput;
+    int64_t outputModuleId, inputModuleId;
+    int outputId, inputId;
+    PlanCable()
+        : id(-1), hasOutput(false), hasInput(false), outputModuleId(-1), inputModuleId(-1),
+          outputId(-1), inputId(-1) {}
+    static PlanCable connected(int64_t id, int64_t outModule, int outPort, int64_t inModule,
+                               int inPort);
+};
+
 /**
  * One live module, as plain data.
  *
@@ -63,9 +79,24 @@ struct WorldModule {
     int64_t id;
     std::string pluginSlug;
     std::string modelSlug;
-    WorldModule() : id(-1) {}
+    /**
+     * How many params and ports the module has, for the bounds checks that used
+     * to read `m->params.size()` off the live pointer.
+     *
+     * Zero by default, and that is the safe direction rather than an oversight:
+     * a snapshot that failed to record the counts refuses every paramId and
+     * portId with PARAMETER_NOT_FOUND / PORT_NOT_FOUND, which is the outcome a
+     * caller can see and correct. The destructive direction would be to accept.
+     */
+    size_t paramCount, inputCount, outputCount;
+    WorldModule() : id(-1), paramCount(0), inputCount(0), outputCount(0) {}
     WorldModule(int64_t id_, const std::string& plugin, const std::string& model)
-        : id(id_), pluginSlug(plugin), modelSlug(model) {}
+        : id(id_), pluginSlug(plugin), modelSlug(model), paramCount(0), inputCount(0),
+          outputCount(0) {}
+    WorldModule(int64_t id_, const std::string& plugin, const std::string& model, size_t params,
+                size_t inputs, size_t outputs)
+        : id(id_), pluginSlug(plugin), modelSlug(model), paramCount(params), inputCount(inputs),
+          outputCount(outputs) {}
 };
 
 /**
@@ -132,10 +163,53 @@ struct PlanWorld {
     std::set<ModelRef> installedModels;
     /** Every live module, so a check can ask about the ones a plan removes. */
     std::vector<WorldModule> modules;
+    /**
+     * Every panel on the rack, in the order `RackWidget::getModules()` gave
+     * them, so `positionFree`'s self-exemption keeps meaning the same widget.
+     * A panel whose `module` is NULL is included with no id -- it is still an
+     * obstacle -- which is why this is a vector and not a map (layout.hpp:52-59).
+     */
+    std::vector<layout::Occupant> occupants;
+    /** Every cable the engine holds, taken once. */
+    std::vector<PlanCable> cables;
+    /**
+     * Rack's panel grid. Required at construction rather than defaulted: the
+     * only source is `RACK_GRID_WIDTH`/`RACK_GRID_HEIGHT`, which a Rack-free
+     * translation unit cannot name, and a silently zero grid would put every
+     * move target at the origin instead of refusing.
+     */
+    layout::Grid grid;
+
+    explicit PlanWorld(const layout::Grid& grid_) : grid(grid_) {}
 
     bool modelInstalled(const std::string& pluginSlug, const std::string& modelSlug) const {
         return installedModels.count(ModelRef(pluginSlug, modelSlug)) != 0;
     }
+
+    /**
+     * The live module with this id, or NULL -- what `Engine::getModule` answered.
+     *
+     * Linear, because `modules` is a snapshot of a `std::map` the engine keys by
+     * id: ids are unique, so the first match is the only match, and a rack large
+     * enough for the scan to matter does not exist.
+     */
+    const WorldModule* module(int64_t moduleId) const;
+
+    /**
+     * The index into `occupants` of the panel `RackWidget::getModule(moduleId)`
+     * would have returned, or `layout::kNoSelf` when there is none.
+     *
+     * First match in child order, which is what `getModule` returns. Resolved
+     * during the same pass that builds `occupants`, so the index and the panel
+     * cannot disagree -- and, unlike `getModule`, it does not dereference a NULL
+     * `module` on the way past (0xe5db8 in the vendored dylib loads
+     * `[widget+0x58]` and then `[that+0x18]` with no null check between them, so
+     * a module-less panel earlier in the list crashes it).
+     */
+    size_t widgetIndex(int64_t moduleId) const;
+
+    /** Whether the engine holds this cable -- what `getCable(id) != NULL` said. */
+    bool hasCable(int64_t cableId) const;
 };
 
 /**
@@ -307,20 +381,6 @@ struct ModuleRef {
  */
 ModuleRef resolveModuleRef(json_t* ref, const std::map<std::string, int64_t>& aliases);
 #endif
-
-/** A cable as validation needs to see it. */
-struct PlanCable {
-    int64_t id;
-    /** False when the engine holds the cable with an end detached. */
-    bool hasOutput, hasInput;
-    int64_t outputModuleId, inputModuleId;
-    int outputId, inputId;
-    PlanCable()
-        : id(-1), hasOutput(false), hasInput(false), outputModuleId(-1), inputModuleId(-1),
-          outputId(-1), inputId(-1) {}
-    static PlanCable connected(int64_t id, int64_t outModule, int outPort, int64_t inModule,
-                               int inPort);
-};
 
 /**
  * Cable ids touching `moduleId` at either end, excluding those `removed`

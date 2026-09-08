@@ -73,6 +73,7 @@ if(JANSSON_FOUND)
     ${RACKMCP_PLUGIN_SRC}/core/frames.cpp
     ${RACKMCP_PLUGIN_SRC}/core/manifest.cpp
     ${RACKMCP_PLUGIN_SRC}/core/service.cpp
+    ${RACKMCP_PLUGIN_SRC}/core/validate.cpp
   )
 endif()
 

@@ -22,7 +22,7 @@ has no implementation behind it and no stated reason for standing alone.
 | tool | 32 |
 | **total** | **459** |
 
-Scanned across 12 source roots and 147 files,
+Scanned across 12 source roots and 150 files,
 plus 24 documentation files and 111 distinct JSON keys
 emitted by the plugin.
 
@@ -60,9 +60,9 @@ present either way; the gate matches the jansson call shape instead.
 | --- | --- | --- |
 | `opaqueStateDisclosed` | `json_true()` | `plugins/RackMCP/src/rackside/Snapshot.cpp:196` |
 | `requiredTemporaryInstantiation` | `json_true()` | `plugins/RackMCP/src/rackside/Snapshot.cpp:443` |
-| `undoable` | `json_true()` | `plugins/RackMCP/src/rackside/Transaction.cpp:748` |
-| `undoEligible` | `json_true()` | `plugins/RackMCP/src/rackside/Transaction.cpp:1441` |
-| `undone` | `json_true()` | `plugins/RackMCP/src/rackside/Transaction.cpp:1496` |
+| `undoable` | `json_true()` | `plugins/RackMCP/src/rackside/Transaction.cpp:374` |
+| `undoEligible` | `json_true()` | `plugins/RackMCP/src/rackside/Transaction.cpp:1067` |
+| `undone` | `json_true()` | `plugins/RackMCP/src/rackside/Transaction.cpp:1122` |
 
 ## The generated C++ header
 

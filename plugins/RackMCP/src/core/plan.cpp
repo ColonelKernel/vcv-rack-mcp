@@ -415,4 +415,25 @@ PlanRisk computeRisk(const PlanEffects& e, int64_t maxOperations) {
     return risk;
 }
 
+const WorldModule* PlanWorld::module(int64_t moduleId) const {
+    for (size_t i = 0; i < modules.size(); i++)
+        if (modules[i].id == moduleId)
+            return &modules[i];
+    return NULL;
+}
+
+size_t PlanWorld::widgetIndex(int64_t moduleId) const {
+    for (size_t i = 0; i < occupants.size(); i++)
+        if (occupants[i].hasModuleId && occupants[i].moduleId == moduleId)
+            return i;
+    return layout::kNoSelf;
+}
+
+bool PlanWorld::hasCable(int64_t cableId) const {
+    for (size_t i = 0; i < cables.size(); i++)
+        if (cables[i].id == cableId)
+            return true;
+    return false;
+}
+
 }  // namespace rackmcp

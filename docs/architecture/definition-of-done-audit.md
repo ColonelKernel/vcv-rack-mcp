@@ -269,7 +269,10 @@ are deliberate and recorded here rather than papered over.
   That is a constraint on *where* logic lives, not a reason for it to go
   untested. Two techniques cover the ground. Logic that only **reads** Rack is
   extracted into plain data and validated there (`core/plan`, `core/layout`,
-  the `PlanWorld` snapshot). Logic that must **call** an SDK object is written
+  `core/validate` and the `PlanWorld` snapshot that feeds it — every refusal a
+  transaction preview can make now decided by a pure function over that
+  snapshot, and covered by `tests/cpp/validate.test.cpp` on three platforms).
+  Logic that must **call** an SDK object is written
   as a template over the type and instantiated twice — with the real type in
   `rackside/`, and in `tests/cpp` with a fake that can be made to misbehave.
   `core/rollback.hpp`'s `runInverses` and `core/barrier.hpp`'s `guardedCall` are
