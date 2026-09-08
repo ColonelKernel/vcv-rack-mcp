@@ -22,7 +22,7 @@ has no implementation behind it and no stated reason for standing alone.
 | tool | 32 |
 | **total** | **459** |
 
-Scanned across 12 source roots and 145 files,
+Scanned across 12 source roots and 147 files,
 plus 24 documentation files and 111 distinct JSON keys
 emitted by the plugin.
 
@@ -92,7 +92,7 @@ to refuse a malformed frame was present and unused.
 | `LIMIT_TXN_COMMIT_TIMEOUT_MS` | Enforced on the MCP server, not in the plugin. The generator emits every entry of LIMITS uniformly so the two sides cannot disagree about a value; a limit whose enforcement lives server-side therefore has a C++ constant with no C++ reader, and that is the intended shape rather than a gap. |
 | `LIMIT_TXN_MAX_ADDED_MODULES` | Enforced on the MCP server, not in the plugin. The generator emits every entry of LIMITS uniformly so the two sides cannot disagree about a value; a limit whose enforcement lives server-side therefore has a C++ constant with no C++ reader, and that is the intended shape rather than a gap. |
 
-The plugin emits 84 error-code string literals, each checked against `ERROR_CODES`.
+The plugin emits 82 error-code string literals, each checked against `ERROR_CODES`.
 The generated `ErrorCode` enum has no C++ caller, so a typo would otherwise compile and reach
 a client that branches on the code.
 

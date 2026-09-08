@@ -4,6 +4,7 @@
 
 #include <jansson.h>
 
+#include "core/barrier.hpp"
 #include "core/frames.hpp"
 #include "gen/rackmcp_protocol_gen.hpp"
 #include "rackside/Handlers.hpp"
@@ -83,25 +84,18 @@ void CommandPumpWidget::step() {
             // `mutationMayHaveOccurred` follows cmd.mutating, since a throw
             // partway through a mutating handler is exactly the case where the
             // caller must not assume nothing changed.
-            try {
-                frame = executeCommand(cmd);
-            }
-            catch (const std::exception& e) {
-                WARN("RackMCP: %s threw: %s", cmd.method.c_str(), e.what());
-                frame = buildResError(cmd.requestId, "INTERNAL",
-                                      std::string("handler threw: ") + e.what(), false,
-                                      cmd.mutating);
-            }
-            catch (const std::string& e) {
-                // The transaction applier reports failures this way.
-                WARN("RackMCP: %s threw: %s", cmd.method.c_str(), e.c_str());
-                frame = buildResError(cmd.requestId, "INTERNAL", "handler threw: " + e, false,
-                                      cmd.mutating);
-            }
-            catch (...) {
-                WARN("RackMCP: %s threw a non-standard exception", cmd.method.c_str());
-                frame = buildResError(cmd.requestId, "INTERNAL",
-                                      "handler threw a non-standard exception", false,
+            //
+            // The three catch clauses live in core/barrier.hpp so a callable
+            // that throws can exercise them where Rack cannot be linked. This
+            // is the only call site, and tests/contract refuses a bare
+            // `executeCommand(` here so it stays that way.
+            const GuardOutcome guard = guardedCall([&cmd]() { return executeCommand(cmd); }, frame);
+            if (guard.threw) {
+                if (guard.nonStandard)
+                    WARN("RackMCP: %s threw a non-standard exception", cmd.method.c_str());
+                else
+                    WARN("RackMCP: %s threw: %s", cmd.method.c_str(), guard.detail.c_str());
+                frame = buildResError(cmd.requestId, "INTERNAL", guard.message, false,
                                       cmd.mutating);
             }
             bridge.setLastOp(cmd.method);
